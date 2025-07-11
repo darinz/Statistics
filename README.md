@@ -20,7 +20,7 @@
 
 ## Overview
 
-This project contains materials for learning both theoretical and practical techniques for applying statistical models to data. The focus is on regression models, which are used to model a variable of interest as a function of explanatory variables.
+This project contains comprehensive materials for learning both theoretical and practical techniques for applying statistical models to data. The focus is on regression models, which are used to model a variable of interest as a function of explanatory variables.
 
 **Example Applications:**
 - Which variables are significant predictors for the success of a restaurant?
@@ -44,6 +44,9 @@ Upon successful completion of this course, you will be able to:
 - Add complexity to regression models using transformations and interactions
 - Use variable selection techniques to select a model
 - Perform regression analyses for a binary response
+- Conduct comprehensive data summarization and exploratory analysis
+- Perform statistical testing and hypothesis testing
+- Create publication-quality visualizations
 
 ### Python Programming Skills
 - Work with data using pandas, numpy, and scipy
@@ -55,6 +58,9 @@ Upon successful completion of this course, you will be able to:
 - Conduct exploratory data analysis (EDA)
 - Create interactive visualizations with plotly
 - Deploy models and create reproducible workflows
+- Perform comprehensive data summarization and statistical analysis
+- Handle outliers and data quality issues
+- Create advanced statistical visualizations
 
 ## Prerequisites
 
@@ -83,24 +89,43 @@ We will recap the most important concepts needed for this course, but some famil
 - **R Data Structures**: Vectors, matrices, lists, data frames
 - **R Programming Basics**: Control flow, loops, functions in R
 
+#### Language-Specific Tracks
+
+##### R Track (R/)
+- **Introduction to R** (`01_intro.md`): Basic R concepts and setup
+- **R Data Types** (`02_data_types.md`): Comprehensive R data types
+- **R Data Structures** (`03_data_structures.md`): R-specific data structures
+- **R Programming Basics** (`04_programming_basics.md`): R programming fundamentals
+- **Summarizing Data with R** (`05_summarizing_data.md`): Comprehensive statistical analysis
+
+##### Python Track (Python/)
+- **Introduction to Python** (`01_intro.md`): Python fundamentals for data science
+- **Python Data Types** (`02_data_types.md`): Complete Python data types guide
+- **Python Data Structures** (`03_data_structures.md`): Python data structures for statistics
+- **Python Programming Basics** (`04_programming_basics.md`): Python programming fundamentals
+- **Summarizing Data with Python** (`05_summarizing_data.md`): Comprehensive statistical analysis
+
+#### Summarizing Data (03_summarizing/)
+- **Summarizing Data** (`01_summarizing_data.md`): Comprehensive guide to data summarization
+
 ### Planned Modules
 
 #### R Track
-- **Module 3**: Data Manipulation with dplyr and tidyr
-- **Module 4**: Linear Regression Models
-- **Module 5**: Model Diagnostics and Assumptions
-- **Module 6**: Multiple Regression and Variable Selection
-- **Module 7**: Categorical Predictors and Interactions
-- **Module 8**: Logistic Regression
-- **Module 9**: Reproducible Research with RMarkdown
+- **Module 6**: Data Manipulation with dplyr and tidyr
+- **Module 7**: Linear Regression Models
+- **Module 8**: Model Diagnostics and Assumptions
+- **Module 9**: Multiple Regression and Variable Selection
+- **Module 10**: Categorical Predictors and Interactions
+- **Module 11**: Logistic Regression
+- **Module 12**: Reproducible Research with RMarkdown
 
 #### Python Track
-- **Module 3**: Statistical Analysis with scipy and statsmodels
-- **Module 4**: Linear Regression with scikit-learn
-- **Module 5**: Model Evaluation and Diagnostics
-- **Module 6**: Feature Engineering and Selection
-- **Module 7**: Logistic Regression and Classification
-- **Module 8**: Advanced Visualization and Reporting
+- **Module 6**: Statistical Analysis with scipy and statsmodels
+- **Module 7**: Linear Regression with scikit-learn
+- **Module 8**: Model Evaluation and Diagnostics
+- **Module 9**: Feature Engineering and Selection
+- **Module 10**: Logistic Regression and Classification
+- **Module 11**: Advanced Visualization and Reporting
 
 ## Technologies Used
 
@@ -111,6 +136,9 @@ We will recap the most important concepts needed for this course, but some famil
 - **rmarkdown**: Reproducible reports
 - **caret**: Machine learning framework
 - **shiny**: Interactive web applications
+- **corrplot**: Correlation matrix visualization
+- **moments**: Higher-order moments and skewness
+- **vcd**: Visualization of categorical data
 
 ### Python Ecosystem
 - **Python**: Programming language
@@ -121,6 +149,8 @@ We will recap the most important concepts needed for this course, but some famil
 - **scikit-learn**: Machine learning library
 - **matplotlib/seaborn**: Data visualization
 - **statsmodels**: Statistical modeling
+- **plotly**: Interactive visualizations
+- **scipy.stats**: Statistical functions and tests
 
 ## Getting Started
 
@@ -136,7 +166,7 @@ We will recap the most important concepts needed for this course, but some famil
 2. **Install RStudio**: Download from [posit.co](https://posit.co/)
 3. **Install required packages**:
    ```r
-   install.packages(c("tidyverse", "rmarkdown", "caret", "shiny"))
+   install.packages(c("tidyverse", "rmarkdown", "caret", "shiny", "corrplot", "moments", "vcd"))
    ```
 
 ### Setting up Python Environment
@@ -175,11 +205,65 @@ Statistics/
 │   ├── 02_data_structures_python.md # Python data structures
 │   ├── 03_programming_basics_r.md # R programming basics
 │   └── 03_programming_basics_python.md # Python programming basics
+├── 03_summarizing/       # Data summarization
+│   └── 01_summarizing_data.md # Comprehensive data summarization guide
+├── R/                    # R-specific track
+│   ├── README.md         # R track overview and learning path
+│   ├── 01_intro.md       # Introduction to R
+│   ├── 02_data_types.md  # R data types
+│   ├── 03_data_structures.md # R data structures
+│   ├── 04_programming_basics.md # R programming basics
+│   └── 05_summarizing_data.md # Summarizing data with R
+├── Python/               # Python-specific track
+│   ├── README.md         # Python track overview and learning path
+│   ├── 01_intro.md       # Introduction to Python
+│   ├── 02_data_types.md  # Python data types
+│   ├── 03_data_structures.md # Python data structures
+│   ├── 04_programming_basics.md # Python programming basics
+│   └── 05_summarizing_data.md # Summarizing data with Python
 ├── docs/                 # Documentation
 ├── examples/             # Example projects
 ├── LICENSE               # MIT License
 └── README.md            # This file
 ```
+
+## Learning Paths
+
+### For Beginners
+1. **Start with Introduction**: Choose between R and Python based on your goals
+2. **Learn Data Fundamentals**: Understand data types and structures
+3. **Master Programming Basics**: Learn control flow, functions, and best practices
+4. **Apply Statistical Analysis**: Use the language-specific tracks for comprehensive learning
+
+### For Intermediate Users
+- Skip to the language-specific tracks (R/ or Python/)
+- Focus on the advanced statistical analysis materials
+- Practice with real-world examples and datasets
+
+### For Advanced Users
+- Use materials as reference for specific techniques
+- Focus on the comprehensive statistical analysis modules
+- Implement exercises with your own datasets
+
+## Key Features
+
+### Comprehensive Coverage
+- **Complete language tracks** for both R and Python
+- **Progressive learning** from basics to advanced statistical analysis
+- **Real-world examples** with actual datasets
+- **Comprehensive exercises** and practice problems
+
+### Statistical Focus
+- **Data summarization** and exploratory analysis
+- **Statistical testing** and hypothesis testing
+- **Outlier detection** and data quality assessment
+- **Advanced visualizations** and reporting
+
+### Practical Applications
+- **Car fuel efficiency analysis** with real data
+- **Student performance analysis** with test scores
+- **Categorical data analysis** with survey data
+- **Outlier detection** and handling techniques
 
 ## Contributing
 
@@ -193,12 +277,29 @@ We welcome contributions! Please feel free to submit a Pull Request. For major c
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+### Areas for Contribution
+- Additional statistical techniques and examples
+- More real-world datasets and case studies
+- Enhanced visualizations and reporting
+- Additional programming exercises
+- Documentation improvements
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Note**: This project is designed to support learning statistics with both R and Python. The repository is actively being developed with new modules being added regularly. Choose the track that best fits your needs, or explore both to understand the strengths of each language in statistical analysis.
+**Note**: This project is designed to support learning statistics with both R and Python. The repository contains comprehensive materials for both languages, with language-specific tracks that provide deep coverage of statistical analysis techniques. Choose the track that best fits your needs, or explore both to understand the strengths of each language in statistical analysis.
 
-**Current Status**: Introduction and Data Fundamentals modules are complete. Advanced statistical modeling modules are planned for future development.
+**Current Status**: 
+- ✅ Introduction and Data Fundamentals modules complete
+- ✅ Language-specific tracks (R/ and Python/) complete with comprehensive content
+- ✅ Data summarization module complete with real-world examples
+- 🔄 Advanced statistical modeling modules planned for future development
+
+**Recent Updates**:
+- Added comprehensive R and Python language-specific tracks
+- Enhanced data summarization with real-world examples
+- Added outlier detection and statistical testing
+- Included advanced visualizations and reporting techniques
