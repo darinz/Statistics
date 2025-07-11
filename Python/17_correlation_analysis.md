@@ -63,92 +63,101 @@ Kendall's $`\tau`$ measures ordinal association:
 | Spearman   | Ordinal/Interval | Monotonic | Nonlinear monotonic, outliers |
 | Kendall    | Ordinal | Monotonic | Small samples, many ties |
 
-## Calculating Correlation in R
+## Calculating Correlation in Python
 
 ### Pearson Correlation
 
-```r
+```python
+import numpy as np
+import pandas as pd
+from scipy import stats
+
 # Simulate data
-set.seed(42)
-x <- rnorm(100)
-y <- 0.7 * x + rnorm(100, sd = 0.5)
+np.random.seed(42)
+x = np.random.normal(size=100)
+y = 0.7 * x + np.random.normal(scale=0.5, size=100)
 
 # Pearson correlation
-cor_pearson <- cor(x, y, method = "pearson")
-cat("Pearson correlation:", round(cor_pearson, 3), "\n")
+cor_pearson, _ = stats.pearsonr(x, y)
+print(f"Pearson correlation: {cor_pearson:.3f}")
 
 # Test significance
-cor_test <- cor.test(x, y, method = "pearson")
-print(cor_test)
+cor_test = stats.pearsonr(x, y)
+print(f"Pearson r: {cor_test[0]:.3f}, p-value: {cor_test[1]:.4f}")
 ```
 
 ### Spearman and Kendall Correlation
 
-```r
+```python
 # Spearman correlation
-cor_spearman <- cor(x, y, method = "spearman")
-cat("Spearman correlation:", round(cor_spearman, 3), "\n")
-cor.test(x, y, method = "spearman")
+cor_spearman, p_spearman = stats.spearmanr(x, y)
+print(f"Spearman correlation: {cor_spearman:.3f}")
+print(f"Spearman p-value: {p_spearman:.4f}")
 
 # Kendall correlation
-cor_kendall <- cor(x, y, method = "kendall")
-cat("Kendall correlation:", round(cor_kendall, 3), "\n")
-cor.test(x, y, method = "kendall")
+cor_kendall, p_kendall = stats.kendalltau(x, y)
+print(f"Kendall correlation: {cor_kendall:.3f}")
+print(f"Kendall p-value: {p_kendall:.4f}")
 ```
 
 ### Correlation Matrix
 
-```r
+```python
 # Multiple variables
-set.seed(123)
-data <- data.frame(
-  A = rnorm(100),
-  B = rnorm(100),
-  C = rnorm(100)
-)
+np.random.seed(123)
+data = pd.DataFrame({
+    'A': np.random.normal(size=100),
+    'B': np.random.normal(size=100),
+    'C': np.random.normal(size=100)
+})
 
 # Correlation matrix
-cor_matrix <- cor(data)
+cor_matrix = data.corr()
 print(cor_matrix)
 
 # Significance matrix
-library(Hmisc)
-cor_results <- rcorr(as.matrix(data))
-print(cor_results$r)  # Correlations
-print(cor_results$P)  # p-values
+from scipy.stats import pearsonr
+p_matrix = pd.DataFrame(np.ones((data.shape[1], data.shape[1])), columns=data.columns, index=data.columns)
+for i in data.columns:
+    for j in data.columns:
+        if i != j:
+            _, p = pearsonr(data[i], data[j])
+            p_matrix.loc[i, j] = p
+        else:
+            p_matrix.loc[i, j] = np.nan
+print("\nP-values matrix:")
+print(p_matrix)
 ```
 
 ## Visualization
 
 ### Scatter Plot with Correlation
 
-```r
-library(ggplot2)
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Scatter plot with regression line
-plot_data <- data.frame(x = x, y = y)
-ggplot(plot_data, aes(x = x, y = y)) +
-  geom_point(alpha = 0.7) +
-  geom_smooth(method = "lm", se = TRUE, color = "blue") +
-  labs(title = "Scatter Plot with Regression Line",
-       subtitle = paste("Pearson r =", round(cor_pearson, 2)),
-       x = "X", y = "Y") +
-  theme_minimal()
+plot_data = pd.DataFrame({'x': x, 'y': y})
+plt.figure(figsize=(8, 6))
+sns.regplot(x='x', y='y', data=plot_data, ci=95, line_kws={'color': 'blue'})
+plt.title(f"Scatter Plot with Regression Line\nPearson r = {cor_pearson:.2f}")
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.tight_layout()
+plt.show()
 ```
 
 ### Correlation Matrix Heatmap
 
-```r
-library(reshape2)
-library(ggplot2)
-
-cor_melt <- melt(cor_matrix)
-ggplot(cor_melt, aes(Var1, Var2, fill = value)) +
-  geom_tile() +
-  geom_text(aes(label = round(value, 2)), color = "white", size = 4) +
-  scale_fill_gradient2(low = "#4575B4", high = "#D73027", mid = "#FFFFBF", midpoint = 0) +
-  labs(title = "Correlation Matrix Heatmap", x = "", y = "") +
-  theme_minimal()
+```python
+cor_melt = cor_matrix.reset_index().melt(id_vars='index')
+cor_melt.columns = ['Var1', 'Var2', 'value']
+plt.figure(figsize=(6, 5))
+sns.heatmap(cor_matrix, annot=True, fmt='.2f', cmap='RdYlBu_r', square=True)
+plt.title("Correlation Matrix Heatmap")
+plt.tight_layout()
+plt.show()
 ```
 
 ## Assumption Checking
@@ -161,33 +170,53 @@ ggplot(cor_melt, aes(Var1, Var2, fill = value)) +
 
 #### Checking Linearity and Outliers
 
-```r
+```python
 # Scatter plot for linearity and outliers
-plot(x, y, main = "Scatter Plot for Linearity and Outliers")
-abline(lm(y ~ x), col = "red")
+plt.figure(figsize=(7, 5))
+plt.scatter(x, y, alpha=0.7)
+slope, intercept = np.polyfit(x, y, 1)
+plt.plot(x, slope * x + intercept, color='red')
+plt.title("Scatter Plot for Linearity and Outliers")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.tight_layout()
+plt.show()
 ```
 
 #### Checking Normality
 
-```r
+```python
 # Q-Q plots
-qqnorm(x); qqline(x, col = "red")
-qqnorm(y); qqline(y, col = "red")
+import scipy.stats as stats
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+stats.probplot(x, dist="norm", plot=axes[0])
+axes[0].set_title("Q-Q Plot for x")
+stats.probplot(y, dist="norm", plot=axes[1])
+axes[1].set_title("Q-Q Plot for y")
+plt.tight_layout()
+plt.show()
 
 # Shapiro-Wilk test
-shapiro.test(x)
-shapiro.test(y)
+print("Shapiro-Wilk test for x:", stats.shapiro(x))
+print("Shapiro-Wilk test for y:", stats.shapiro(y))
 ```
 
 #### Checking Homoscedasticity
 
-```r
+```python
 # Residuals vs fitted
-model <- lm(y ~ x)
-plot(fitted(model), resid(model),
-     main = "Residuals vs Fitted Values",
-     xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, col = "red")
+from sklearn.linear_model import LinearRegression
+model = LinearRegression().fit(x.reshape(-1, 1), y)
+fitted = model.predict(x.reshape(-1, 1))
+residuals = y - fitted
+plt.figure(figsize=(7, 5))
+plt.scatter(fitted, residuals)
+plt.axhline(0, color='red')
+plt.title("Residuals vs Fitted Values")
+plt.xlabel("Fitted Values")
+plt.ylabel("Residuals")
+plt.tight_layout()
+plt.show()
 ```
 
 ### Robust Alternatives
@@ -209,9 +238,19 @@ abline(h = 0, col = "red")
 
 ### Confidence Interval for $`r`$
 
-```r
-# Confidence interval for correlation
-cor_test$conf.int
+```python
+# Confidence interval for correlation (using Fisher's z)
+def correlation_ci(r, n, alpha=0.05):
+    from scipy.stats import norm
+    z = np.arctanh(r)
+    se = 1 / np.sqrt(n - 3)
+    z_crit = norm.ppf(1 - alpha/2)
+    ci_lower = np.tanh(z - z_crit * se)
+    ci_upper = np.tanh(z + z_crit * se)
+    return ci_lower, ci_upper
+
+ci_low, ci_up = correlation_ci(cor_pearson, len(x))
+print(f"95% CI for r: [{ci_low:.2f}, {ci_up:.2f}]")
 ```
 
 ### Fisher's z-Transformation
@@ -228,28 +267,29 @@ The standard error of $`z`$ is $`\frac{1}{\sqrt{n-3}}`$.
 
 ### Example 1: Height and Weight
 
-```r
+```python
 # Simulate height and weight data
-set.seed(1)
-height <- rnorm(100, mean = 170, sd = 10)
-weight <- 0.5 * height + rnorm(100, mean = 0, sd = 8)
+np.random.seed(1)
+height = np.random.normal(170, 10, 100)
+weight = 0.5 * height + np.random.normal(0, 8, 100)
 
 # Pearson correlation
-cor(height, weight)
-cor.test(height, weight)
+cor_hw, p_hw = stats.pearsonr(height, weight)
+print(f"Pearson correlation: {cor_hw:.3f}, p-value: {p_hw:.4f}")
 ```
 
 ### Example 2: Nonlinear Relationship
 
-```r
+```python
 # Simulate nonlinear data
-set.seed(2)
-x <- rnorm(100)
-y <- x^2 + rnorm(100)
+np.random.seed(2)
+x_nl = np.random.normal(size=100)
+y_nl = x_nl ** 2 + np.random.normal(size=100)
 
 # Pearson vs Spearman
-cor(x, y, method = "pearson")
-cor(x, y, method = "spearman")
+cor_pearson_nl, _ = stats.pearsonr(x_nl, y_nl)
+cor_spearman_nl, _ = stats.spearmanr(x_nl, y_nl)
+print(f"Pearson: {cor_pearson_nl:.3f}, Spearman: {cor_spearman_nl:.3f}")
 ```
 
 ## Best Practices
