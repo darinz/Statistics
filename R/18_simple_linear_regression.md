@@ -1,584 +1,254 @@
-# Correlation Analysis
+# Simple Linear Regression
 
 ## Overview
 
-Correlation analysis examines the strength and direction of relationships between variables. It's fundamental to understanding associations in data and is often a precursor to regression analysis.
+Simple linear regression models the relationship between a single predictor (independent variable) and a response (dependent variable) by fitting a straight line. It is foundational for prediction, understanding associations, and causal inference in statistics.
 
-## Pearson Correlation
+### Key Concepts
+- **Regression**: Predicts the value of one variable based on another.
+- **Line of Best Fit**: The straight line that minimizes the sum of squared residuals.
+- **Slope and Intercept**: Quantify the direction and strength of the relationship.
+- **Assumptions**: Linearity, independence, homoscedasticity, normality of residuals.
 
-### Basic Pearson Correlation
+## Mathematical Foundations
+
+### Model Equation
+
+The simple linear regression model is:
+
+```math
+Y_i = \beta_0 + \beta_1 X_i + \epsilon_i
+```
+
+Where:
+- $`Y_i`$: Response variable for observation $`i`$
+- $`X_i`$: Predictor variable for observation $`i`$
+- $`\beta_0`$: Intercept (expected value of $`Y`$ when $`X = 0`$)
+- $`\beta_1`$: Slope (change in $`Y`$ for a one-unit increase in $`X`$)
+- $`\epsilon_i`$: Error term (residual)
+
+### Least Squares Estimation
+
+The best-fitting line minimizes the sum of squared residuals:
+
+```math
+\text{RSS} = \sum_{i=1}^n (Y_i - \hat{Y}_i)^2
+```
+
+The estimated coefficients are:
+
+```math
+\hat{\beta}_1 = \frac{\sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})}{\sum_{i=1}^n (X_i - \bar{X})^2}
+```
+
+```math
+\hat{\beta}_0 = \bar{Y} - \hat{\beta}_1 \bar{X}
+```
+
+### Interpretation
+- $`\hat{\beta}_1`$: For each one-unit increase in $`X`$, $`Y`$ changes by $`\hat{\beta}_1`$ units (on average).
+- $`\hat{\beta}_0`$: Expected value of $`Y`$ when $`X = 0`$ (may not always be meaningful).
+
+### Goodness of Fit: $R^2$
+
+$R^2$ measures the proportion of variance in $Y$ explained by $X$:
+
+```math
+R^2 = 1 - \frac{\text{RSS}}{\text{TSS}} = \frac{\text{ESS}}{\text{TSS}}
+```
+Where:
+- $`\text{TSS} = \sum_{i=1}^n (Y_i - \bar{Y})^2`$ (total sum of squares)
+- $`\text{ESS} = \sum_{i=1}^n (\hat{Y}_i - \bar{Y})^2`$ (explained sum of squares)
+- $`\text{RSS} = \sum_{i=1}^n (Y_i - \hat{Y}_i)^2`$ (residual sum of squares)
+
+$R^2$ ranges from 0 (no fit) to 1 (perfect fit).
+
+## Fitting Simple Linear Regression in R
+
+### Example: Predicting MPG from Weight
 
 ```r
-# Load sample data
+# Load data
 data(mtcars)
 
-# Calculate Pearson correlation between MPG and weight
-pearson_cor <- cor(mtcars$mpg, mtcars$wt, method = "pearson")
-cat("Pearson correlation (MPG vs Weight):", pearson_cor, "\n")
-
-# Calculate correlation matrix for multiple variables
-correlation_matrix <- cor(mtcars[, c("mpg", "wt", "hp", "disp")], method = "pearson")
-print(correlation_matrix)
-
-# Test significance of correlation
-cor_test <- cor.test(mtcars$mpg, mtcars$wt, method = "pearson")
-print(cor_test)
-```
-
-### Correlation with Confidence Intervals
-
-```r
-# Calculate correlation with confidence interval
-library(psych)
-
-# Using psych package for correlation with CI
-cor_with_ci <- corr.test(mtcars[, c("mpg", "wt", "hp", "disp")], 
-                         use = "pairwise", 
-                         method = "pearson")
-
-print(cor_with_ci$r)  # Correlation matrix
-print(cor_with_ci$p)  # P-values
-print(cor_with_ci$ci) # Confidence intervals
-```
-
-### Visualizing Correlations
-
-```r
-# Scatter plot with correlation line
-plot(mtcars$wt, mtcars$mpg, 
-     main = "MPG vs Weight",
-     xlab = "Weight (1000 lbs)", 
-     ylab = "Miles per Gallon",
-     pch = 16, col = "blue")
-
-# Add correlation line
-abline(lm(mpg ~ wt, data = mtcars), col = "red", lwd = 2)
-
-# Add correlation coefficient text
-text(4, 30, paste("r =", round(pearson_cor, 3)), col = "red", cex = 1.2)
-
-# Correlation matrix heatmap
-library(corrplot)
-corrplot(correlation_matrix, method = "color", type = "upper", 
-         addCoef.col = "black", tl.col = "black", tl.srt = 45)
-```
-
-## Spearman Correlation
-
-### Basic Spearman Correlation
-
-```r
-# Calculate Spearman correlation
-spearman_cor <- cor(mtcars$mpg, mtcars$wt, method = "spearman")
-cat("Spearman correlation (MPG vs Weight):", spearman_cor, "\n")
-
-# Test significance
-spearman_test <- cor.test(mtcars$mpg, mtcars$wt, method = "spearman")
-print(spearman_test)
-
-# Compare Pearson vs Spearman
-cat("Pearson correlation:", pearson_cor, "\n")
-cat("Spearman correlation:", spearman_cor, "\n")
-```
-
-### Rank Correlation Analysis
-
-```r
-# Create ranked data
-mpg_ranks <- rank(mtcars$mpg)
-wt_ranks <- rank(mtcars$wt)
-
-# Manual calculation of Spearman correlation
-n <- length(mtcars$mpg)
-sum_d_squared <- sum((mpg_ranks - wt_ranks)^2)
-spearman_manual <- 1 - (6 * sum_d_squared) / (n * (n^2 - 1))
-
-cat("Manual Spearman calculation:", spearman_manual, "\n")
-cat("Built-in Spearman:", spearman_cor, "\n")
-```
-
-## Kendall's Tau
-
-### Basic Kendall's Tau
-
-```r
-# Calculate Kendall's tau
-kendall_tau <- cor(mtcars$mpg, mtcars$wt, method = "kendall")
-cat("Kendall's tau (MPG vs Weight):", kendall_tau, "\n")
-
-# Test significance
-kendall_test <- cor.test(mtcars$mpg, mtcars$wt, method = "kendall")
-print(kendall_test)
-
-# Compare all three correlation measures
-cat("Pearson:", pearson_cor, "\n")
-cat("Spearman:", spearman_cor, "\n")
-cat("Kendall's tau:", kendall_tau, "\n")
-```
-
-## Partial Correlation
-
-### Controlling for Third Variables
-
-```r
-# Calculate partial correlation (MPG vs Weight, controlling for HP)
-library(ppcor)
-
-partial_cor <- pcor.test(mtcars$mpg, mtcars$wt, mtcars$hp, method = "pearson")
-print(partial_cor)
-
-# Compare zero-order vs partial correlation
-cat("Zero-order correlation (MPG vs Weight):", pearson_cor, "\n")
-cat("Partial correlation (MPG vs Weight | HP):", partial_cor$estimate, "\n")
-
-# Multiple partial correlations
-partial_matrix <- pcor(mtcars[, c("mpg", "wt", "hp", "disp")])
-print(partial_matrix$estimate)
-```
-
-## Correlation Matrix Analysis
-
-### Comprehensive Correlation Analysis
-
-```r
-# Function to analyze correlation matrix
-analyze_correlations <- function(data, method = "pearson") {
-  # Calculate correlation matrix
-  cor_matrix <- cor(data, method = method, use = "pairwise.complete.obs")
-  
-  # Calculate p-values
-  p_matrix <- matrix(NA, nrow = ncol(data), ncol = ncol(data))
-  for (i in 1:ncol(data)) {
-    for (j in 1:ncol(data)) {
-      if (i != j) {
-        test_result <- cor.test(data[, i], data[, j], method = method)
-        p_matrix[i, j] <- test_result$p.value
-      }
-    }
-  }
-  
-  # Create significance matrix
-  sig_matrix <- p_matrix < 0.05
-  
-  return(list(
-    correlations = cor_matrix,
-    p_values = p_matrix,
-    significant = sig_matrix
-  ))
-}
-
-# Apply to mtcars data
-selected_vars <- mtcars[, c("mpg", "wt", "hp", "disp", "drat", "qsec")]
-cor_analysis <- analyze_correlations(selected_vars)
-
-print("Correlation Matrix:")
-print(round(cor_analysis$correlations, 3))
-
-print("P-values:")
-print(round(cor_analysis$p_values, 3))
-
-print("Significant correlations (p < 0.05):")
-print(cor_analysis$significant)
-```
-
-### Correlation Network Analysis
-
-```r
-# Create correlation network
-library(qgraph)
-
-# Prepare correlation matrix for network
-cor_network <- cor_analysis$correlations
-diag(cor_network) <- 0  # Remove self-correlations
-
-# Create network plot
-qgraph(cor_network, 
-       layout = "spring",
-       labels = colnames(selected_vars),
-       title = "Correlation Network",
-       edge.color = ifelse(cor_network > 0, "green", "red"),
-       edge.width = abs(cor_network) * 3)
-```
-
-## Correlation vs Causation
-
-### Understanding Correlation Limits
-
-```r
-# Function to demonstrate correlation vs causation
-demonstrate_correlation_limits <- function() {
-  cat("=== CORRELATION vs CAUSATION ===\n\n")
-  
-  cat("1. Correlation does not imply causation\n")
-  cat("   - Two variables can be correlated without one causing the other\n")
-  cat("   - Third variables may explain the relationship\n\n")
-  
-  cat("2. Examples of spurious correlations:\n")
-  cat("   - Ice cream sales and crime rates (both increase in summer)\n")
-  cat("   - Number of firefighters and damage (more fires = more damage)\n\n")
-  
-  cat("3. Types of relationships:\n")
-  cat("   - Direct causation: A → B\n")
-  cat("   - Reverse causation: B → A\n")
-  cat("   - Common cause: C → A, C → B\n")
-  cat("   - Coincidence: No real relationship\n\n")
-  
-  cat("4. Establishing causation requires:\n")
-  cat("   - Temporal precedence\n")
-  cat("   - Covariation\n")
-  cat("   - Elimination of alternative explanations\n")
-  cat("   - Theoretical plausibility\n")
-}
-
-demonstrate_correlation_limits()
-```
-
-## Robust Correlation Methods
-
-### Winsorized Correlation
-
-```r
-# Function to calculate winsorized correlation
-winsorized_correlation <- function(x, y, k = 2) {
-  # Winsorize the data
-  x_winsorized <- winsorize(x, k)
-  y_winsorized <- winsorize(y, k)
-  
-  # Calculate correlation
-  return(cor(x_winsorized, y_winsorized))
-}
-
-# Winsorize function
-winsorize <- function(x, k) {
-  n <- length(x)
-  sorted_x <- sort(x)
-  
-  # Replace k smallest and k largest values
-  x_winsorized <- x
-  x_winsorized[x <= sorted_x[k]] <- sorted_x[k]
-  x_winsorized[x >= sorted_x[n - k + 1]] <- sorted_x[n - k + 1]
-  
-  return(x_winsorized)
-}
-
-# Compare robust correlations
-pearson_robust <- winsorized_correlation(mtcars$mpg, mtcars$wt)
-cat("Winsorized correlation:", pearson_robust, "\n")
-cat("Original Pearson:", pearson_cor, "\n")
-```
-
-### Biweight Midcorrelation
-
-```r
-# Function to calculate biweight midcorrelation
-biweight_midcorrelation <- function(x, y) {
-  # Calculate median absolute deviation
-  mad_x <- mad(x)
-  mad_y <- mad(y)
-  
-  # Calculate u-values
-  u_x <- (x - median(x)) / (9 * mad_x)
-  u_y <- (y - median(y)) / (9 * mad_y)
-  
-  # Calculate weights
-  w_x <- (1 - u_x^2)^2 * (abs(u_x) < 1)
-  w_y <- (1 - u_y^2)^2 * (abs(u_y) < 1)
-  
-  # Calculate biweight midcorrelation
-  numerator <- sum(w_x * w_y * (x - median(x)) * (y - median(y)))
-  denominator <- sqrt(sum(w_x * (x - median(x))^2) * sum(w_y * (y - median(y))^2))
-  
-  return(numerator / denominator)
-}
-
-# Compare with other methods
-biweight_cor <- biweight_midcorrelation(mtcars$mpg, mtcars$wt)
-cat("Biweight midcorrelation:", biweight_cor, "\n")
-cat("Pearson correlation:", pearson_cor, "\n")
-cat("Spearman correlation:", spearman_cor, "\n")
-```
-
-## Correlation in Different Contexts
-
-### Time Series Correlation
-
-```r
-# Simulate time series data
-set.seed(123)
-n <- 100
-time <- 1:n
-series1 <- cumsum(rnorm(n, mean = 0, sd = 1))
-series2 <- cumsum(rnorm(n, mean = 0, sd = 1)) + 0.5 * series1
-
-# Calculate correlation
-ts_cor <- cor(series1, series2)
-cat("Time series correlation:", ts_cor, "\n")
-
-# Plot time series
-plot(time, series1, type = "l", col = "blue", 
-     main = "Time Series Correlation",
-     xlab = "Time", ylab = "Value")
-lines(time, series2, col = "red")
-legend("topleft", legend = c("Series 1", "Series 2"), 
-       col = c("blue", "red"), lty = 1)
-```
-
-### Categorical Variable Correlation
-
-```r
-# Correlation with categorical variables
-# Convert transmission to numeric for correlation
-mtcars$am_numeric <- as.numeric(mtcars$am)
-
-# Point-biserial correlation (binary variable)
-point_biserial <- cor(mtcars$mpg, mtcars$am_numeric)
-cat("Point-biserial correlation (MPG vs Transmission):", point_biserial, "\n")
-
-# Biserial correlation (assuming underlying normal distribution)
-library(polycor)
-biserial_cor <- polyserial(mtcars$mpg, mtcars$am_numeric)
-cat("Biserial correlation:", biserial_cor, "\n")
-```
-
-## Correlation Diagnostics
-
-### Outlier Detection in Correlation
-
-```r
-# Function to detect influential points in correlation
-correlation_outliers <- function(x, y, threshold = 2) {
-  # Calculate standardized residuals
-  model <- lm(y ~ x)
-  residuals <- rstandard(model)
-  
-  # Identify outliers
-  outliers <- abs(residuals) > threshold
-  
-  # Calculate correlation with and without outliers
-  cor_all <- cor(x, y)
-  cor_clean <- cor(x[!outliers], y[!outliers])
-  
-  return(list(
-    outliers = which(outliers),
-    correlation_all = cor_all,
-    correlation_clean = cor_clean,
-    change = cor_all - cor_clean
-  ))
-}
-
-# Apply to MPG vs Weight
-outlier_analysis <- correlation_outliers(mtcars$wt, mtcars$mpg)
-print(outlier_analysis)
-
-# Plot with outliers highlighted
-plot(mtcars$wt, mtcars$mpg, 
-     main = "MPG vs Weight with Outliers",
-     xlab = "Weight", ylab = "MPG")
-points(mtcars$wt[outlier_analysis$outliers], 
-       mtcars$mpg[outlier_analysis$outliers], 
-       col = "red", pch = 16, cex = 1.5)
-```
-
-### Heteroscedasticity in Correlation
-
-```r
-# Check for heteroscedasticity
-plot(mtcars$wt, mtcars$mpg, 
-     main = "MPG vs Weight",
-     xlab = "Weight", ylab = "MPG")
-
-# Add regression line
-abline(lm(mpg ~ wt, data = mtcars), col = "red")
-
-# Residual plot
+# Fit simple linear regression
 model <- lm(mpg ~ wt, data = mtcars)
-plot(fitted(model), residuals(model), 
-     main = "Residual Plot",
-     xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, col = "red", lty = 2)
+summary(model)
+
+# Extract coefficients
+coef(model)
+
+# Fitted values and residuals
+fitted_vals <- fitted(model)
+residuals <- resid(model)
+
+# Plot data and regression line
+plot(mtcars$wt, mtcars$mpg, pch = 16, col = "blue",
+     main = "Simple Linear Regression: MPG vs Weight",
+     xlab = "Weight (1000 lbs)", ylab = "Miles per Gallon")
+abline(model, col = "red", lwd = 2)
+```
+
+### Interpreting Output
+- **Intercept**: Estimated MPG when weight is zero (not always meaningful).
+- **Slope**: Change in MPG for each 1000 lb increase in weight.
+- **$R^2$**: Proportion of variance in MPG explained by weight.
+- **p-value**: Tests if the slope is significantly different from zero.
+
+## Confidence and Prediction Intervals
+
+### Confidence Interval for the Mean Response
+
+```r
+# Predict mean MPG for a new weight value
+new_data <- data.frame(wt = 3)
+predict(model, newdata = new_data, interval = "confidence")
+```
+
+### Prediction Interval for a New Observation
+
+```r
+# Predict individual MPG for a new car
+predict(model, newdata = new_data, interval = "prediction")
+```
+
+## Assumption Checking and Diagnostics
+
+### 1. Linearity
+
+- Relationship between $`X`$ and $`Y`$ should be linear.
+- **Check**: Scatter plot, residuals vs fitted plot.
+
+### 2. Independence
+
+- Observations should be independent.
+- **Check**: Study design, Durbin-Watson test for time series.
+
+### 3. Homoscedasticity (Constant Variance)
+
+- Residuals should have constant variance.
+- **Check**: Plot residuals vs fitted values.
+
+### 4. Normality of Residuals
+
+- Residuals should be approximately normally distributed.
+- **Check**: Q-Q plot, Shapiro-Wilk test.
+
+```r
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model)
+par(mfrow = c(1, 1))
+
+# Shapiro-Wilk test for normality
+shapiro.test(resid(model))
+```
+
+### Outlier and Influence Diagnostics
+
+```r
+# Leverage and influence
+influence_measures <- influence.measures(model)
+print(influence_measures)
+
+# Cook's distance
+cooksd <- cooks.distance(model)
+plot(cooksd, type = "h", main = "Cook's Distance", ylab = "Cook's D")
+abline(h = 4/length(cooksd), col = "red", lty = 2)
+```
+
+## Effect Size and Model Fit
+
+### $R^2$ and Adjusted $R^2$
+- $R^2$: Proportion of variance explained by the model.
+- Adjusted $R^2$: Adjusts for number of predictors (useful for multiple regression).
+
+### Standard Error of Estimate
+
+```math
+SE = \sqrt{\frac{\text{RSS}}{n-2}}
+```
+
+### F-statistic
+
+Tests whether the model explains a significant amount of variance:
+
+```math
+F = \frac{\text{ESS}/1}{\text{RSS}/(n-2)}
 ```
 
 ## Practical Examples
 
-### Example 1: Financial Data Analysis
+### Example 1: Predicting House Prices
 
 ```r
-# Simulate financial data
-set.seed(123)
-n_days <- 252
-returns_stock1 <- rnorm(n_days, mean = 0.001, sd = 0.02)
-returns_stock2 <- 0.7 * returns_stock1 + rnorm(n_days, mean = 0, sd = 0.015)
+# Simulate data
+set.seed(42)
+house_size <- rnorm(100, mean = 1500, sd = 300)
+house_price <- 50000 + 120 * house_size + rnorm(100, mean = 0, sd = 20000)
 
-# Calculate rolling correlation
-window_size <- 30
-rolling_cor <- numeric(n_days - window_size + 1)
+# Fit model
+house_model <- lm(house_price ~ house_size)
+summary(house_model)
 
-for (i in 1:(n_days - window_size + 1)) {
-  rolling_cor[i] <- cor(returns_stock1[i:(i + window_size - 1)], 
-                        returns_stock2[i:(i + window_size - 1)])
-}
-
-# Plot rolling correlation
-plot(rolling_cor, type = "l", 
-     main = "Rolling 30-Day Correlation",
-     xlab = "Time", ylab = "Correlation")
-abline(h = 0.7, col = "red", lty = 2)
+# Plot
+plot(house_size, house_price, pch = 16, col = "darkgreen",
+     main = "House Price vs Size",
+     xlab = "Size (sq ft)", ylab = "Price ($)")
+abline(house_model, col = "red", lwd = 2)
 ```
 
-### Example 2: Survey Data Analysis
+### Example 2: Predicting Exam Scores from Study Hours
 
 ```r
-# Simulate survey data
+# Simulate data
 set.seed(123)
-n_respondents <- 200
+study_hours <- rnorm(50, mean = 10, sd = 2)
+exam_score <- 40 + 5 * study_hours + rnorm(50, mean = 0, sd = 5)
 
-# Simulate correlated variables
-satisfaction <- rnorm(n_respondents, mean = 7, sd = 1.5)
-loyalty <- 0.6 * satisfaction + rnorm(n_respondents, mean = 0, sd = 1)
-recommendation <- 0.5 * satisfaction + 0.3 * loyalty + rnorm(n_respondents, mean = 0, sd = 0.8)
+# Fit model
+exam_model <- lm(exam_score ~ study_hours)
+summary(exam_model)
 
-survey_data <- data.frame(
-  satisfaction = satisfaction,
-  loyalty = loyalty,
-  recommendation = recommendation
-)
-
-# Calculate correlation matrix
-survey_cor <- cor(survey_data)
-print(round(survey_cor, 3))
-
-# Test significance
-survey_tests <- corr.test(survey_data)
-print(survey_tests$p)
-```
-
-### Example 3: Scientific Research
-
-```r
-# Simulate scientific data
-set.seed(123)
-n_subjects <- 50
-
-# Simulate correlated physiological measures
-heart_rate <- rnorm(n_subjects, mean = 75, sd = 10)
-blood_pressure <- 0.8 * heart_rate + rnorm(n_subjects, mean = 120, sd = 15)
-stress_level <- -0.6 * heart_rate + rnorm(n_subjects, mean = 5, sd = 2)
-
-scientific_data <- data.frame(
-  heart_rate = heart_rate,
-  blood_pressure = blood_pressure,
-  stress_level = stress_level
-)
-
-# Calculate partial correlations
-partial_cor_scientific <- pcor(scientific_data)
-print(round(partial_cor_scientific$estimate, 3))
-
-# Compare zero-order vs partial correlations
-zero_order <- cor(scientific_data)
-print("Zero-order correlations:")
-print(round(zero_order, 3))
-
-print("Partial correlations:")
-print(round(partial_cor_scientific$estimate, 3))
+# Plot
+plot(study_hours, exam_score, pch = 16, col = "purple",
+     main = "Exam Score vs Study Hours",
+     xlab = "Study Hours", ylab = "Exam Score")
+abline(exam_model, col = "red", lwd = 2)
 ```
 
 ## Best Practices
+- Always visualize data and check assumptions before interpreting results.
+- Report coefficients, $R^2$, confidence intervals, and diagnostics.
+- Avoid extrapolation beyond the range of observed data.
+- Be cautious of outliers and influential points.
+- Remember: correlation does not imply causation; regression does not prove causality without proper design.
 
-### Correlation Interpretation Guidelines
+## Reporting Guidelines
 
-```r
-# Function to interpret correlation strength
-interpret_correlation <- function(r, method = "Pearson") {
-  abs_r <- abs(r)
-  
-  strength <- ifelse(abs_r >= 0.9, "very strong",
-                     ifelse(abs_r >= 0.7, "strong",
-                            ifelse(abs_r >= 0.5, "moderate",
-                                   ifelse(abs_r >= 0.3, "weak",
-                                          "very weak"))))
-  
-  direction <- ifelse(r > 0, "positive", "negative")
-  
-  cat("=== CORRELATION INTERPRETATION ===\n")
-  cat("Method:", method, "\n")
-  cat("Correlation coefficient:", round(r, 3), "\n")
-  cat("Strength:", strength, "\n")
-  cat("Direction:", direction, "\n")
-  cat("Interpretation: There is a", strength, direction, "relationship.\n")
-  
-  # Guidelines for interpretation
-  cat("\nGuidelines for interpretation:\n")
-  cat("- |r| ≥ 0.9: Very strong relationship\n")
-  cat("- |r| ≥ 0.7: Strong relationship\n")
-  cat("- |r| ≥ 0.5: Moderate relationship\n")
-  cat("- |r| ≥ 0.3: Weak relationship\n")
-  cat("- |r| < 0.3: Very weak relationship\n")
-}
-
-# Apply to MPG vs Weight
-interpret_correlation(pearson_cor, "Pearson")
-```
-
-### Reporting Guidelines
-
-```r
-# Function to generate correlation report
-generate_correlation_report <- function(x, y, method = "pearson") {
-  # Calculate correlation and test
-  cor_result <- cor.test(x, y, method = method)
-  
-  cat("=== CORRELATION REPORT ===\n\n")
-  cat("Variables:", deparse(substitute(x)), "and", deparse(substitute(y)), "\n")
-  cat("Method:", method, "\n")
-  cat("Correlation coefficient:", round(cor_result$estimate, 3), "\n")
-  cat("95% Confidence Interval:", round(cor_result$conf.int, 3), "\n")
-  cat("t-statistic:", round(cor_result$statistic, 3), "\n")
-  cat("Degrees of freedom:", cor_result$parameter, "\n")
-  cat("p-value:", ifelse(cor_result$p.value < 0.001, "< .001", 
-                         round(cor_result$p.value, 3)), "\n")
-  
-  # Interpretation
-  if (cor_result$p.value < 0.05) {
-    cat("Conclusion: Significant correlation (p < .05)\n")
-  } else {
-    cat("Conclusion: Non-significant correlation (p ≥ .05)\n")
-  }
-}
-
-# Apply to MPG vs Weight
-generate_correlation_report(mtcars$mpg, mtcars$wt, "pearson")
-```
+- Report the model equation, coefficients, $R^2$, confidence intervals, and p-values.
+- Example: "A simple linear regression found that weight significantly predicted MPG, $`b = -5.34, 95\%\ CI [-7.0, -3.7], p < .001, R^2 = 0.75`$."
 
 ## Exercises
 
-### Exercise 1: Basic Correlation Analysis
-Calculate and interpret Pearson, Spearman, and Kendall correlations between MPG and weight in the mtcars dataset.
+### Exercise 1: Fit and Interpret a Simple Linear Regression
+Fit a model predicting MPG from horsepower in the mtcars dataset. Interpret the coefficients, $R^2$, and check assumptions.
 
-### Exercise 2: Correlation Matrix
-Create a correlation matrix for all numeric variables in the mtcars dataset and identify the strongest relationships.
+### Exercise 2: Confidence and Prediction Intervals
+Calculate and interpret confidence and prediction intervals for a new observation in your model.
 
-### Exercise 3: Partial Correlation
-Calculate partial correlations between MPG, weight, and horsepower, controlling for each variable in turn.
+### Exercise 3: Diagnostics and Outliers
+Identify and interpret outliers and influential points in your regression model.
 
-### Exercise 4: Robust Correlation
-Compare different correlation methods (Pearson, Spearman, winsorized) on a dataset with outliers.
-
-### Exercise 5: Time Series Correlation
-Generate two time series with known correlation and calculate rolling correlations to demonstrate how relationships change over time.
-
-## Next Steps
-
-In the next chapter, we'll learn about simple linear regression, which builds upon correlation analysis to make predictions.
+### Exercise 4: Real-World Application
+Find a real dataset (e.g., from R's datasets package). Fit a simple linear regression, check assumptions, and report results.
 
 ---
 
 **Key Takeaways:**
-- Pearson correlation measures linear relationships
-- Spearman correlation measures monotonic relationships
-- Kendall's tau is robust to outliers
-- Partial correlation controls for third variables
-- Correlation does not imply causation
-- Always check assumptions and outliers
-- Consider effect size alongside significance
-- Use appropriate correlation measures for your data type 
+- Simple linear regression models the relationship between two variables
+- The slope quantifies the effect of the predictor
+- $R^2$ measures goodness of fit
+- Always check assumptions and diagnostics
+- Report coefficients, intervals, and model fit
+- Regression does not prove causation without proper design 
