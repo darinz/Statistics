@@ -45,50 +45,55 @@ Suppose $`Y`$ is a binary outcome ($`Y \in \{0, 1\}`$) and $`X_1, X_2, ..., X_k`
 
 ### Example: Simulated Credit Approval Data
 
-```r
-# Load required packages
-library(tidyverse)
-library(caret)
-library(pROC)
-library(car)
-library(ResourceSelection)
+```python
+# Import required libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, classification_report, roc_curve, roc_auc_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from scipy import stats
+import warnings
+warnings.filterwarnings('ignore')
 
 # Set seed for reproducibility
-set.seed(123)
+np.random.seed(123)
 
 # Generate sample data for binary logistic regression
-n_samples <- 500
+n_samples = 500
 
 # Create predictor variables
-logistic_data <- data.frame(
-  age = rnorm(n_samples, 45, 10),
-  income = rnorm(n_samples, 60000, 15000),
-  education_years = rnorm(n_samples, 14, 3),
-  credit_score = rnorm(n_samples, 700, 100),
-  debt_ratio = rnorm(n_samples, 0.3, 0.1)
-)
+logistic_data = pd.DataFrame({
+    'age': np.random.normal(45, 10, n_samples),
+    'income': np.random.normal(60000, 15000, n_samples),
+    'education_years': np.random.normal(14, 3, n_samples),
+    'credit_score': np.random.normal(700, 100, n_samples),
+    'debt_ratio': np.random.normal(0.3, 0.1, n_samples)
+})
 
 # Create binary outcome based on predictors
 # Higher age, income, education, credit score, and lower debt ratio increase probability
-log_odds <- -2 + 0.05 * logistic_data$age + 
-            0.00001 * logistic_data$income + 
-            0.2 * logistic_data$education_years + 
-            0.01 * logistic_data$credit_score - 
-            3 * logistic_data$debt_ratio
+log_odds = (-2 + 0.05 * logistic_data['age'] + 
+            0.00001 * logistic_data['income'] + 
+            0.2 * logistic_data['education_years'] + 
+            0.01 * logistic_data['credit_score'] - 
+            3 * logistic_data['debt_ratio'])
 
 # Convert to probability
-prob <- 1 / (1 + exp(-log_odds))
+prob = 1 / (1 + np.exp(-log_odds))
 
 # Generate binary outcome
-logistic_data$approved <- rbinom(n_samples, 1, prob)
-
-# Convert to factor
-logistic_data$approved <- factor(logistic_data$approved, levels = c(0, 1), 
-                                labels = c("Rejected", "Approved"))
+logistic_data['approved'] = np.random.binomial(1, prob)
+logistic_data['approved'] = logistic_data['approved'].map({0: 'Rejected', 1: 'Approved'})
 
 print("Sample of the data:")
-print(head(logistic_data))
-print(table(logistic_data$approved))
+print(logistic_data.head())
+print(logistic_data['approved'].value_counts())
 ```
 
 #### Code Explanation
@@ -101,30 +106,35 @@ print(table(logistic_data$approved))
 
 ### Fitting and Interpreting the Model
 
-```r
+```python
+# Prepare data for modeling
+logistic_data['approved_bin'] = (logistic_data['approved'] == 'Approved').astype(int)
+X = logistic_data[['age', 'income', 'education_years', 'credit_score', 'debt_ratio']]
+X = sm.add_constant(X)
+y = logistic_data['approved_bin']
+
 # Fit logistic regression model
-logistic_model <- glm(approved ~ age + income + education_years + credit_score + debt_ratio, 
-                     data = logistic_data, family = binomial(link = "logit"))
+logistic_model = sm.Logit(y, X).fit()
 
 # Model summary
 print("Logistic Regression Model Summary:")
-print(summary(logistic_model))
+print(logistic_model.summary())
 
 # Extract coefficients
-coefficients <- coef(logistic_model)
+coefficients = logistic_model.params
 print("Model Coefficients:")
-print(round(coefficients, 4))
+print(coefficients.round(4))
 
 # Odds ratios
-odds_ratios <- exp(coefficients)
+odds_ratios = np.exp(coefficients)
 print("Odds Ratios:")
-print(round(odds_ratios, 4))
+print(odds_ratios.round(4))
 
 # Confidence intervals for odds ratios
-conf_int <- confint(logistic_model)
-odds_ratios_ci <- exp(conf_int)
+conf_int = logistic_model.conf_int()
+odds_ratios_ci = np.exp(conf_int)
 print("Odds Ratios with 95% Confidence Intervals:")
-print(round(odds_ratios_ci, 4))
+print(odds_ratios_ci.round(4))
 ```
 
 #### Code Explanation
@@ -141,33 +151,29 @@ print(round(odds_ratios_ci, 4))
 
 ### Model Interpretation
 
-```r
+```python
 # Function to interpret logistic regression coefficients
-interpret_logistic_coefficients <- function(model) {
-  coefficients <- coef(model)
-  odds_ratios <- exp(coefficients)
-  
-  cat("=== LOGISTIC REGRESSION INTERPRETATION ===\n\n")
-  
-  for (i in 2:length(coefficients)) {  # Skip intercept
-    var_name <- names(coefficients)[i]
-    coef_value <- coefficients[i]
-    odds_ratio <- odds_ratios[i]
+def interpret_logistic_coefficients(model):
+    coefficients = model.params
+    odds_ratios = np.exp(coefficients)
     
-    cat("Variable:", var_name, "\n")
-    cat("Coefficient:", round(coef_value, 4), "\n")
-    cat("Odds Ratio:", round(odds_ratio, 4), "\n")
+    print("=== LOGISTIC REGRESSION INTERPRETATION ===\n")
     
-    if (odds_ratio > 1) {
-      cat("Interpretation: A one-unit increase in", var_name, 
-          "increases the odds of the event by", round((odds_ratio - 1) * 100, 1), "%\n")
-    } else {
-      cat("Interpretation: A one-unit increase in", var_name, 
-          "decreases the odds of the event by", round((1 - odds_ratio) * 100, 1), "%\n")
-    }
-    cat("\n")
-  }
-}
+    for i, var_name in enumerate(coefficients.index[1:], 1):  # Skip intercept
+        coef_value = coefficients[i]
+        odds_ratio = odds_ratios[i]
+        
+        print(f"Variable: {var_name}")
+        print(f"Coefficient: {coef_value:.4f}")
+        print(f"Odds Ratio: {odds_ratio:.4f}")
+        
+        if odds_ratio > 1:
+            print(f"Interpretation: A one-unit increase in {var_name} "
+                  f"increases the odds of the event by {(odds_ratio - 1) * 100:.1f}%")
+        else:
+            print(f"Interpretation: A one-unit increase in {var_name} "
+                  f"decreases the odds of the event by {(1 - odds_ratio) * 100:.1f}%")
+        print()
 
 # Apply interpretation
 interpret_logistic_coefficients(logistic_model)
@@ -193,80 +199,101 @@ interpret_logistic_coefficients(logistic_model)
 
 ### Model Diagnostics
 
-```r
+```python
 # Residual analysis for logistic regression
-logistic_diagnostics <- function(model, data) {
-  cat("=== LOGISTIC REGRESSION DIAGNOSTICS ===\n\n")
-  
-  # Deviance residuals
-  deviance_residuals <- residuals(model, type = "deviance")
-  
-  # Pearson residuals
-  pearson_residuals <- residuals(model, type = "pearson")
-  
-  # Fitted probabilities
-  fitted_probs <- fitted(model)
-  
-  # Create diagnostic plots
-  par(mfrow = c(2, 2))
-  
-  # Deviance residuals vs fitted values
-  plot(fitted_probs, deviance_residuals, main = "Deviance Residuals vs Fitted",
-       xlab = "Fitted Probabilities", ylab = "Deviance Residuals")
-  abline(h = 0, col = "red", lty = 2)
-  
-  # Pearson residuals vs fitted values
-  plot(fitted_probs, pearson_residuals, main = "Pearson Residuals vs Fitted",
-       xlab = "Fitted Probabilities", ylab = "Pearson Residuals")
-  abline(h = 0, col = "red", lty = 2)
-  
-  # Q-Q plot of deviance residuals
-  qqnorm(deviance_residuals, main = "Q-Q Plot of Deviance Residuals")
-  qqline(deviance_residuals, col = "red")
-  
-  # Leverage plot
-  leverage <- hatvalues(model)
-  plot(leverage, deviance_residuals, main = "Residuals vs Leverage",
-       xlab = "Leverage", ylab = "Deviance Residuals")
-  abline(h = 0, col = "red", lty = 2)
-  
-  par(mfrow = c(1, 1))
-  
-  # Hosmer-Lemeshow test
-  hl_test <- hoslem.test(model$y, fitted_probs, g = 10)
-  cat("Hosmer-Lemeshow Test:\n")
-  cat("Chi-square statistic:", round(hl_test$statistic, 3), "\n")
-  cat("p-value:", round(hl_test$p.value, 4), "\n")
-  
-  if (hl_test$p.value > 0.05) {
-    cat("Model fits well (p > 0.05)\n")
-  } else {
-    cat("Model may not fit well (p ≤ 0.05)\n")
-  }
-  
-  # Influential observations
-  cook_dist <- cooks.distance(model)
-  influential <- which(cook_dist > 4/length(cook_dist))
-  
-  cat("\nInfluential Observations (Cook's distance > 4/n):\n")
-  if (length(influential) > 0) {
-    print(influential)
-  } else {
-    cat("No influential observations detected.\n")
-  }
-  
-  return(list(
-    deviance_residuals = deviance_residuals,
-    pearson_residuals = pearson_residuals,
-    fitted_probs = fitted_probs,
-    leverage = leverage,
-    cook_dist = cook_dist,
-    hl_test = hl_test
-  ))
-}
+def logistic_diagnostics(model, data):
+    print("=== LOGISTIC REGRESSION DIAGNOSTICS ===\n")
+    
+    # Get fitted probabilities
+    fitted_probs = model.predict(X)
+    
+    # Calculate residuals (approximation for logistic regression)
+    y_actual = y.values
+    residuals = y_actual - fitted_probs
+    
+    # Create diagnostic plots
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    
+    # Residuals vs fitted values
+    axes[0, 0].scatter(fitted_probs, residuals, alpha=0.6)
+    axes[0, 0].axhline(y=0, color='red', linestyle='--')
+    axes[0, 0].set_xlabel('Fitted Probabilities')
+    axes[0, 0].set_ylabel('Residuals')
+    axes[0, 0].set_title('Residuals vs Fitted')
+    axes[0, 0].grid(True)
+    
+    # Q-Q plot of residuals
+    stats.probplot(residuals, dist="norm", plot=axes[0, 1])
+    axes[0, 1].set_title('Q-Q Plot of Residuals')
+    
+    # Histogram of residuals
+    axes[1, 0].hist(residuals, bins=20, alpha=0.7, edgecolor='black')
+    axes[1, 0].set_xlabel('Residuals')
+    axes[1, 0].set_ylabel('Frequency')
+    axes[1, 0].set_title('Histogram of Residuals')
+    axes[1, 0].grid(True)
+    
+    # Leverage plot (simplified)
+    influence = model.get_influence()
+    leverage = influence.hat_matrix_diag
+    axes[1, 1].scatter(leverage, residuals, alpha=0.6)
+    axes[1, 1].axhline(y=0, color='red', linestyle='--')
+    axes[1, 1].set_xlabel('Leverage')
+    axes[1, 1].set_ylabel('Residuals')
+    axes[1, 1].set_title('Residuals vs Leverage')
+    axes[1, 1].grid(True)
+    
+    plt.tight_layout()
+    plt.show()
+    
+    # Hosmer-Lemeshow test (approximation)
+    def hosmer_lemeshow_test(y_true, y_pred, g=10):
+        # Group observations by predicted probabilities
+        df = pd.DataFrame({'y_true': y_true, 'y_pred': y_pred})
+        df['group'] = pd.qcut(df['y_pred'], g, labels=False)
+        
+        # Calculate observed and expected frequencies
+        observed = df.groupby('group')['y_true'].sum()
+        expected = df.groupby('group')['y_pred'].sum()
+        
+        # Chi-square statistic
+        chi_square = ((observed - expected) ** 2 / expected).sum()
+        p_value = 1 - stats.chi2.cdf(chi_square, g-2)
+        
+        return chi_square, p_value
+    
+    hl_stat, hl_p_value = hosmer_lemeshow_test(y_actual, fitted_probs)
+    print(f"Hosmer-Lemeshow Test:")
+    print(f"Chi-square statistic: {hl_stat:.3f}")
+    print(f"p-value: {hl_p_value:.4f}")
+    
+    if hl_p_value > 0.05:
+        print("Model fits well (p > 0.05)")
+    else:
+        print("Model may not fit well (p ≤ 0.05)")
+    
+    # Influential observations
+    influence = model.get_influence()
+    cook_dist = influence.cooks_distance[0]
+    influential = np.where(cook_dist > 4/len(cook_dist))[0]
+    
+    print(f"\nInfluential Observations (Cook's distance > 4/n):")
+    if len(influential) > 0:
+        print(influential)
+    else:
+        print("No influential observations detected.")
+    
+    return {
+        'residuals': residuals,
+        'fitted_probs': fitted_probs,
+        'leverage': leverage,
+        'cook_dist': cook_dist,
+        'hl_stat': hl_stat,
+        'hl_p_value': hl_p_value
+    }
 
 # Apply diagnostics
-diagnostics_result <- logistic_diagnostics(logistic_model, logistic_data)
+diagnostics_result = logistic_diagnostics(logistic_model, logistic_data)
 ```
 
 #### Code Explanation
@@ -281,63 +308,57 @@ diagnostics_result <- logistic_diagnostics(logistic_model, logistic_data)
 
 ### Classification Metrics
 
-```r
+```python
 # Function to calculate classification metrics
-calculate_classification_metrics <- function(actual, predicted, threshold = 0.5) {
-  # Convert probabilities to predictions
-  predicted_class <- ifelse(predicted >= threshold, 1, 0)
-  
-  # Create confusion matrix
-  cm <- table(Actual = actual, Predicted = predicted_class)
-  
-  # Calculate metrics
-  tp <- cm[2, 2]  # True positives
-  tn <- cm[1, 1]  # True negatives
-  fp <- cm[1, 2]  # False positives
-  fn <- cm[2, 1]  # False negatives
-  
-  accuracy <- (tp + tn) / (tp + tn + fp + fn)
-  sensitivity <- tp / (tp + fn)  # Recall
-  specificity <- tn / (tn + fp)
-  precision <- tp / (tp + fp)
-  f1_score <- 2 * (precision * sensitivity) / (precision + sensitivity)
-  
-  return(list(
-    confusion_matrix = cm,
-    accuracy = accuracy,
-    sensitivity = sensitivity,
-    specificity = specificity,
-    precision = precision,
-    f1_score = f1_score
-  ))
-}
+def calculate_classification_metrics(actual, predicted, threshold=0.5):
+    # Convert probabilities to predictions
+    predicted_class = (predicted >= threshold).astype(int)
+    
+    # Create confusion matrix
+    cm = confusion_matrix(actual, predicted_class)
+    
+    # Calculate metrics
+    tn, fp, fn, tp = cm.ravel()
+    
+    accuracy = (tp + tn) / (tp + tn + fp + fn)
+    sensitivity = tp / (tp + fn)  # Recall
+    specificity = tn / (tn + fp)
+    precision = tp / (tp + fp)
+    f1_score = 2 * (precision * sensitivity) / (precision + sensitivity)
+    
+    return {
+        'confusion_matrix': cm,
+        'accuracy': accuracy,
+        'sensitivity': sensitivity,
+        'specificity': specificity,
+        'precision': precision,
+        'f1_score': f1_score
+    }
 
 # Split data for evaluation
-set.seed(123)
-train_index <- createDataPartition(logistic_data$approved, p = 0.7, list = FALSE)
-train_data <- logistic_data[train_index, ]
-test_data <- logistic_data[-train_index, ]
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=123, stratify=y
+)
 
 # Fit model on training data
-train_model <- glm(approved ~ age + income + education_years + credit_score + debt_ratio, 
-                   data = train_data, family = binomial(link = "logit"))
+train_model = sm.Logit(y_train, X_train).fit()
 
 # Predictions on test data
-test_predictions <- predict(train_model, newdata = test_data, type = "response")
-test_actual <- as.numeric(test_data$approved) - 1  # Convert to 0/1
+test_predictions = train_model.predict(X_test)
+test_actual = y_test.values
 
 # Calculate metrics
-metrics <- calculate_classification_metrics(test_actual, test_predictions)
+metrics = calculate_classification_metrics(test_actual, test_predictions)
 
-cat("Classification Metrics:\n")
-cat("Accuracy:", round(metrics$accuracy, 3), "\n")
-cat("Sensitivity (Recall):", round(metrics$sensitivity, 3), "\n")
-cat("Specificity:", round(metrics$specificity, 3), "\n")
-cat("Precision:", round(metrics$precision, 3), "\n")
-cat("F1 Score:", round(metrics$f1_score, 3), "\n")
+print("Classification Metrics:")
+print(f"Accuracy: {metrics['accuracy']:.3f}")
+print(f"Sensitivity (Recall): {metrics['sensitivity']:.3f}")
+print(f"Specificity: {metrics['specificity']:.3f}")
+print(f"Precision: {metrics['precision']:.3f}")
+print(f"F1 Score: {metrics['f1_score']:.3f}")
 
 print("Confusion Matrix:")
-print(metrics$confusion_matrix)
+print(metrics['confusion_matrix'])
 ```
 
 #### Code Explanation
@@ -352,33 +373,45 @@ print(metrics$confusion_matrix)
 
 ### ROC Curve and AUC
 
-```r
+```python
 # ROC curve analysis
-roc_obj <- roc(test_actual, test_predictions)
-auc_value <- auc(roc_obj)
+fpr, tpr, thresholds = roc_curve(test_actual, test_predictions)
+auc_value = roc_auc_score(test_actual, test_predictions)
 
 # Plot ROC curve
-plot(roc_obj, main = "ROC Curve", col = "blue", lwd = 2)
-abline(a = 0, b = 1, lty = 2, col = "red")
-text(0.8, 0.2, paste("AUC =", round(auc_value, 3)), cex = 1.2)
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='blue', lw=2, label=f'ROC curve (AUC = {auc_value:.3f})')
+plt.plot([0, 1], [0, 1], color='red', lw=2, linestyle='--', label='Random')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend(loc="lower right")
+plt.grid(True)
+plt.show()
 
-cat("ROC Analysis:\n")
-cat("AUC:", round(auc_value, 3), "\n")
+print("ROC Analysis:")
+print(f"AUC: {auc_value:.3f}")
 
-# Find optimal threshold
-optimal_threshold <- coords(roc_obj, "best")
-cat("Optimal threshold:", round(optimal_threshold$threshold, 3), "\n")
-cat("Optimal sensitivity:", round(optimal_threshold$sensitivity, 3), "\n")
-cat("Optimal specificity:", round(optimal_threshold$specificity, 3), "\n")
+# Find optimal threshold (Youden's J statistic)
+youden_j = tpr - fpr
+optimal_idx = np.argmax(youden_j)
+optimal_threshold = thresholds[optimal_idx]
+optimal_sensitivity = tpr[optimal_idx]
+optimal_specificity = 1 - fpr[optimal_idx]
+
+print(f"Optimal threshold: {optimal_threshold:.3f}")
+print(f"Optimal sensitivity: {optimal_sensitivity:.3f}")
+print(f"Optimal specificity: {optimal_specificity:.3f}")
 
 # Calculate metrics with optimal threshold
-optimal_metrics <- calculate_classification_metrics(test_actual, test_predictions, 
-                                                 optimal_threshold$threshold)
+optimal_metrics = calculate_classification_metrics(test_actual, test_predictions, optimal_threshold)
 
-cat("\nMetrics with Optimal Threshold:\n")
-cat("Accuracy:", round(optimal_metrics$accuracy, 3), "\n")
-cat("Sensitivity:", round(optimal_metrics$sensitivity, 3), "\n")
-cat("Specificity:", round(optimal_metrics$specificity, 3), "\n")
+print("\nMetrics with Optimal Threshold:")
+print(f"Accuracy: {optimal_metrics['accuracy']:.3f}")
+print(f"Sensitivity: {optimal_metrics['sensitivity']:.3f}")
+print(f"Specificity: {optimal_metrics['specificity']:.3f}")
 ```
 
 #### Code Explanation
@@ -390,61 +423,56 @@ cat("Specificity:", round(optimal_metrics$specificity, 3), "\n")
 
 ### Cross-Validation
 
-```r
+```python
 # K-fold cross-validation
-cv_logistic <- function(data, k = 5) {
-  n <- nrow(data)
-  fold_size <- floor(n / k)
-  
-  cv_metrics <- list()
-  
-  for (fold in 1:k) {
-    # Create fold indices
-    start_idx <- (fold - 1) * fold_size + 1
-    end_idx <- ifelse(fold == k, n, fold * fold_size)
-    test_indices <- start_idx:end_idx
+from sklearn.model_selection import KFold
+
+def cv_logistic(data, k=5):
+    n = len(data)
+    kf = KFold(n_splits=k, shuffle=True, random_state=123)
     
-    # Split data
-    train_fold <- data[-test_indices, ]
-    test_fold <- data[test_indices, ]
+    cv_metrics = []
     
-    # Fit model
-    fold_model <- glm(approved ~ age + income + education_years + credit_score + debt_ratio, 
-                     data = train_fold, family = binomial(link = "logit"))
+    for fold, (train_idx, test_idx) in enumerate(kf.split(data), 1):
+        # Split data
+        X_train_fold = X.iloc[train_idx]
+        X_test_fold = X.iloc[test_idx]
+        y_train_fold = y.iloc[train_idx]
+        y_test_fold = y.iloc[test_idx]
+        
+        # Fit model
+        fold_model = sm.Logit(y_train_fold, X_train_fold).fit(disp=0)
+        
+        # Predictions
+        fold_pred = fold_model.predict(X_test_fold)
+        fold_actual = y_test_fold.values
+        
+        # Calculate metrics
+        fold_metrics = calculate_classification_metrics(fold_actual, fold_pred)
+        cv_metrics.append(fold_metrics)
     
-    # Predictions
-    fold_pred <- predict(fold_model, newdata = test_fold, type = "response")
-    fold_actual <- as.numeric(test_fold$approved) - 1
+    # Average metrics across folds
+    avg_accuracy = np.mean([m['accuracy'] for m in cv_metrics])
+    avg_sensitivity = np.mean([m['sensitivity'] for m in cv_metrics])
+    avg_specificity = np.mean([m['specificity'] for m in cv_metrics])
+    avg_f1 = np.mean([m['f1_score'] for m in cv_metrics])
     
-    # Calculate metrics
-    fold_metrics <- calculate_classification_metrics(fold_actual, fold_pred)
-    
-    cv_metrics[[paste0("fold_", fold)]] <- fold_metrics
-  }
-  
-  # Average metrics across folds
-  avg_accuracy <- mean(sapply(cv_metrics, function(x) x$accuracy))
-  avg_sensitivity <- mean(sapply(cv_metrics, function(x) x$sensitivity))
-  avg_specificity <- mean(sapply(cv_metrics, function(x) x$specificity))
-  avg_f1 <- mean(sapply(cv_metrics, function(x) x$f1_score))
-  
-  return(list(
-    fold_metrics = cv_metrics,
-    avg_accuracy = avg_accuracy,
-    avg_sensitivity = avg_sensitivity,
-    avg_specificity = avg_specificity,
-    avg_f1 = avg_f1
-  ))
-}
+    return {
+        'fold_metrics': cv_metrics,
+        'avg_accuracy': avg_accuracy,
+        'avg_sensitivity': avg_sensitivity,
+        'avg_specificity': avg_specificity,
+        'avg_f1': avg_f1
+    }
 
 # Apply cross-validation
-cv_results <- cv_logistic(logistic_data, k = 5)
+cv_results = cv_logistic(logistic_data, k=5)
 
-cat("Cross-Validation Results:\n")
-cat("Average Accuracy:", round(cv_results$avg_accuracy, 3), "\n")
-cat("Average Sensitivity:", round(cv_results$avg_sensitivity, 3), "\n")
-cat("Average Specificity:", round(cv_results$avg_specificity, 3), "\n")
-cat("Average F1 Score:", round(cv_results$avg_f1, 3), "\n")
+print("Cross-Validation Results:")
+print(f"Average Accuracy: {cv_results['avg_accuracy']:.3f}")
+print(f"Average Sensitivity: {cv_results['avg_sensitivity']:.3f}")
+print(f"Average Specificity: {cv_results['avg_specificity']:.3f}")
+print(f"Average F1 Score: {cv_results['avg_f1']:.3f}")
 ```
 
 #### Code Explanation
@@ -469,53 +497,51 @@ For $`J`$ outcome categories ($`Y \in \{1, 2, ..., J\}`$), the model is:
 
 ### Example: Simulated Risk Category Data
 
-```r
-# Load nnet package for multinomial logistic regression
-library(nnet)
+```python
+# Import multinomial logistic regression
+from sklearn.linear_model import LogisticRegression as SklearnLogisticRegression
 
 # Generate multinomial data
-set.seed(123)
-n_multinomial <- 400
+np.random.seed(123)
+n_multinomial = 400
 
-multinomial_data <- data.frame(
-  age = rnorm(n_multinomial, 45, 10),
-  income = rnorm(n_multinomial, 60000, 15000),
-  education_years = rnorm(n_multinomial, 14, 3),
-  credit_score = rnorm(n_multinomial, 700, 100),
-  debt_ratio = rnorm(n_multinomial, 0.3, 0.1)
-)
+multinomial_data = pd.DataFrame({
+    'age': np.random.normal(45, 10, n_multinomial),
+    'income': np.random.normal(60000, 15000, n_multinomial),
+    'education_years': np.random.normal(14, 3, n_multinomial),
+    'credit_score': np.random.normal(700, 100, n_multinomial),
+    'debt_ratio': np.random.normal(0.3, 0.1, n_multinomial)
+})
 
 # Create multinomial outcome (3 categories)
-# Category 1: Low risk, Category 2: Medium risk, Category 3: High risk
-log_odds_medium <- -1 + 0.02 * multinomial_data$age + 
-                   0.000005 * multinomial_data$income + 
-                   0.1 * multinomial_data$education_years + 
-                   0.005 * multinomial_data$credit_score - 
-                   1.5 * multinomial_data$debt_ratio
+# Category 0: Low risk, Category 1: Medium risk, Category 2: High risk
+log_odds_medium = (-1 + 0.02 * multinomial_data['age'] + 
+                   0.000005 * multinomial_data['income'] + 
+                   0.1 * multinomial_data['education_years'] + 
+                   0.005 * multinomial_data['credit_score'] - 
+                   1.5 * multinomial_data['debt_ratio'])
 
-log_odds_high <- -2 + 0.03 * multinomial_data$age + 
-                 0.000008 * multinomial_data$income + 
-                 0.15 * multinomial_data$education_years + 
-                 0.008 * multinomial_data$credit_score - 
-                 2 * multinomial_data$debt_ratio
+log_odds_high = (-2 + 0.03 * multinomial_data['age'] + 
+                 0.000008 * multinomial_data['income'] + 
+                 0.15 * multinomial_data['education_years'] + 
+                 0.008 * multinomial_data['credit_score'] - 
+                 2 * multinomial_data['debt_ratio'])
 
 # Calculate probabilities
-prob_medium <- exp(log_odds_medium) / (1 + exp(log_odds_medium) + exp(log_odds_high))
-prob_high <- exp(log_odds_high) / (1 + exp(log_odds_medium) + exp(log_odds_high))
-prob_low <- 1 - prob_medium - prob_high
+prob_medium = np.exp(log_odds_medium) / (1 + np.exp(log_odds_medium) + np.exp(log_odds_high))
+prob_high = np.exp(log_odds_high) / (1 + np.exp(log_odds_medium) + np.exp(log_odds_high))
+prob_low = 1 - prob_medium - prob_high
 
 # Generate multinomial outcome
-multinomial_data$risk_category <- apply(
-  cbind(prob_low, prob_medium, prob_high), 1, 
-  function(p) sample(1:3, 1, prob = p)
-)
+probs = np.column_stack([prob_low, prob_medium, prob_high])
+multinomial_data['risk_category'] = np.array([np.random.choice(3, p=p) for p in probs])
 
-multinomial_data$risk_category <- factor(multinomial_data$risk_category,
-                                       levels = 1:3,
-                                       labels = c("Low Risk", "Medium Risk", "High Risk"))
+# Create labels
+risk_labels = {0: 'Low Risk', 1: 'Medium Risk', 2: 'High Risk'}
+multinomial_data['risk_category_label'] = multinomial_data['risk_category'].map(risk_labels)
 
 print("Multinomial Data Summary:")
-print(table(multinomial_data$risk_category))
+print(multinomial_data['risk_category_label'].value_counts())
 ```
 
 #### Code Explanation
@@ -525,36 +551,37 @@ print(table(multinomial_data$risk_category))
 
 ### Fitting and Interpreting the Multinomial Model
 
-```r
-# Load nnet package for multinomial logistic regression
-library(nnet)
+```python
+# Prepare data for multinomial regression
+X_multinomial = multinomial_data[['age', 'income', 'education_years', 'credit_score', 'debt_ratio']]
+X_multinomial = sm.add_constant(X_multinomial)
+y_multinomial = multinomial_data['risk_category']
 
-# Fit multinomial logistic regression
-multinomial_model <- multinom(risk_category ~ age + income + education_years + 
-                             credit_score + debt_ratio, data = multinomial_data)
+# Fit multinomial logistic regression using statsmodels
+multinomial_model = sm.MNLogit(y_multinomial, X_multinomial).fit()
 
 # Model summary
 print("Multinomial Logistic Regression Summary:")
-print(summary(multinomial_model))
+print(multinomial_model.summary())
 
 # Extract coefficients
-multinomial_coef <- coef(multinomial_model)
+multinomial_coef = multinomial_model.params
 print("Multinomial Coefficients:")
-print(round(multinomial_coef, 4))
+print(multinomial_coef.round(4))
 
 # Calculate odds ratios
-multinomial_odds <- exp(multinomial_coef)
+multinomial_odds = np.exp(multinomial_coef)
 print("Multinomial Odds Ratios:")
-print(round(multinomial_odds, 4))
+print(multinomial_odds.round(4))
 
 # Z-statistics and p-values
-z_stats <- summary(multinomial_model)$coefficients / summary(multinomial_model)$standard.errors
-p_values <- 2 * (1 - pnorm(abs(z_stats)))
+z_stats = multinomial_model.tvalues
+p_values = multinomial_model.pvalues
 
 print("Z-statistics:")
-print(round(z_stats, 3))
+print(z_stats.round(3))
 print("P-values:")
-print(round(p_values, 4))
+print(p_values.round(4))
 ```
 
 #### Code Explanation
@@ -583,36 +610,42 @@ For ordered categories, the proportional odds model is:
 - $`\theta_j`$ are threshold (cutpoint) parameters.
 - $`\beta`$ coefficients are assumed constant across thresholds (proportional odds assumption).
 
-```r
-# Load MASS package for ordinal logistic regression
-library(MASS)
+```python
+# For ordinal logistic regression, we'll use a custom implementation
+# since statsmodels doesn't have a direct ordinal logistic regression function
 
 # Create ordinal outcome (convert risk category to numeric)
-ordinal_data <- multinomial_data
-ordinal_data$risk_ordinal <- as.numeric(ordinal_data$risk_category)
+ordinal_data = multinomial_data.copy()
+ordinal_data['risk_ordinal'] = ordinal_data['risk_category']
 
-# Fit ordinal logistic regression (proportional odds model)
-ordinal_model <- polr(risk_category ~ age + income + education_years + 
-                     credit_score + debt_ratio, data = ordinal_data, Hess = TRUE)
+# Fit ordinal logistic regression using sklearn (simplified approach)
+from sklearn.linear_model import LogisticRegression
 
-# Model summary
+# Prepare data
+X_ordinal = ordinal_data[['age', 'income', 'education_years', 'credit_score', 'debt_ratio']]
+y_ordinal = ordinal_data['risk_ordinal']
+
+# Fit ordinal logistic regression (using sklearn's multinomial option)
+ordinal_model = LogisticRegression(multi_class='multinomial', solver='lbfgs', random_state=123)
+ordinal_model.fit(X_ordinal, y_ordinal)
+
+# Model summary (simplified)
 print("Ordinal Logistic Regression Summary:")
-print(summary(ordinal_model))
-
-# Extract coefficients
-ordinal_coef <- coef(ordinal_model)
-print("Ordinal Coefficients:")
-print(round(ordinal_coef, 4))
+print(f"Intercept: {ordinal_model.intercept_}")
+print("Coefficients:")
+for i, feature in enumerate(X_ordinal.columns):
+    print(f"{feature}: {ordinal_model.coef_[0][i]:.4f}")
 
 # Calculate odds ratios
-ordinal_odds <- exp(ordinal_coef)
+ordinal_odds = np.exp(ordinal_model.coef_[0])
 print("Ordinal Odds Ratios:")
-print(round(ordinal_odds, 4))
+for i, feature in enumerate(X_ordinal.columns):
+    print(f"{feature}: {ordinal_odds[i]:.4f}")
 
-# Thresholds (cutpoints)
-thresholds <- ordinal_model$zeta
-print("Thresholds:")
-print(round(thresholds, 4))
+# Thresholds (intercepts for each class)
+print("Thresholds (Intercepts):")
+for i, intercept in enumerate(ordinal_model.intercept_):
+    print(f"Class {i}: {intercept:.4f}")
 ```
 
 #### Code Explanation
@@ -624,67 +657,63 @@ print(round(thresholds, 4))
 
 ### Model Comparison
 
-```r
+```python
 # Compare binary, multinomial, and ordinal models
-model_comparison <- function(binary_data, multinomial_data) {
-  cat("=== MODEL COMPARISON ===\n\n")
-  
-  # Binary model (combine medium and high risk)
-  binary_data_combined <- binary_data
-  binary_data_combined$approved <- ifelse(binary_data_combined$approved == "Approved", 1, 0)
-  
-  # Fit binary model
-  binary_model <- glm(approved ~ age + income + education_years + credit_score + debt_ratio, 
-                     data = binary_data_combined, family = binomial(link = "logit"))
-  
-  # AIC comparison
-  binary_aic <- AIC(binary_model)
-  multinomial_aic <- AIC(multinomial_model)
-  ordinal_aic <- AIC(ordinal_model)
-  
-  cat("AIC Comparison:\n")
-  cat("Binary model:", round(binary_aic, 2), "\n")
-  cat("Multinomial model:", round(multinomial_aic, 2), "\n")
-  cat("Ordinal model:", round(ordinal_aic, 2), "\n\n")
-  
-  # BIC comparison
-  binary_bic <- BIC(binary_model)
-  multinomial_bic <- BIC(multinomial_model)
-  ordinal_bic <- BIC(ordinal_model)
-  
-  cat("BIC Comparison:\n")
-  cat("Binary model:", round(binary_bic, 2), "\n")
-  cat("Multinomial model:", round(multinomial_bic, 2), "\n")
-  cat("Ordinal model:", round(ordinal_bic, 2), "\n\n")
-  
-  # Likelihood ratio test for ordinal vs multinomial
-  lr_stat <- -2 * (logLik(ordinal_model) - logLik(multinomial_model))
-  lr_p_value <- pchisq(lr_stat, df = 1, lower.tail = FALSE)
-  
-  cat("Likelihood Ratio Test (Ordinal vs Multinomial):\n")
-  cat("Chi-square statistic:", round(lr_stat, 3), "\n")
-  cat("p-value:", round(lr_p_value, 4), "\n")
-  
-  if (lr_p_value > 0.05) {
-    cat("Ordinal model is preferred (proportional odds assumption holds)\n")
-  } else {
-    cat("Multinomial model is preferred (proportional odds assumption violated)\n")
-  }
-  
-  return(list(
-    binary_aic = binary_aic,
-    multinomial_aic = multinomial_aic,
-    ordinal_aic = ordinal_aic,
-    binary_bic = binary_bic,
-    multinomial_bic = multinomial_bic,
-    ordinal_bic = ordinal_bic,
-    lr_stat = lr_stat,
-    lr_p_value = lr_p_value
-  ))
-}
+def model_comparison(binary_data, multinomial_data):
+    print("=== MODEL COMPARISON ===\n")
+    
+    # Binary model (combine medium and high risk)
+    binary_data_combined = binary_data.copy()
+    binary_data_combined['approved_bin'] = (binary_data_combined['approved'] == 'Approved').astype(int)
+    
+    # Fit binary model
+    X_binary = binary_data_combined[['age', 'income', 'education_years', 'credit_score', 'debt_ratio']]
+    X_binary = sm.add_constant(X_binary)
+    y_binary = binary_data_combined['approved_bin']
+    binary_model = sm.Logit(y_binary, X_binary).fit(disp=0)
+    
+    # AIC comparison
+    binary_aic = binary_model.aic
+    multinomial_aic = multinomial_model.aic
+    
+    # For ordinal model, we'll use a simplified AIC calculation
+    ordinal_aic = len(X_ordinal.columns) * 2 + 2 * (-ordinal_model.score(X_ordinal, y_ordinal))
+    
+    print("AIC Comparison:")
+    print(f"Binary model: {binary_aic:.2f}")
+    print(f"Multinomial model: {multinomial_aic:.2f}")
+    print(f"Ordinal model: {ordinal_aic:.2f}\n")
+    
+    # BIC comparison
+    binary_bic = binary_model.bic
+    multinomial_bic = multinomial_model.bic
+    
+    # For ordinal model, we'll use a simplified BIC calculation
+    n = len(y_ordinal)
+    ordinal_bic = len(X_ordinal.columns) * np.log(n) + 2 * (-ordinal_model.score(X_ordinal, y_ordinal))
+    
+    print("BIC Comparison:")
+    print(f"Binary model: {binary_bic:.2f}")
+    print(f"Multinomial model: {multinomial_bic:.2f}")
+    print(f"Ordinal model: {ordinal_bic:.2f}\n")
+    
+    # Likelihood ratio test for ordinal vs multinomial (simplified)
+    # Since we're using different implementations, we'll compare model performance
+    print("Model Performance Comparison:")
+    print("Note: Direct likelihood ratio test not available due to different implementations")
+    print("Consider comparing classification accuracy and other metrics instead")
+    
+    return {
+        'binary_aic': binary_aic,
+        'multinomial_aic': multinomial_aic,
+        'ordinal_aic': ordinal_aic,
+        'binary_bic': binary_bic,
+        'multinomial_bic': multinomial_bic,
+        'ordinal_bic': ordinal_bic
+    }
 
 # Apply model comparison
-comparison_results <- model_comparison(logistic_data, multinomial_data)
+comparison_results = model_comparison(logistic_data, multinomial_data)
 ```
 
 #### Code Explanation
@@ -698,53 +727,60 @@ comparison_results <- model_comparison(logistic_data, multinomial_data)
 
 ### Example 1: Credit Card Approval
 
-```r
+```python
 # Simulate credit card application data
-set.seed(123)
-n_applications <- 1000
+np.random.seed(123)
+n_applications = 1000
 
-credit_data <- data.frame(
-  age = rnorm(n_applications, 35, 8),
-  income = rnorm(n_applications, 75000, 20000),
-  credit_score = rnorm(n_applications, 720, 80),
-  debt_to_income = rnorm(n_applications, 0.25, 0.1),
-  employment_years = rnorm(n_applications, 5, 3),
-  previous_defaults = rpois(n_applications, 0.3),
-  home_ownership = factor(sample(c("Rent", "Own", "Mortgage"), n_applications, 
-                               prob = c(0.4, 0.3, 0.3), replace = TRUE)
-)
+credit_data = pd.DataFrame({
+    'age': np.random.normal(35, 8, n_applications),
+    'income': np.random.normal(75000, 20000, n_applications),
+    'credit_score': np.random.normal(720, 80, n_applications),
+    'debt_to_income': np.random.normal(0.25, 0.1, n_applications),
+    'employment_years': np.random.normal(5, 3, n_applications),
+    'previous_defaults': np.random.poisson(0.3, n_applications),
+    'home_ownership': np.random.choice(['Rent', 'Own', 'Mortgage'], 
+                                      n_applications, p=[0.4, 0.3, 0.3])
+})
 
 # Create approval probability
-log_odds_credit <- -3 + 0.02 * credit_data$age + 
-                   0.00001 * credit_data$income + 
-                   0.015 * credit_data$credit_score - 
-                   2 * credit_data$debt_to_income + 
-                   0.1 * credit_data$employment_years - 
-                   0.5 * credit_data$previous_defaults
+log_odds_credit = (-3 + 0.02 * credit_data['age'] + 
+                   0.00001 * credit_data['income'] + 
+                   0.015 * credit_data['credit_score'] - 
+                   2 * credit_data['debt_to_income'] + 
+                   0.1 * credit_data['employment_years'] - 
+                   0.5 * credit_data['previous_defaults'])
 
 # Add home ownership effect
-log_odds_credit[credit_data$home_ownership == "Own"] <- 
-  log_odds_credit[credit_data$home_ownership == "Own"] + 0.3
-log_odds_credit[credit_data$home_ownership == "Mortgage"] <- 
-  log_odds_credit[credit_data$home_ownership == "Mortgage"] + 0.1
+log_odds_credit[credit_data['home_ownership'] == 'Own'] += 0.3
+log_odds_credit[credit_data['home_ownership'] == 'Mortgage'] += 0.1
 
-prob_credit <- 1 / (1 + exp(-log_odds_credit))
-credit_data$approved <- rbinom(n_applications, 1, prob_credit)
-credit_data$approved <- factor(credit_data$approved, levels = c(0, 1), 
-                              labels = c("Rejected", "Approved"))
+prob_credit = 1 / (1 + np.exp(-log_odds_credit))
+credit_data['approved'] = np.random.binomial(1, prob_credit)
+credit_data['approved'] = credit_data['approved'].map({0: 'Rejected', 1: 'Approved'})
+
+# Prepare data for modeling
+credit_data['approved_bin'] = (credit_data['approved'] == 'Approved').astype(int)
+
+# Create dummy variables for categorical predictors
+credit_data_encoded = pd.get_dummies(credit_data, columns=['home_ownership'], drop_first=True)
 
 # Fit credit approval model
-credit_model <- glm(approved ~ age + income + credit_score + debt_to_income + 
-                    employment_years + previous_defaults + home_ownership, 
-                    data = credit_data, family = binomial(link = "logit"))
+X_credit = credit_data_encoded[['age', 'income', 'credit_score', 'debt_to_income', 
+                               'employment_years', 'previous_defaults', 
+                               'home_ownership_Own', 'home_ownership_Rent']]
+X_credit = sm.add_constant(X_credit)
+y_credit = credit_data_encoded['approved_bin']
+
+credit_model = sm.Logit(y_credit, X_credit).fit()
 
 print("Credit Card Approval Model:")
-print(summary(credit_model))
+print(credit_model.summary())
 
 # Odds ratios
-credit_odds <- exp(coef(credit_model))
+credit_odds = np.exp(credit_model.params)
 print("Odds Ratios for Credit Approval:")
-print(round(credit_odds, 4))
+print(credit_odds.round(4))
 ```
 
 #### Code Explanation
@@ -756,64 +792,69 @@ print(round(credit_odds, 4))
 
 ### Example 2: Medical Diagnosis
 
-```r
+```python
 # Simulate medical diagnosis data
-set.seed(123)
-n_patients <- 800
+np.random.seed(123)
+n_patients = 800
 
-medical_data <- data.frame(
-  age = rnorm(n_patients, 60, 15),
-  bmi = rnorm(n_patients, 28, 5),
-  blood_pressure = rnorm(n_patients, 140, 20),
-  cholesterol = rnorm(n_patients, 200, 40),
-  glucose = rnorm(n_patients, 100, 20),
-  family_history = factor(sample(c("No", "Yes"), n_patients, 
-                               prob = c(0.7, 0.3), replace = TRUE),
-  smoking = factor(sample(c("Never", "Former", "Current"), n_patients, 
-                         prob = c(0.4, 0.3, 0.3), replace = TRUE)
-)
+medical_data = pd.DataFrame({
+    'age': np.random.normal(60, 15, n_patients),
+    'bmi': np.random.normal(28, 5, n_patients),
+    'blood_pressure': np.random.normal(140, 20, n_patients),
+    'cholesterol': np.random.normal(200, 40, n_patients),
+    'glucose': np.random.normal(100, 20, n_patients),
+    'family_history': np.random.choice(['No', 'Yes'], n_patients, p=[0.7, 0.3]),
+    'smoking': np.random.choice(['Never', 'Former', 'Current'], n_patients, p=[0.4, 0.3, 0.3])
+})
 
 # Create disease probability (diabetes)
-log_odds_diabetes <- -4 + 0.03 * medical_data$age + 
-                     0.05 * medical_data$bmi + 
-                     0.01 * medical_data$blood_pressure + 
-                     0.005 * medical_data$cholesterol + 
-                     0.02 * medical_data$glucose
+log_odds_diabetes = (-4 + 0.03 * medical_data['age'] + 
+                     0.05 * medical_data['bmi'] + 
+                     0.01 * medical_data['blood_pressure'] + 
+                     0.005 * medical_data['cholesterol'] + 
+                     0.02 * medical_data['glucose'])
 
 # Add categorical effects
-log_odds_diabetes[medical_data$family_history == "Yes"] <- 
-  log_odds_diabetes[medical_data$family_history == "Yes"] + 0.8
-log_odds_diabetes[medical_data$smoking == "Current"] <- 
-  log_odds_diabetes[medical_data$smoking == "Current"] + 0.3
-log_odds_diabetes[medical_data$smoking == "Former"] <- 
-  log_odds_diabetes[medical_data$smoking == "Former"] + 0.1
+log_odds_diabetes[medical_data['family_history'] == 'Yes'] += 0.8
+log_odds_diabetes[medical_data['smoking'] == 'Current'] += 0.3
+log_odds_diabetes[medical_data['smoking'] == 'Former'] += 0.1
 
-prob_diabetes <- 1 / (1 + exp(-log_odds_diabetes))
-medical_data$diabetes <- rbinom(n_patients, 1, prob_diabetes)
-medical_data$diabetes <- factor(medical_data$diabetes, levels = c(0, 1), 
-                               labels = c("No Diabetes", "Diabetes"))
+prob_diabetes = 1 / (1 + np.exp(-log_odds_diabetes))
+medical_data['diabetes'] = np.random.binomial(1, prob_diabetes)
+medical_data['diabetes'] = medical_data['diabetes'].map({0: 'No Diabetes', 1: 'Diabetes'})
+
+# Prepare data for modeling
+medical_data['diabetes_bin'] = (medical_data['diabetes'] == 'Diabetes').astype(int)
+
+# Create dummy variables for categorical predictors
+medical_data_encoded = pd.get_dummies(medical_data, columns=['family_history', 'smoking'], drop_first=True)
 
 # Fit medical diagnosis model
-medical_model <- glm(diabetes ~ age + bmi + blood_pressure + cholesterol + 
-                     glucose + family_history + smoking, 
-                     data = medical_data, family = binomial(link = "logit"))
+X_medical = medical_data_encoded[['age', 'bmi', 'blood_pressure', 'cholesterol', 'glucose',
+                                 'family_history_Yes', 'smoking_Former', 'smoking_Current']]
+X_medical = sm.add_constant(X_medical)
+y_medical = medical_data_encoded['diabetes_bin']
+
+medical_model = sm.Logit(y_medical, X_medical).fit()
 
 print("Medical Diagnosis Model:")
-print(summary(medical_model))
+print(medical_model.summary())
 
 # Risk prediction for new patient
-new_patient <- data.frame(
-  age = 65,
-  bmi = 32,
-  blood_pressure = 150,
-  cholesterol = 220,
-  glucose = 120,
-  family_history = "Yes",
-  smoking = "Former"
-)
+new_patient = pd.DataFrame({
+    'age': [65],
+    'bmi': [32],
+    'blood_pressure': [150],
+    'cholesterol': [220],
+    'glucose': [120],
+    'family_history_Yes': [1],
+    'smoking_Former': [1],
+    'smoking_Current': [0]
+})
+new_patient = sm.add_constant(new_patient)
 
-predicted_risk <- predict(medical_model, newdata = new_patient, type = "response")
-cat("Predicted diabetes risk for new patient:", round(predicted_risk, 3), "\n")
+predicted_risk = medical_model.predict(new_patient)[0]
+print(f"Predicted diabetes risk for new patient: {predicted_risk:.3f}")
 ```
 
 #### Code Explanation
@@ -832,70 +873,66 @@ cat("Predicted diabetes risk for new patient:", round(predicted_risk, 3), "\n")
 - Check sample size and class balance.
 - Always check model assumptions and diagnostics.
 
-```r
+```python
 # Function to help choose appropriate logistic regression model
-choose_logistic_model <- function(data, outcome_var) {
-  cat("=== LOGISTIC REGRESSION MODEL SELECTION ===\n\n")
-  
-  # Check outcome variable
-  outcome_levels <- levels(data[[outcome_var]])
-  n_levels <- length(outcome_levels)
-  
-  cat("Outcome variable:", outcome_var, "\n")
-  cat("Number of levels:", n_levels, "\n")
-  cat("Levels:", paste(outcome_levels, collapse = ", "), "\n\n")
-  
-  if (n_levels == 2) {
-    cat("RECOMMENDATION: Use binary logistic regression\n")
-    cat("- Suitable for binary outcomes\n")
-    cat("- Easy to interpret odds ratios\n")
-    cat("- Good for classification problems\n")
-  } else if (n_levels == 3) {
-    cat("RECOMMENDATION: Consider both multinomial and ordinal\n")
-    cat("- Multinomial: No ordering assumption\n")
-    cat("- Ordinal: Assumes proportional odds\n")
-    cat("- Test proportional odds assumption\n")
-  } else {
-    cat("RECOMMENDATION: Use multinomial logistic regression\n")
-    cat("- Suitable for multiple unordered categories\n")
-    cat("- More complex interpretation\n")
-  }
-  
-  # Check sample size
-  n_samples <- nrow(data)
-  cat("\nSample size:", n_samples, "\n")
-  
-  if (n_samples < 100) {
-    cat("WARNING: Small sample size may affect model stability\n")
-  } else if (n_samples < 500) {
-    cat("Sample size is adequate for most applications\n")
-  } else {
-    cat("Sample size is good for complex models\n")
-  }
-  
-  # Check class balance
-  outcome_counts <- table(data[[outcome_var]])
-  min_count <- min(outcome_counts)
-  max_count <- max(outcome_counts)
-  imbalance_ratio <- max_count / min_count
-  
-  cat("\nClass balance:\n")
-  print(outcome_counts)
-  
-  if (imbalance_ratio > 3) {
-    cat("WARNING: Class imbalance detected\n")
-    cat("Consider: resampling, different thresholds, or class weights\n")
-  }
-  
-  return(list(
-    n_levels = n_levels,
-    n_samples = n_samples,
-    imbalance_ratio = imbalance_ratio
-  ))
-}
+def choose_logistic_model(data, outcome_var):
+    print("=== LOGISTIC REGRESSION MODEL SELECTION ===\n")
+    
+    # Check outcome variable
+    outcome_levels = data[outcome_var].unique()
+    n_levels = len(outcome_levels)
+    
+    print(f"Outcome variable: {outcome_var}")
+    print(f"Number of levels: {n_levels}")
+    print(f"Levels: {', '.join(outcome_levels)}\n")
+    
+    if n_levels == 2:
+        print("RECOMMENDATION: Use binary logistic regression")
+        print("- Suitable for binary outcomes")
+        print("- Easy to interpret odds ratios")
+        print("- Good for classification problems")
+    elif n_levels == 3:
+        print("RECOMMENDATION: Consider both multinomial and ordinal")
+        print("- Multinomial: No ordering assumption")
+        print("- Ordinal: Assumes proportional odds")
+        print("- Test proportional odds assumption")
+    else:
+        print("RECOMMENDATION: Use multinomial logistic regression")
+        print("- Suitable for multiple unordered categories")
+        print("- More complex interpretation")
+    
+    # Check sample size
+    n_samples = len(data)
+    print(f"\nSample size: {n_samples}")
+    
+    if n_samples < 100:
+        print("WARNING: Small sample size may affect model stability")
+    elif n_samples < 500:
+        print("Sample size is adequate for most applications")
+    else:
+        print("Sample size is good for complex models")
+    
+    # Check class balance
+    outcome_counts = data[outcome_var].value_counts()
+    min_count = outcome_counts.min()
+    max_count = outcome_counts.max()
+    imbalance_ratio = max_count / min_count
+    
+    print("\nClass balance:")
+    print(outcome_counts)
+    
+    if imbalance_ratio > 3:
+        print("WARNING: Class imbalance detected")
+        print("Consider: resampling, different thresholds, or class weights")
+    
+    return {
+        'n_levels': n_levels,
+        'n_samples': n_samples,
+        'imbalance_ratio': imbalance_ratio
+    }
 
 # Apply model selection
-model_selection <- choose_logistic_model(logistic_data, "approved")
+model_selection = choose_logistic_model(logistic_data, "approved")
 ```
 
 ---
@@ -907,69 +944,79 @@ model_selection <- choose_logistic_model(logistic_data, "approved")
 - Report diagnostics (e.g., Hosmer-Lemeshow test, ROC/AUC).
 - Discuss limitations, assumptions, and recommendations.
 
-```r
+```python
 # Function to generate comprehensive logistic regression report
-generate_logistic_report <- function(model, data, test_data = NULL) {
-  cat("=== LOGISTIC REGRESSION REPORT ===\n\n")
-  
-  # Model summary
-  cat("MODEL SUMMARY:\n")
-  print(summary(model))
-  
-  # Odds ratios with confidence intervals
-  cat("\nODDS RATIOS WITH 95% CONFIDENCE INTERVALS:\n")
-  odds_ci <- exp(confint(model))
-  odds_table <- data.frame(
-    Variable = rownames(odds_ci),
-    Odds_Ratio = exp(coef(model)),
-    CI_Lower = odds_ci[, 1],
-    CI_Upper = odds_ci[, 2]
-  )
-  print(round(odds_table, 3))
-  
-  # Model fit statistics
-  cat("\nMODEL FIT STATISTICS:\n")
-  cat("AIC:", round(AIC(model), 2), "\n")
-  cat("BIC:", round(BIC(model), 2), "\n")
-  cat("Log-likelihood:", round(logLik(model), 2), "\n")
-  
-  # Hosmer-Lemeshow test
-  hl_test <- hoslem.test(model$y, fitted(model), g = 10)
-  cat("Hosmer-Lemeshow test p-value:", round(hl_test$p.value, 4), "\n")
-  
-  if (hl_test$p.value > 0.05) {
-    cat("Model fits well\n")
-  } else {
-    cat("Model fit may be inadequate\n")
-  }
-  
-  # Performance metrics (if test data provided)
-  if (!is.null(test_data)) {
-    cat("\nPERFORMANCE METRICS:\n")
-    test_pred <- predict(model, newdata = test_data, type = "response")
-    test_actual <- as.numeric(test_data$approved) - 1
+def generate_logistic_report(model, data, test_data=None):
+    print("=== LOGISTIC REGRESSION REPORT ===\n")
     
-    # ROC analysis
-    roc_obj <- roc(test_actual, test_pred)
-    auc_value <- auc(roc_obj)
+    # Model summary
+    print("MODEL SUMMARY:")
+    print(model.summary())
     
-    cat("AUC:", round(auc_value, 3), "\n")
+    # Odds ratios with confidence intervals
+    print("\nODDS RATIOS WITH 95% CONFIDENCE INTERVALS:")
+    conf_int = model.conf_int()
+    odds_ci = np.exp(conf_int)
+    odds_table = pd.DataFrame({
+        'Variable': model.params.index,
+        'Odds_Ratio': np.exp(model.params),
+        'CI_Lower': odds_ci.iloc[:, 0],
+        'CI_Upper': odds_ci.iloc[:, 1]
+    })
+    print(odds_table.round(3))
     
-    # Classification metrics
-    metrics <- calculate_classification_metrics(test_actual, test_pred)
-    cat("Accuracy:", round(metrics$accuracy, 3), "\n")
-    cat("Sensitivity:", round(metrics$sensitivity, 3), "\n")
-    cat("Specificity:", round(metrics$specificity, 3), "\n")
-    cat("F1 Score:", round(metrics$f1_score, 3), "\n")
-  }
-  
-  # Recommendations
-  cat("\nRECOMMENDATIONS:\n")
-  cat("- Check for influential observations\n")
-  cat("- Validate model assumptions\n")
-  cat("- Consider model diagnostics\n")
-  cat("- Test model on new data\n")
-}
+    # Model fit statistics
+    print("\nMODEL FIT STATISTICS:")
+    print(f"AIC: {model.aic:.2f}")
+    print(f"BIC: {model.bic:.2f}")
+    print(f"Log-likelihood: {model.llf:.2f}")
+    
+    # Hosmer-Lemeshow test (approximation)
+    fitted_probs = model.predict()
+    y_actual = model.model.endog
+    
+    def hosmer_lemeshow_test(y_true, y_pred, g=10):
+        df = pd.DataFrame({'y_true': y_true, 'y_pred': y_pred})
+        df['group'] = pd.qcut(df['y_pred'], g, labels=False)
+        observed = df.groupby('group')['y_true'].sum()
+        expected = df.groupby('group')['y_pred'].sum()
+        chi_square = ((observed - expected) ** 2 / expected).sum()
+        p_value = 1 - stats.chi2.cdf(chi_square, g-2)
+        return chi_square, p_value
+    
+    hl_stat, hl_p_value = hosmer_lemeshow_test(y_actual, fitted_probs)
+    print(f"Hosmer-Lemeshow test p-value: {hl_p_value:.4f}")
+    
+    if hl_p_value > 0.05:
+        print("Model fits well")
+    else:
+        print("Model fit may be inadequate")
+    
+    # Performance metrics (if test data provided)
+    if test_data is not None:
+        print("\nPERFORMANCE METRICS:")
+        test_pred = model.predict(test_data)
+        test_actual = test_data.iloc[:, -1]  # Assuming last column is target
+        
+        # ROC analysis
+        fpr, tpr, _ = roc_curve(test_actual, test_pred)
+        auc_value = roc_auc_score(test_actual, test_pred)
+        
+        print(f"AUC: {auc_value:.3f}")
+        
+        # Classification metrics
+        metrics = calculate_classification_metrics(test_actual, test_pred)
+        print(f"Accuracy: {metrics['accuracy']:.3f}")
+        print(f"Sensitivity: {metrics['sensitivity']:.3f}")
+        print(f"Specificity: {metrics['specificity']:.3f}")
+        print(f"F1 Score: {metrics['f1_score']:.3f}")
+    
+    # Recommendations
+    print("\nRECOMMENDATIONS:")
+    print("- Check for influential observations")
+    print("- Validate model assumptions")
+    print("- Consider model diagnostics")
+    print("- Test model on new data")
 
 # Generate report
 generate_logistic_report(logistic_model, logistic_data, test_data)
@@ -981,8 +1028,39 @@ generate_logistic_report(logistic_model, logistic_data, test_data)
 
 ### Exercise 1: Binary Logistic Regression
 **Objective:** Fit a binary logistic regression model to a dataset. Interpret the coefficients and odds ratios.
-- *Hint:* Use `glm()` with `family = binomial`.
+- *Hint:* Use `statsmodels.Logit()` or `sklearn.LogisticRegression()`.
 - *Learning Outcome:* Understand model fitting and interpretation.
+
+```python
+# Exercise 1: Binary Logistic Regression
+# Simulate data for customer churn prediction
+np.random.seed(123)
+n_customers = 600
+
+churn_data = pd.DataFrame({
+    'tenure': np.random.normal(24, 12, n_customers),
+    'monthly_charges': np.random.normal(65, 20, n_customers),
+    'total_charges': np.random.normal(1500, 800, n_customers),
+    'contract_type': np.random.choice(['Month-to-month', 'One year', 'Two year'], 
+                                     n_customers, p=[0.5, 0.3, 0.2]),
+    'payment_method': np.random.choice(['Electronic check', 'Mailed check', 'Bank transfer', 'Credit card'], 
+                                      n_customers, p=[0.3, 0.2, 0.25, 0.25])
+})
+
+# Create churn probability
+log_odds_churn = (-2 + 0.05 * churn_data['tenure'] - 
+                  0.02 * churn_data['monthly_charges'] + 
+                  0.001 * churn_data['total_charges'])
+
+# Add categorical effects
+log_odds_churn[churn_data['contract_type'] == 'Month-to-month'] += 0.8
+log_odds_churn[churn_data['contract_type'] == 'One year'] += 0.2
+log_odds_churn[churn_data['payment_method'] == 'Electronic check'] += 0.5
+
+prob_churn = 1 / (1 + np.exp(-log_odds_churn))
+churn_data['churn'] = np.random.binomial(1, prob_churn)
+churn_data['churn'] = churn_data['churn'].map({0: 'No Churn', 1: 'Churn'})
+```
 
 ### Exercise 2: Model Diagnostics
 **Objective:** Perform comprehensive diagnostics for a logistic regression model, including residual analysis and influence diagnostics.
@@ -991,13 +1069,53 @@ generate_logistic_report(logistic_model, logistic_data, test_data)
 
 ### Exercise 3: Model Performance
 **Objective:** Evaluate model performance using ROC curves, classification metrics, and cross-validation.
-- *Hint:* Use `pROC` for ROC/AUC and implement k-fold cross-validation.
+- *Hint:* Use `sklearn.metrics` for ROC/AUC and implement k-fold cross-validation.
 - *Learning Outcome:* Understand model evaluation and validation.
 
 ### Exercise 4: Multinomial Logistic Regression
 **Objective:** Fit a multinomial logistic regression model and compare it with binary and ordinal models.
-- *Hint:* Use `nnet::multinom()` and `MASS::polr()`.
+- *Hint:* Use `statsmodels.MNLogit()` and `sklearn.LogisticRegression()` with `multi_class='multinomial'`.
 - *Learning Outcome:* Understand when and how to use multinomial and ordinal models.
+
+```python
+# Exercise 4: Multinomial Logistic Regression
+# Simulate data for customer satisfaction levels
+np.random.seed(123)
+n_satisfaction = 500
+
+satisfaction_data = pd.DataFrame({
+    'age': np.random.normal(45, 12, n_satisfaction),
+    'income': np.random.normal(60000, 20000, n_satisfaction),
+    'service_quality': np.random.normal(7, 2, n_satisfaction),
+    'wait_time': np.random.normal(10, 5, n_satisfaction),
+    'previous_experience': np.random.choice(['Poor', 'Fair', 'Good'], n_satisfaction, p=[0.2, 0.3, 0.5])
+})
+
+# Create satisfaction probability (3 levels: Low, Medium, High)
+log_odds_medium = (-1 + 0.02 * satisfaction_data['age'] + 
+                   0.00001 * satisfaction_data['income'] + 
+                   0.3 * satisfaction_data['service_quality'] - 
+                   0.05 * satisfaction_data['wait_time'])
+
+log_odds_high = (-2 + 0.03 * satisfaction_data['age'] + 
+                 0.000015 * satisfaction_data['income'] + 
+                 0.5 * satisfaction_data['service_quality'] - 
+                 0.08 * satisfaction_data['wait_time'])
+
+# Add categorical effects
+log_odds_medium[satisfaction_data['previous_experience'] == 'Good'] += 0.5
+log_odds_high[satisfaction_data['previous_experience'] == 'Good'] += 1.0
+
+# Calculate probabilities
+prob_medium = np.exp(log_odds_medium) / (1 + np.exp(log_odds_medium) + np.exp(log_odds_high))
+prob_high = np.exp(log_odds_high) / (1 + np.exp(log_odds_medium) + np.exp(log_odds_high))
+prob_low = 1 - prob_medium - prob_high
+
+# Generate outcome
+probs = np.column_stack([prob_low, prob_medium, prob_high])
+satisfaction_data['satisfaction'] = np.array([np.random.choice(3, p=p) for p in probs])
+satisfaction_data['satisfaction'] = satisfaction_data['satisfaction'].map({0: 'Low', 1: 'Medium', 2: 'High'})
+```
 
 ### Exercise 5: Real-World Application
 **Objective:** Apply logistic regression to a real-world classification problem and generate a comprehensive report.
@@ -1015,8 +1133,3 @@ generate_logistic_report(logistic_model, logistic_data, test_data)
 - Multinomial and ordinal models extend binary logistic regression
 - Always check assumptions and validate models
 - Consider class imbalance and sample size requirements
-
----
-
-**Next Steps:**
-In the next chapter, we'll learn about survival analysis for time-to-event data. 
