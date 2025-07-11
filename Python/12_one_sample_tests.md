@@ -683,27 +683,27 @@ Outliers can significantly influence test results and should be identified and h
 **Mathematical Methods:**
 
 1. **IQR Method (Tukey's Fences):**
-   ```math
-   \text{Lower bound} = Q_1 - 1.5 \times IQR
-   \text{Upper bound} = Q_3 + 1.5 \times IQR
-   ```
+```math
+\text{Lower bound} = Q_1 - 1.5 \times IQR
+\text{Upper bound} = Q_3 + 1.5 \times IQR
+```
 
 2. **Z-score Method:**
-   ```math
-   z_i = \frac{x_i - \bar{x}}{s}
-   ```
+```math
+z_i = \frac{x_i - \bar{x}}{s}
+```
    Values with $|z_i| > 3$ are considered outliers.
 
 3. **Modified Z-score Method (Robust):**
-   ```math
-   M_i = \frac{0.6745(x_i - \text{median})}{\text{MAD}}
-   ```
+```math
+M_i = \frac{0.6745(x_i - \text{median})}{\text{MAD}}
+```
    Values with $|M_i| > 3.5$ are considered outliers.
 
 4. **Mahalanobis Distance (Multivariate):**
-   ```math
-   D^2 = (x - \mu)^T \Sigma^{-1} (x - \mu)
-   ```
+```math
+D^2 = (x - \mu)^T \Sigma^{-1} (x - \mu)
+```
 
 ```python
 # Comprehensive outlier detection function
