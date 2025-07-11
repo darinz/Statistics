@@ -18,19 +18,19 @@ Correlation analysis examines the strength and direction of relationships betwee
 Covariance quantifies how two variables change together:
 
 ```math
-\operatorname{Cov}(X, Y) = \frac{1}{n-1} \sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})
+\text{Cov}(X, Y) = \frac{1}{n-1} \sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})
 ```
 
-- $`\operatorname{Cov}(X, Y) > 0`$: Variables tend to increase together
-- $`\operatorname{Cov}(X, Y) < 0`$: One increases as the other decreases
-- $`\operatorname{Cov}(X, Y) = 0`$: No linear relationship
+- $`\text{Cov}(X, Y) > 0`$: Variables tend to increase together
+- $`\text{Cov}(X, Y) < 0`$: One increases as the other decreases
+- $`\text{Cov}(X, Y) = 0`$: No linear relationship
 
 ### Pearson Correlation Coefficient ($`r`$)
 
 Pearson's $`r`$ measures the strength and direction of a linear relationship:
 
 ```math
-r = \frac{\operatorname{Cov}(X, Y)}{s_X s_Y} = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^n (x_i - \bar{x})^2} \sqrt{\sum_{i=1}^n (y_i - \bar{y})^2}}
+r = \frac{\text{Cov}(X, Y)}{s_X s_Y} = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^n (x_i - \bar{x})^2} \sqrt{\sum_{i=1}^n (y_i - \bar{y})^2}}
 ```
 
 - $`r = 1`$: Perfect positive linear relationship
