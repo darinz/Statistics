@@ -685,6 +685,9 @@ Outliers can significantly influence test results and should be identified and h
 1. **IQR Method (Tukey's Fences):**
 ```math
 \text{Lower bound} = Q_1 - 1.5 \times IQR
+```
+
+```math
 \text{Upper bound} = Q_3 + 1.5 \times IQR
 ```
 
