@@ -71,59 +71,14 @@ where:
 
 ### Basic Independent Samples t-Test
 
-```python
-# Load sample data
-import pandas as pd
-import numpy as np
-from scipy import stats
-from sklearn.datasets import load_iris
+The `independent_samples_t_test()` function demonstrates a comprehensive independent samples t-test using the Iris dataset. It shows manual calculations for Welch's t-test including the t-statistic, degrees of freedom, and confidence intervals, then compares with SciPy's implementation.
 
-# Load iris dataset as example (similar to mtcars)
-iris = load_iris()
-iris_df = pd.DataFrame(iris.data, columns=iris.feature_names)
-iris_df['target'] = iris.target
-
-# Compare sepal length between two species (0 vs 1)
-species_0_sepal_length = iris_df[iris_df['target'] == 0]['sepal length (cm)']
-species_1_sepal_length = iris_df[iris_df['target'] == 1]['sepal length (cm)']
-
-# Perform independent samples t-test
-t_statistic, p_value = stats.ttest_ind(species_0_sepal_length, species_1_sepal_length, equal_var=False)
-
-# Calculate confidence interval manually
-n1 = len(species_0_sepal_length)
-n2 = len(species_1_sepal_length)
-mean1 = species_0_sepal_length.mean()
-mean2 = species_1_sepal_length.mean()
-var1 = species_0_sepal_length.var()
-var2 = species_1_sepal_length.var()
-
-# Welch's t-test (unequal variances)
-se_welch = np.sqrt(var1/n1 + var2/n2)
-manual_t_welch = (mean1 - mean2) / se_welch
-
-# Degrees of freedom (Welch's approximation)
-df_welch = (var1/n1 + var2/n2)**2 / ((var1/n1)**2/(n1-1) + (var2/n2)**2/(n2-1))
-
-# Calculate confidence interval
-t_critical = stats.t.ppf(0.975, df_welch)
-ci_lower = (mean1 - mean2) - t_critical * se_welch
-ci_upper = (mean1 - mean2) + t_critical * se_welch
-mean_diff = mean1 - mean2
-
-print("Test Results:")
-print(f"Mean difference (Species 0 - Species 1): {mean_diff:.3f}")
-print(f"t-statistic: {t_statistic:.3f}")
-print(f"p-value: {p_value:.4f}")
-print(f"95% Confidence Interval: [{ci_lower:.3f}, {ci_upper:.3f}]")
-
-print("\nManual Calculation Verification:")
-print(f"Group 1 (Species 0): n = {n1}, mean = {mean1:.3f}, var = {var1:.3f}")
-print(f"Group 2 (Species 1): n = {n2}, mean = {mean2:.3f}, var = {var2:.3f}")
-print(f"Standard Error (Welch): {se_welch:.3f}")
-print(f"Manual t-statistic: {manual_t_welch:.3f}")
-print(f"Degrees of freedom: {df_welch:.1f}")
-```
+**Key features:**
+- Manual calculation of Welch's t-test formula
+- Confidence interval computation
+- Verification with SciPy's ttest_ind function
+- Real dataset example (Iris species comparison)
+- Detailed output showing all intermediate calculations
 
 ### Equal vs Unequal Variances
 
@@ -151,67 +106,14 @@ t = \frac{\bar{x}_1 - \bar{x}_2}{\sqrt{\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}}}
 - **Equal variances:** When population variances are known to be equal or similar
 - **Unequal variances:** When variances may differ (more conservative approach)
 
-```python
-# Test for equal variances
-f_statistic, var_p_value = stats.levene(species_0_sepal_length, species_1_sepal_length)
+The `assumption_checking()` function demonstrates comprehensive assumption checking for two-sample tests, including Levene's test for homogeneity of variance and comparison between equal and unequal variance t-tests.
 
-# Manual F-test calculation
-f_stat_manual = var1 / var2
-df1 = n1 - 1
-df2 = n2 - 1
-f_p_value_manual = 2 * (1 - stats.f.cdf(f_stat_manual, df1, df2))
-
-print("\nManual F-test calculation:")
-print(f"F-statistic: {f_stat_manual:.3f}")
-print(f"Degrees of freedom: {df1}, {df2}")
-print(f"p-value: {f_p_value_manual:.4f}")
-
-# Perform t-test with equal variances (if appropriate)
-if var_p_value > 0.05:
-    t_test_equal_var = stats.ttest_ind(species_0_sepal_length, species_1_sepal_length, equal_var=True)
-    print("\nUsing equal variances t-test:")
-    print(f"t-statistic: {t_test_equal_var.statistic:.3f}")
-    print(f"p-value: {t_test_equal_var.pvalue:.4f}")
-    
-    # Manual pooled t-test calculation
-    pooled_sd = np.sqrt(((n1-1)*var1 + (n2-1)*var2) / (n1 + n2 - 2))
-    pooled_se = pooled_sd * np.sqrt(1/n1 + 1/n2)
-    manual_t_pooled = (mean1 - mean2) / pooled_se
-    df_pooled = n1 + n2 - 2
-    
-    print("\nManual pooled t-test calculation:")
-    print(f"Pooled SD: {pooled_sd:.3f}")
-    print(f"Pooled SE: {pooled_se:.3f}")
-    print(f"t-statistic: {manual_t_pooled:.3f}")
-    print(f"Degrees of freedom: {df_pooled}")
-    
-else:
-    print("\nUsing Welch's t-test (unequal variances):")
-    print(f"t-statistic: {t_statistic:.3f}")
-    print(f"p-value: {p_value:.4f}")
-
-# Compare results
-t_equal_var = stats.ttest_ind(species_0_sepal_length, species_1_sepal_length, equal_var=True)
-print("\nComparison of t-tests:")
-print(f"Equal variances p-value: {t_equal_var.pvalue:.4f}")
-print(f"Unequal variances p-value: {p_value:.4f}")
-
-# Effect on confidence intervals
-t_critical_equal = stats.t.ppf(0.975, df_pooled)
-ci_equal_lower = (mean1 - mean2) - t_critical_equal * pooled_se
-ci_equal_upper = (mean1 - mean2) + t_critical_equal * pooled_se
-
-print("\nConfidence Intervals:")
-print(f"Equal variances 95% CI: [{ci_equal_lower:.3f}, {ci_equal_upper:.3f}]")
-print(f"Unequal variances 95% CI: [{ci_lower:.3f}, {ci_upper:.3f}]")
-
-# Width comparison
-width_equal = ci_equal_upper - ci_equal_lower
-width_unequal = ci_upper - ci_lower
-
-print(f"CI width (equal variances): {width_equal:.3f}")
-print(f"CI width (unequal variances): {width_unequal:.3f}")
-```
+**Key features:**
+- Levene's test for homogeneity of variance
+- Manual F-test calculation
+- Comparison of pooled vs Welch's t-test
+- Confidence interval width comparison
+- Decision-making based on assumption test results
 
 ### Effect Size for Independent Samples
 
@@ -249,81 +151,15 @@ where $SE_d = \sqrt{\frac{n_1 + n_2}{n_1 n_2} + \frac{d^2}{2(n_1 + n_2)}}$
 - Large effect: $0.5 \leq |d| < 0.8$
 - Very large effect: $|d| \geq 0.8$
 
-```python
-# Calculate Cohen's d for independent samples
-def calculate_cohens_d_independent(group1, group2):
-    n1 = len(group1)
-    n2 = len(group2)
-    
-    # Pooled standard deviation
-    pooled_sd = np.sqrt(((n1 - 1) * group1.var() + (n2 - 1) * group2.var()) / (n1 + n2 - 2))
-    
-    # Cohen's d
-    cohens_d = (group1.mean() - group2.mean()) / pooled_sd
-    
-    # Hedges' g (unbiased estimator)
-    hedges_g = cohens_d * (1 - 3 / (4 * (n1 + n2) - 9))
-    
-    # Standard error of effect size
-    se_d = np.sqrt((n1 + n2)/(n1 * n2) + cohens_d**2/(2*(n1 + n2)))
-    
-    # Confidence interval for effect size
-    df = n1 + n2 - 2
-    t_critical = stats.t.ppf(0.975, df)
-    ci_lower = cohens_d - t_critical * se_d
-    ci_upper = cohens_d + t_critical * se_d
-    
-    return {
-        'cohens_d': cohens_d,
-        'hedges_g': hedges_g,
-        'pooled_sd': pooled_sd,
-        'se_d': se_d,
-        'ci_lower': ci_lower,
-        'ci_upper': ci_upper,
-        'n1': n1,
-        'n2': n2
-    }
+The `effect_size_calculations()` function demonstrates various effect size measures for two-sample comparisons, including Cohen's d, Hedges' g, and confidence intervals for effect sizes.
 
-# Apply to species comparison
-species_effect = calculate_cohens_d_independent(species_0_sepal_length, species_1_sepal_length)
-
-print("Effect Size Analysis:")
-print(f"Cohen's d: {species_effect['cohens_d']:.3f}")
-print(f"Hedges' g: {species_effect['hedges_g']:.3f}")
-print(f"Pooled SD: {species_effect['pooled_sd']:.3f}")
-print(f"Standard Error of d: {species_effect['se_d']:.3f}")
-print(f"95% CI for d: [{species_effect['ci_lower']:.3f}, {species_effect['ci_upper']:.3f}]")
-
-# Interpret effect size
-def interpret_effect_size(d):
-    if abs(d) < 0.2:
-        return "Small effect"
-    elif abs(d) < 0.5:
-        return "Medium effect"
-    elif abs(d) < 0.8:
-        return "Large effect"
-    else:
-        return "Very large effect"
-
-print(f"Effect size interpretation: {interpret_effect_size(species_effect['cohens_d'])}")
-
-# Power analysis based on effect size
-from statsmodels.stats.power import TTestPower
-power_analysis = TTestPower()
-power_result = power_analysis.power(effect_size=species_effect['cohens_d'], 
-                                   nobs1=species_effect['n1'], 
-                                   nobs2=species_effect['n2'], 
-                                   alpha=0.05)
-print(f"Power for current effect size: {power_result:.3f}")
-
-# Required sample size for 80% power
-if power_result < 0.8:
-    required_n = power_analysis.solve_power(effect_size=species_effect['cohens_d'], 
-                                           alpha=0.05, 
-                                           power=0.8, 
-                                           ratio=species_effect['n2']/species_effect['n1'])
-    print(f"Required sample size per group for 80% power: {int(np.ceil(required_n))}")
-```
+**Key features:**
+- Cohen's d calculation with pooled standard deviation
+- Hedges' g (bias-corrected effect size)
+- Confidence intervals for effect sizes
+- Effect size interpretation guidelines
+- Power analysis based on effect size
+- Sample size determination for desired power
 
 ## Paired Samples t-Test
 
@@ -360,59 +196,14 @@ d = \frac{\bar{d}}{s_d}
 
 ### Basic Paired Samples t-Test
 
-```python
-# Simulate paired data (before and after treatment)
-np.random.seed(123)
-n_subjects = 20
-before_scores = np.random.normal(75, 10, n_subjects)
-after_scores = before_scores + np.random.normal(5, 8, n_subjects)
+The `paired_samples_t_test()` function demonstrates paired t-test calculations using simulated before/after treatment data. It includes manual calculations of the t-statistic, confidence intervals, and effect size (Cohen's d for paired samples).
 
-# Perform paired samples t-test
-paired_test = stats.ttest_rel(before_scores, after_scores)
-
-# Manual calculation for understanding
-differences = after_scores - before_scores
-mean_diff = differences.mean()
-sd_diff = differences.std()
-se_diff = sd_diff / np.sqrt(n_subjects)
-manual_t_paired = mean_diff / se_diff
-df_paired = n_subjects - 1
-
-print("\nManual Paired t-test Calculation:")
-print(f"Mean difference: {mean_diff:.3f}")
-print(f"SD of differences: {sd_diff:.3f}")
-print(f"Standard error: {se_diff:.3f}")
-print(f"t-statistic: {manual_t_paired:.3f}")
-print(f"Degrees of freedom: {df_paired}")
-
-# Calculate paired effect size
-paired_effect = mean_diff / sd_diff
-
-print("\nPaired Samples Results:")
-print(f"Mean difference (After - Before): {mean_diff:.3f}")
-print(f"t-statistic: {paired_test.statistic:.3f}")
-print(f"p-value: {paired_test.pvalue:.4f}")
-print(f"Effect size (Cohen's d): {paired_effect:.3f}")
-
-# Compare with independent samples approach (incorrect for paired data)
-independent_effect = calculate_cohens_d_independent(pd.Series(before_scores), pd.Series(after_scores))
-print(f"Independent samples effect size (incorrect): {independent_effect['cohens_d']:.3f}")
-print(f"Paired samples effect size (correct): {paired_effect:.3f}")
-
-# Power comparison
-paired_power = power_analysis.power(effect_size=paired_effect, 
-                                   nobs=n_subjects, 
-                                   alpha=0.05)
-independent_power = power_analysis.power(effect_size=independent_effect['cohens_d'], 
-                                        nobs1=n_subjects, 
-                                        nobs2=n_subjects, 
-                                        alpha=0.05)
-
-print("\nPower Comparison:")
-print(f"Paired design power: {paired_power:.3f}")
-print(f"Independent design power: {independent_power:.3f}")
-print(f"Power advantage: {paired_power - independent_power:.3f}")
-```
+**Key features:**
+- Manual calculation of paired t-test
+- Confidence interval for mean difference
+- Effect size calculation (Cohen's d)
+- Comparison with SciPy's ttest_rel function
+- Power comparison between paired and independent designs
 
 ### Paired Data Analysis
 
