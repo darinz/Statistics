@@ -1,605 +1,294 @@
-# Analysis of Variance (ANOVA)
+# Correlation Analysis
 
 ## Overview
 
-Analysis of Variance (ANOVA) is a statistical method used to compare means across multiple groups. It extends the t-test to handle more than two groups and can test for interactions between factors.
+Correlation analysis examines the strength and direction of relationships between two or more quantitative variables. It is foundational for understanding associations, prediction, and causality in statistics and data science.
 
-## One-Way ANOVA
+### Key Concepts
 
-### Basic One-Way ANOVA
+- **Covariance**: Measures the joint variability of two variables.
+- **Correlation**: Standardizes covariance to a scale from -1 to 1, indicating both strength and direction.
+- **Types of Correlation**: Pearson (linear), Spearman (monotonic, rank-based), Kendall (ordinal, rank-based).
+- **Interpretation**: Correlation does not imply causation.
 
-```r
-# Load sample data
-data(mtcars)
+## Mathematical Foundations
 
-# One-way ANOVA: Compare MPG across different cylinder types
-one_way_anova <- aov(mpg ~ factor(cyl), data = mtcars)
-summary(one_way_anova)
+### Covariance
 
-# Extract results
-f_statistic <- summary(one_way_anova)[[1]]$"F value"[1]
-p_value <- summary(one_way_anova)[[1]]$"Pr(>F)"[1]
-df_between <- summary(one_way_anova)[[1]]$"Df"[1]
-df_within <- summary(one_way_anova)[[1]]$"Df"[2]
+Covariance quantifies how two variables change together:
 
-cat("F-statistic:", f_statistic, "\n")
-cat("p-value:", p_value, "\n")
-cat("Degrees of freedom (between):", df_between, "\n")
-cat("Degrees of freedom (within):", df_within, "\n")
+```math
+\operatorname{Cov}(X, Y) = \frac{1}{n-1} \sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})
 ```
 
-### Descriptive Statistics by Group
+- $`\operatorname{Cov}(X, Y) > 0`$: Variables tend to increase together
+- $`\operatorname{Cov}(X, Y) < 0`$: One increases as the other decreases
+- $`\operatorname{Cov}(X, Y) = 0`$: No linear relationship
 
-```r
-# Calculate descriptive statistics by cylinder type
-library(dplyr)
+### Pearson Correlation Coefficient ($`r`$)
 
-group_stats <- mtcars %>%
-  group_by(cyl) %>%
-  summarise(
-    n = n(),
-    mean_mpg = mean(mpg),
-    sd_mpg = sd(mpg),
-    se_mpg = sd_mpg / sqrt(n)
-  )
+Pearson's $`r`$ measures the strength and direction of a linear relationship:
 
-print(group_stats)
-
-# Create box plot
-boxplot(mpg ~ cyl, data = mtcars, 
-        main = "MPG by Number of Cylinders",
-        xlab = "Number of Cylinders", 
-        ylab = "Miles per Gallon",
-        col = c("lightblue", "lightgreen", "lightcoral"))
+```math
+r = \frac{\operatorname{Cov}(X, Y)}{s_X s_Y} = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^n (x_i - \bar{x})^2} \sqrt{\sum_{i=1}^n (y_i - \bar{y})^2}}
 ```
 
-### Assumptions Check
+- $`r = 1`$: Perfect positive linear relationship
+- $`r = -1`$: Perfect negative linear relationship
+- $`r = 0`$: No linear relationship
 
-```r
-# Check ANOVA assumptions
-par(mfrow = c(2, 2))
+### Spearman's Rank Correlation ($`\rho`$)
 
-# 1. Normality within each group
-cyl_4 <- mtcars$mpg[mtcars$cyl == 4]
-cyl_6 <- mtcars$mpg[mtcars$cyl == 6]
-cyl_8 <- mtcars$mpg[mtcars$cyl == 8]
+Spearman's $`\rho`$ assesses monotonic relationships using ranks:
 
-qqnorm(cyl_4, main = "Q-Q Plot: 4 Cylinders")
-qqline(cyl_4)
-
-qqnorm(cyl_6, main = "Q-Q Plot: 6 Cylinders")
-qqline(cyl_6)
-
-qqnorm(cyl_8, main = "Q-Q Plot: 8 Cylinders")
-qqline(cyl_8)
-
-# 2. Homogeneity of variances
-plot(one_way_anova, which = 1, main = "Residuals vs Fitted")
-
-par(mfrow = c(1, 1))
-
-# Levene's test for homogeneity of variances
-library(car)
-levene_test <- leveneTest(mpg ~ factor(cyl), data = mtcars)
-print(levene_test)
-
-# Shapiro-Wilk test for normality of residuals
-shapiro_test <- shapiro.test(residuals(one_way_anova))
-print(shapiro_test)
+```math
+\rho = 1 - \frac{6 \sum d_i^2}{n(n^2 - 1)}
 ```
 
-### Post Hoc Tests
+Where $`d_i`$ is the difference between the ranks of $`x_i`$ and $`y_i`$.
 
-```r
-# Tukey's HSD test
-tukey_result <- TukeyHSD(one_way_anova)
-print(tukey_result)
+### Kendall's Tau ($`\tau`$)
 
-# Plot Tukey results
-plot(tukey_result)
+Kendall's $`\tau`$ measures ordinal association:
 
-# Pairwise t-tests with Bonferroni correction
-pairwise_tests <- pairwise.t.test(mtcars$mpg, mtcars$cyl, p.adjust.method = "bonferroni")
-print(pairwise_tests)
-
-# Effect size (eta-squared)
-ss_between <- summary(one_way_anova)[[1]]$"Sum Sq"[1]
-ss_total <- sum(summary(one_way_anova)[[1]]$"Sum Sq")
-eta_squared <- ss_between / ss_total
-
-cat("Effect size (eta-squared):", eta_squared, "\n")
+```math
+\tau = \frac{(\text{number of concordant pairs}) - (\text{number of discordant pairs})}{\frac{1}{2} n(n-1)}
 ```
 
-## Two-Way ANOVA
+## When to Use Each Correlation
 
-### Basic Two-Way ANOVA
+| Correlation | Data Type | Assumptions | Use Case |
+|------------|-----------|-------------|----------|
+| Pearson    | Interval/Ratio | Linear, normality | Linear relationships |
+| Spearman   | Ordinal/Interval | Monotonic | Nonlinear monotonic, outliers |
+| Kendall    | Ordinal | Monotonic | Small samples, many ties |
+
+## Calculating Correlation in R
+
+### Pearson Correlation
 
 ```r
-# Two-way ANOVA: MPG by cylinders and transmission type
-two_way_anova <- aov(mpg ~ factor(cyl) * factor(am), data = mtcars)
-summary(two_way_anova)
+# Simulate data
+set.seed(42)
+x <- rnorm(100)
+y <- 0.7 * x + rnorm(100, sd = 0.5)
 
-# Extract results
-anova_table <- summary(two_way_anova)[[1]]
-print(anova_table)
+# Pearson correlation
+cor_pearson <- cor(x, y, method = "pearson")
+cat("Pearson correlation:", round(cor_pearson, 3), "\n")
 
-# Calculate effect sizes
-ss_cyl <- anova_table$"Sum Sq"[1]
-ss_am <- anova_table$"Sum Sq"[2]
-ss_interaction <- anova_table$"Sum Sq"[3]
-ss_total <- sum(anova_table$"Sum Sq")
-
-eta_squared_cyl <- ss_cyl / ss_total
-eta_squared_am <- ss_am / ss_total
-eta_squared_interaction <- ss_interaction / ss_total
-
-cat("Effect size for cylinders:", eta_squared_cyl, "\n")
-cat("Effect size for transmission:", eta_squared_am, "\n")
-cat("Effect size for interaction:", eta_squared_interaction, "\n")
+# Test significance
+cor_test <- cor.test(x, y, method = "pearson")
+print(cor_test)
 ```
 
-### Interaction Plot
+### Spearman and Kendall Correlation
 
 ```r
-# Create interaction plot
-interaction.plot(mtcars$cyl, mtcars$am, mtcars$mpg,
-                main = "Interaction Plot: MPG by Cylinders and Transmission",
-                xlab = "Number of Cylinders",
-                ylab = "Mean MPG",
-                trace.label = "Transmission",
-                col = c("blue", "red"),
-                lwd = 2)
+# Spearman correlation
+cor_spearman <- cor(x, y, method = "spearman")
+cat("Spearman correlation:", round(cor_spearman, 3), "\n")
+cor.test(x, y, method = "spearman")
 
-# Alternative using ggplot2
+# Kendall correlation
+cor_kendall <- cor(x, y, method = "kendall")
+cat("Kendall correlation:", round(cor_kendall, 3), "\n")
+cor.test(x, y, method = "kendall")
+```
+
+### Correlation Matrix
+
+```r
+# Multiple variables
+set.seed(123)
+data <- data.frame(
+  A = rnorm(100),
+  B = rnorm(100),
+  C = rnorm(100)
+)
+
+# Correlation matrix
+cor_matrix <- cor(data)
+print(cor_matrix)
+
+# Significance matrix
+library(Hmisc)
+cor_results <- rcorr(as.matrix(data))
+print(cor_results$r)  # Correlations
+print(cor_results$P)  # p-values
+```
+
+## Visualization
+
+### Scatter Plot with Correlation
+
+```r
 library(ggplot2)
-ggplot(mtcars, aes(x = factor(cyl), y = mpg, color = factor(am))) +
-  stat_summary(fun = mean, geom = "line", aes(group = factor(am)), size = 1) +
-  stat_summary(fun = mean, geom = "point", size = 3) +
-  labs(title = "Interaction Plot: MPG by Cylinders and Transmission",
-       x = "Number of Cylinders",
-       y = "Mean MPG",
-       color = "Transmission") +
+
+# Scatter plot with regression line
+plot_data <- data.frame(x = x, y = y)
+ggplot(plot_data, aes(x = x, y = y)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  labs(title = "Scatter Plot with Regression Line",
+       subtitle = paste("Pearson r =", round(cor_pearson, 2)),
+       x = "X", y = "Y") +
   theme_minimal()
 ```
 
-### Descriptive Statistics for Two-Way ANOVA
+### Correlation Matrix Heatmap
 
 ```r
-# Calculate descriptive statistics for each combination
-two_way_stats <- mtcars %>%
-  group_by(cyl, am) %>%
-  summarise(
-    n = n(),
-    mean_mpg = mean(mpg),
-    sd_mpg = sd(mpg),
-    se_mpg = sd_mpg / sqrt(n)
-  ) %>%
-  ungroup()
-
-print(two_way_stats)
-
-# Create heatmap of means
 library(reshape2)
-means_matrix <- dcast(two_way_stats, cyl ~ am, value.var = "mean_mpg")
-print(means_matrix)
-```
+library(ggplot2)
 
-## Repeated Measures ANOVA
-
-### Simulating Repeated Measures Data
-
-```r
-# Simulate repeated measures data
-set.seed(123)
-n_subjects <- 20
-n_timepoints <- 3
-
-# Create data frame
-subject_id <- rep(1:n_subjects, each = n_timepoints)
-time_point <- rep(c("Baseline", "Week 4", "Week 8"), times = n_subjects)
-
-# Simulate scores with treatment effect
-baseline <- rnorm(n_subjects, mean = 50, sd = 10)
-week4 <- baseline + rnorm(n_subjects, mean = 5, sd = 3)
-week8 <- baseline + rnorm(n_subjects, mean = 10, sd = 3)
-
-scores <- c(baseline, week4, week8)
-
-repeated_data <- data.frame(
-  subject_id = subject_id,
-  time_point = time_point,
-  score = scores
-)
-
-# Convert to wide format for analysis
-repeated_wide <- reshape(repeated_data, 
-                        idvar = "subject_id", 
-                        timevar = "time_point", 
-                        direction = "wide")
-
-print(head(repeated_wide))
-```
-
-### Repeated Measures ANOVA Analysis
-
-```r
-# Perform repeated measures ANOVA
-library(ez)
-
-repeated_anova <- ezANOVA(data = repeated_data,
-                          dv = score,
-                          wid = subject_id,
-                          within = time_point,
-                          detailed = TRUE)
-
-print(repeated_anova)
-
-# Alternative using aov() with Error term
-repeated_aov <- aov(score ~ time_point + Error(subject_id/time_point), 
-                    data = repeated_data)
-summary(repeated_aov)
-```
-
-### Post Hoc Tests for Repeated Measures
-
-```r
-# Pairwise comparisons with Bonferroni correction
-pairwise_repeated <- pairwise.t.test(repeated_data$score, 
-                                    repeated_data$time_point,
-                                    p.adjust.method = "bonferroni",
-                                    paired = TRUE)
-print(pairwise_repeated)
-
-# Calculate effect size
-ss_time <- repeated_anova$ANOVA$SSn[1]
-ss_error <- repeated_anova$ANOVA$SSd[1]
-partial_eta_squared <- ss_time / (ss_time + ss_error)
-
-cat("Partial eta-squared:", partial_eta_squared, "\n")
-```
-
-## Mixed Design ANOVA
-
-### Simulating Mixed Design Data
-
-```r
-# Simulate mixed design data (between-subject factor: treatment group)
-set.seed(123)
-n_per_group <- 15
-n_timepoints <- 3
-
-# Create data frame
-subject_id <- rep(1:(2 * n_per_group), each = n_timepoints)
-group <- rep(c("Control", "Treatment"), each = n_per_group * n_timepoints)
-time_point <- rep(c("Baseline", "Week 4", "Week 8"), times = 2 * n_per_group)
-
-# Simulate scores
-control_baseline <- rnorm(n_per_group, mean = 50, sd = 10)
-control_week4 <- control_baseline + rnorm(n_per_group, mean = 2, sd = 3)
-control_week8 <- control_baseline + rnorm(n_per_group, mean = 3, sd = 3)
-
-treatment_baseline <- rnorm(n_per_group, mean = 50, sd = 10)
-treatment_week4 <- treatment_baseline + rnorm(n_per_group, mean = 8, sd = 3)
-treatment_week8 <- treatment_baseline + rnorm(n_per_group, mean = 15, sd = 3)
-
-scores <- c(control_baseline, control_week4, control_week8,
-            treatment_baseline, treatment_week4, treatment_week8)
-
-mixed_data <- data.frame(
-  subject_id = subject_id,
-  group = group,
-  time_point = time_point,
-  score = scores
-)
-
-print(head(mixed_data))
-```
-
-### Mixed Design ANOVA Analysis
-
-```r
-# Perform mixed design ANOVA
-mixed_anova <- ezANOVA(data = mixed_data,
-                       dv = score,
-                       wid = subject_id,
-                       between = group,
-                       within = time_point,
-                       detailed = TRUE)
-
-print(mixed_anova)
-
-# Alternative using aov()
-mixed_aov <- aov(score ~ group * time_point + Error(subject_id/time_point), 
-                 data = mixed_data)
-summary(mixed_aov)
-```
-
-### Interaction Analysis
-
-```r
-# Create interaction plot
-ggplot(mixed_data, aes(x = time_point, y = score, color = group, group = group)) +
-  stat_summary(fun = mean, geom = "line", size = 1) +
-  stat_summary(fun = mean, geom = "point", size = 3) +
-  labs(title = "Mixed Design ANOVA: Score by Group and Time",
-       x = "Time Point",
-       y = "Mean Score",
-       color = "Group") +
+cor_melt <- melt(cor_matrix)
+ggplot(cor_melt, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  geom_text(aes(label = round(value, 2)), color = "white", size = 4) +
+  scale_fill_gradient2(low = "#4575B4", high = "#D73027", mid = "#FFFFBF", midpoint = 0) +
+  labs(title = "Correlation Matrix Heatmap", x = "", y = "") +
   theme_minimal()
-
-# Simple effects analysis
-library(emmeans)
-
-# Test simple effects of time within each group
-simple_effects <- emmeans(mixed_aov, ~ time_point | group)
-pairs(simple_effects, adjust = "bonferroni")
-
-# Test simple effects of group at each time point
-simple_effects_group <- emmeans(mixed_aov, ~ group | time_point)
-pairs(simple_effects_group, adjust = "bonferroni")
 ```
 
-## Nonparametric Alternatives
+## Assumption Checking
 
-### Kruskal-Wallis Test (One-Way)
+### Pearson Correlation Assumptions
+- Linearity: Relationship between variables is linear
+- Normality: Both variables are normally distributed
+- Homoscedasticity: Constant variance of residuals
+- No significant outliers
+
+#### Checking Linearity and Outliers
 
 ```r
-# Kruskal-Wallis test for nonparametric one-way ANOVA
-kruskal_result <- kruskal.test(mpg ~ factor(cyl), data = mtcars)
-print(kruskal_result)
-
-# Post hoc tests for Kruskal-Wallis
-library(dunn.test)
-dunn_result <- dunn.test(mtcars$mpg, mtcars$cyl, method = "bonferroni")
-print(dunn_result)
+# Scatter plot for linearity and outliers
+plot(x, y, main = "Scatter Plot for Linearity and Outliers")
+abline(lm(y ~ x), col = "red")
 ```
 
-### Friedman Test (Repeated Measures)
+#### Checking Normality
 
 ```r
-# Friedman test for nonparametric repeated measures
-friedman_result <- friedman.test(score ~ time_point | subject_id, data = repeated_data)
-print(friedman_result)
+# Q-Q plots
+qqnorm(x); qqline(x, col = "red")
+qqnorm(y); qqline(y, col = "red")
 
-# Post hoc tests for Friedman
-library(PMCMRplus)
-friedman_posthoc <- friedmanTest(score ~ time_point | subject_id, data = repeated_data)
-print(friedman_posthoc)
+# Shapiro-Wilk test
+shapiro.test(x)
+shapiro.test(y)
 ```
 
-## Effect Size and Power Analysis
-
-### Effect Size Calculations
+#### Checking Homoscedasticity
 
 ```r
-# Function to calculate effect sizes for ANOVA
-calculate_effect_sizes <- function(anova_result) {
-  anova_table <- summary(anova_result)[[1]]
-  
-  # Calculate eta-squared
-  ss_effects <- anova_table$"Sum Sq"[-nrow(anova_table)]
-  ss_total <- sum(anova_table$"Sum Sq")
-  eta_squared <- ss_effects / ss_total
-  
-  # Calculate partial eta-squared
-  ss_error <- anova_table$"Sum Sq"[nrow(anova_table)]
-  partial_eta_squared <- ss_effects / (ss_effects + ss_error)
-  
-  # Calculate Cohen's f
-  cohens_f <- sqrt(partial_eta_squared / (1 - partial_eta_squared))
-  
-  return(data.frame(
-    Effect = rownames(anova_table)[-nrow(anova_table)],
-    Eta_Squared = eta_squared,
-    Partial_Eta_Squared = partial_eta_squared,
-    Cohens_f = cohens_f
-  ))
-}
-
-# Apply to one-way ANOVA
-effect_sizes <- calculate_effect_sizes(one_way_anova)
-print(effect_sizes)
+# Residuals vs fitted
+model <- lm(y ~ x)
+plot(fitted(model), resid(model),
+     main = "Residuals vs Fitted Values",
+     xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
 ```
 
-### Power Analysis
+### Robust Alternatives
+- Use Spearman or Kendall correlation if assumptions are violated
+- Consider robust correlation methods (e.g., biweight midcorrelation)
+
+## Effect Size and Confidence Intervals
+
+### Interpreting Correlation Coefficient
+
+| $`|r|`$      | Strength         |
+|----------|------------------|
+| 0.00-0.10 | Negligible       |
+| 0.10-0.30 | Small            |
+| 0.30-0.50 | Moderate         |
+| 0.50-0.70 | Large            |
+| 0.70-0.90 | Very large       |
+| 0.90-1.00 | Nearly perfect   |
+
+### Confidence Interval for $`r`$
 
 ```r
-# Power analysis for one-way ANOVA
-library(pwr)
-
-# Calculate power for given effect size and sample size
-effect_size <- 0.25  # Medium effect
-n_per_group <- 10
-n_groups <- 3
-
-power_result <- pwr.anova.test(k = n_groups, 
-                               n = n_per_group, 
-                               f = effect_size, 
-                               sig.level = 0.05)
-print(power_result)
-
-# Calculate required sample size for desired power
-required_sample <- pwr.anova.test(k = n_groups, 
-                                  f = effect_size, 
-                                  sig.level = 0.05, 
-                                  power = 0.80)
-print(required_sample)
+# Confidence interval for correlation
+cor_test$conf.int
 ```
+
+### Fisher's z-Transformation
+
+To compare correlations or compute confidence intervals:
+
+```math
+z = \frac{1}{2} \ln\left(\frac{1 + r}{1 - r}\right)
+```
+
+The standard error of $`z`$ is $`\frac{1}{\sqrt{n-3}}`$.
 
 ## Practical Examples
 
-### Example 1: Educational Research
+### Example 1: Height and Weight
 
 ```r
-# Simulate educational data
-set.seed(123)
-n_students <- 60
-teaching_methods <- c("Traditional", "Interactive", "Online")
+# Simulate height and weight data
+set.seed(1)
+height <- rnorm(100, mean = 170, sd = 10)
+weight <- 0.5 * height + rnorm(100, mean = 0, sd = 8)
 
-# Simulate test scores
-traditional <- rnorm(20, mean = 75, sd = 10)
-interactive <- rnorm(20, mean = 82, sd = 10)
-online <- rnorm(20, mean = 78, sd = 10)
-
-scores <- c(traditional, interactive, online)
-method <- rep(teaching_methods, each = 20)
-
-education_data <- data.frame(method = method, score = scores)
-
-# Perform ANOVA
-edu_anova <- aov(score ~ method, data = education_data)
-summary(edu_anova)
-
-# Post hoc tests
-edu_tukey <- TukeyHSD(edu_anova)
-print(edu_tukey)
-
-# Effect size
-edu_effect <- calculate_effect_sizes(edu_anova)
-print(edu_effect)
+# Pearson correlation
+cor(height, weight)
+cor.test(height, weight)
 ```
 
-### Example 2: Clinical Trial
+### Example 2: Nonlinear Relationship
 
 ```r
-# Simulate clinical trial data
-set.seed(123)
-n_patients <- 30
-time_points <- c("Baseline", "Week 2", "Week 4", "Week 6")
+# Simulate nonlinear data
+set.seed(2)
+x <- rnorm(100)
+y <- x^2 + rnorm(100)
 
-# Simulate pain scores
-baseline <- rnorm(n_patients, mean = 7, sd = 1.5)
-week2 <- baseline - rnorm(n_patients, mean = 1, sd = 0.5)
-week4 <- baseline - rnorm(n_patients, mean = 2, sd = 0.5)
-week6 <- baseline - rnorm(n_patients, mean = 2.5, sd = 0.5)
-
-pain_scores <- c(baseline, week2, week4, week6)
-patient_id <- rep(1:n_patients, times = 4)
-time <- rep(time_points, each = n_patients)
-
-clinical_data <- data.frame(
-  patient_id = patient_id,
-  time = time,
-  pain_score = pain_scores
-)
-
-# Perform repeated measures ANOVA
-clinical_anova <- ezANOVA(data = clinical_data,
-                          dv = pain_score,
-                          wid = patient_id,
-                          within = time,
-                          detailed = TRUE)
-
-print(clinical_anova)
-
-# Post hoc tests
-clinical_pairwise <- pairwise.t.test(clinical_data$pain_score,
-                                    clinical_data$time,
-                                    p.adjust.method = "bonferroni",
-                                    paired = TRUE)
-print(clinical_pairwise)
+# Pearson vs Spearman
+cor(x, y, method = "pearson")
+cor(x, y, method = "spearman")
 ```
 
 ## Best Practices
 
-### Assumption Checking
+- Always visualize data before interpreting correlation
+- Check assumptions for Pearson correlation
+- Use Spearman or Kendall for non-normal or ordinal data
+- Report effect size and confidence intervals
+- Correlation does not imply causation
+- Be cautious of outliers and influential points
+- Use robust methods for non-normal data
 
-```r
-# Comprehensive assumption checking function
-check_anova_assumptions <- function(anova_result, data, group_var, dv_var) {
-  cat("=== ANOVA ASSUMPTION CHECKS ===\n\n")
-  
-  # 1. Normality of residuals
-  residuals <- residuals(anova_result)
-  shapiro_test <- shapiro.test(residuals)
-  cat("1. Normality of Residuals (Shapiro-Wilk):\n")
-  cat("   W =", shapiro_test$statistic, ", p =", shapiro_test$p.value, "\n")
-  cat("   Interpretation:", ifelse(shapiro_test$p.value > 0.05, "Normal", "Not normal"), "\n\n")
-  
-  # 2. Homogeneity of variances
-  levene_test <- leveneTest(as.formula(paste(dv_var, "~", group_var)), data = data)
-  cat("2. Homogeneity of Variances (Levene's Test):\n")
-  cat("   F =", levene_test$`F value`[1], ", p =", levene_test$`Pr(>F)`[1], "\n")
-  cat("   Interpretation:", ifelse(levene_test$`Pr(>F)`[1] > 0.05, "Equal variances", "Unequal variances"), "\n\n")
-  
-  # 3. Independence (assumed if design is correct)
-  cat("3. Independence:\n")
-  cat("   Checked through study design\n\n")
-  
-  # 4. Visual diagnostics
-  par(mfrow = c(2, 2))
-  plot(anova_result)
-  par(mfrow = c(1, 1))
-}
+## Reporting Guidelines
 
-# Apply to one-way ANOVA
-check_anova_assumptions(one_way_anova, mtcars, "cyl", "mpg")
-```
-
-### Reporting Guidelines
-
-```r
-# Function to generate APA-style report
-generate_anova_report <- function(anova_result, effect_name = "effect") {
-  anova_table <- summary(anova_result)[[1]]
-  
-  cat("=== APA-STYLE ANOVA REPORT ===\n\n")
-  
-  # Main effect
-  f_stat <- anova_table$"F value"[1]
-  p_value <- anova_table$"Pr(>F)"[1]
-  df_between <- anova_table$"Df"[1]
-  df_within <- anova_table$"Df"[2]
-  
-  cat("A one-way analysis of variance was conducted to compare", effect_name, "\n")
-  cat("across groups. There was a", ifelse(p_value < 0.001, "highly significant",
-                                           ifelse(p_value < 0.01, "significant",
-                                                  ifelse(p_value < 0.05, "marginally significant", "non-significant"))), "\n")
-  cat("effect, F(", df_between, ",", df_within, ") =", round(f_stat, 3), ", p =", 
-      ifelse(p_value < 0.001, "< .001", round(p_value, 3)), ".\n\n")
-  
-  # Effect size
-  ss_between <- anova_table$"Sum Sq"[1]
-  ss_total <- sum(anova_table$"Sum Sq")
-  eta_squared <- ss_between / ss_total
-  
-  cat("The effect size (η²) was", round(eta_squared, 3), ", indicating a", 
-      ifelse(eta_squared < 0.01, "small",
-             ifelse(eta_squared < 0.06, "medium", "large")), "effect.\n\n")
-}
-
-# Apply to one-way ANOVA
-generate_anova_report(one_way_anova, "MPG across cylinder types")
-```
+- Report the type of correlation, value, confidence interval, and p-value
+- Example: "There was a large, positive correlation between X and Y, $`r = 0.65, 95\%\ CI [0.50, 0.77], p < .001`$."
 
 ## Exercises
 
-### Exercise 1: One-Way ANOVA
-Perform a one-way ANOVA to compare MPG across different transmission types (automatic vs manual) and interpret the results.
+### Exercise 1: Pearson Correlation
+Simulate two variables with a linear relationship. Calculate and interpret the Pearson correlation, check assumptions, and visualize the data.
 
-### Exercise 2: Two-Way ANOVA
-Conduct a two-way ANOVA to examine the effects of cylinder type and transmission type on MPG, including the interaction effect.
+### Exercise 2: Spearman Correlation
+Simulate two variables with a monotonic but nonlinear relationship. Calculate and interpret the Spearman correlation.
 
-### Exercise 3: Repeated Measures ANOVA
-Design a repeated measures study and analyze the data using appropriate ANOVA techniques.
+### Exercise 3: Correlation Matrix
+Simulate a dataset with at least four variables. Compute and visualize the correlation matrix. Interpret the strongest and weakest relationships.
 
-### Exercise 4: Nonparametric Alternatives
-Compare the results of parametric ANOVA with nonparametric alternatives for the same dataset.
+### Exercise 4: Robust Correlation
+Simulate data with outliers. Compare Pearson, Spearman, and robust correlation methods. Discuss the impact of outliers.
 
-### Exercise 5: Effect Size and Power
-Calculate effect sizes for your ANOVA results and perform power analysis to determine required sample sizes.
-
-## Next Steps
-
-In the next chapter, we'll learn about correlation analysis, which examines relationships between variables.
+### Exercise 5: Real-World Application
+Find a real dataset (e.g., from R's datasets package). Perform a comprehensive correlation analysis, including visualization, assumption checking, and reporting.
 
 ---
 
 **Key Takeaways:**
-- ANOVA extends t-tests to multiple groups
-- Check assumptions before interpreting results
-- Use appropriate post hoc tests for multiple comparisons
-- Consider effect sizes alongside p-values
-- Nonparametric alternatives exist for violated assumptions
-- Repeated measures ANOVA handles within-subject designs
-- Mixed designs combine between- and within-subject factors 
+- Correlation quantifies the strength and direction of association
+- Pearson for linear, normal data; Spearman/Kendall for ranks or non-normal data
+- Always check assumptions and visualize
+- Correlation ≠ causation
+- Report effect size and confidence intervals 
