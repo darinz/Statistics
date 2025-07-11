@@ -31,14 +31,14 @@ where $`Y`$ is the response, $`X_j`$ are predictors, $`\beta_j`$ are coefficient
 ### Model Selection Criteria
 
 - **Akaike Information Criterion (AIC):**
-  ```math
-  \text{AIC} = 2k - 2\log(L)
-  ```
+```math
+\text{AIC} = 2k - 2\log(L)
+```
   where $`k`$ is the number of parameters, $`L`$ is the likelihood.
 - **Bayesian Information Criterion (BIC):**
-  ```math
-  \text{BIC} = k \log(n) - 2\log(L)
-  ```
+```math
+\text{BIC} = k \log(n) - 2\log(L)
+```
   where $`n`$ is the sample size.
 - **Cross-Validation (CV):**
   - Partition data, fit model on training, evaluate on validation set.
@@ -160,9 +160,9 @@ Regularization methods add a penalty to the regression loss function to shrink c
 ### Multicollinearity Detection
 
 - **Variance Inflation Factor (VIF):**
-  ```math
-  VIF_j = \frac{1}{1 - R_j^2}
-  ```
+```math
+VIF_j = \frac{1}{1 - R_j^2}
+```
   where $`R_j^2`$ is the $`R^2`$ from regressing $`X_j`$ on all other predictors.
 - **Condition number:** Large values ($`> 30`$) indicate multicollinearity.
 
