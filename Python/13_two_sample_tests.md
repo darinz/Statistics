@@ -1324,143 +1324,134 @@ Quality control applications use two-sample tests to compare production processe
 
 **Scenario:** A manufacturing plant wants to compare the output quality of two production machines to determine if they produce significantly different results.
 
-```r
+```python
 # Simulate quality control data
-set.seed(123)
-n_machine1 <- 20
-n_machine2 <- 20
+np.random.seed(123)
+n_machine1 = 20
+n_machine2 = 20
 
 # Generate production data
-machine1_output <- rnorm(n_machine1, mean = 100, sd = 5)
-machine2_output <- rnorm(n_machine2, mean = 98, sd = 6)
+machine1_output = np.random.normal(100, 5, n_machine1)
+machine2_output = np.random.normal(98, 6, n_machine2)
 
 # Comprehensive quality control analysis
-cat("=== QUALITY CONTROL ANALYSIS ===\n")
-cat("Machine 1 n:", n_machine1, "\n")
-cat("Machine 2 n:", n_machine2, "\n")
-cat("Machine 1 mean:", round(mean(machine1_output), 2), "\n")
-cat("Machine 2 mean:", round(mean(machine2_output), 2), "\n")
-cat("Machine 1 SD:", round(sd(machine1_output), 2), "\n")
-cat("Machine 2 SD:", round(sd(machine2_output), 2), "\n")
+print("=== QUALITY CONTROL ANALYSIS ===")
+print(f"Machine 1 n: {n_machine1}")
+print(f"Machine 2 n: {n_machine2}")
+print(f"Machine 1 mean: {machine1_output.mean():.2f}")
+print(f"Machine 2 mean: {machine2_output.mean():.2f}")
+print(f"Machine 1 SD: {machine1_output.std():.2f}")
+print(f"Machine 2 SD: {machine2_output.std():.2f}")
 
 # Specification limits (assume 95-105 is acceptable)
-spec_lower <- 95
-spec_upper <- 105
+spec_lower = 95
+spec_upper = 105
 
-cat("\nSpecification Analysis:\n")
-cat("Specification limits:", spec_lower, "-", spec_upper, "\n")
+print(f"\nSpecification Analysis:")
+print(f"Specification limits: {spec_lower} - {spec_upper}")
 
 # Calculate process capability
-machine1_capable <- sum(machine1_output >= spec_lower & machine1_output <= spec_upper)
-machine2_capable <- sum(machine2_output >= spec_lower & machine2_output <= spec_upper)
+machine1_capable = ((machine1_output >= spec_lower) & (machine1_output <= spec_upper)).sum()
+machine2_capable = ((machine2_output >= spec_lower) & (machine2_output <= spec_upper)).sum()
 
-cat("Machine 1 within specs:", machine1_capable, "/", n_machine1, 
-    "(", round(machine1_capable/n_machine1*100, 1), "%)\n")
-cat("Machine 2 within specs:", machine2_capable, "/", n_machine2, 
-    "(", round(machine2_capable/n_machine2*100, 1), "%)\n")
+print(f"Machine 1 within specs: {machine1_capable}/{n_machine1} ({machine1_capable/n_machine1*100:.1f}%)")
+print(f"Machine 2 within specs: {machine2_capable}/{n_machine2} ({machine2_capable/n_machine2*100:.1f}%)")
 
 # Perform quality control test
-quality_test <- t.test(machine1_output, machine2_output)
-print(quality_test)
+quality_test = stats.ttest_ind(machine1_output, machine2_output)
+print(f"\nQuality t-test: statistic={quality_test.statistic:.3f}, p-value={quality_test.pvalue:.4f}")
 
 # Nonparametric alternative
-quality_wilcox <- wilcox.test(machine1_output, machine2_output)
-print(quality_wilcox)
+quality_wilcox = stats.mannwhitneyu(machine1_output, machine2_output, alternative='two-sided')
+print(f"Quality Wilcoxon: statistic={quality_wilcox.statistic:.3f}, p-value={quality_wilcox.pvalue:.4f}")
 
 # Effect size
-quality_effect <- calculate_cohens_d_independent(machine1_output, machine2_output)
+quality_effect = calculate_cohens_d_independent(pd.Series(machine1_output), pd.Series(machine2_output))
 
-cat("\nQuality Control Results:\n")
-cat("Mean difference (Machine 1 - Machine 2):", round(mean(machine1_output) - mean(machine2_output), 2), "\n")
-cat("Effect size (Cohen's d):", round(quality_effect$cohens_d, 3), "\n")
-cat("Effect interpretation:", interpret_effect_size(quality_effect$cohens_d), "\n")
+print("\nQuality Control Results:")
+print(f"Mean difference (Machine 1 - Machine 2): {machine1_output.mean() - machine2_output.mean():.2f}")
+print(f"Effect size (Cohen's d): {quality_effect['cohens_d']:.3f}")
+print(f"Effect interpretation: {interpret_effect_size(quality_effect['cohens_d'])}")
 
 # Compare parametric and nonparametric results
-cat("\nTest Comparison:\n")
-cat("t-test p-value:", round(quality_test$p.value, 4), "\n")
-cat("Wilcoxon p-value:", round(quality_wilcox$p.value, 4), "\n")
+print("\nTest Comparison:")
+print(f"t-test p-value: {quality_test.pvalue:.4f}")
+print(f"Wilcoxon p-value: {quality_wilcox.pvalue:.4f}")
 
 # Process capability indices
-machine1_cpk <- min((mean(machine1_output) - spec_lower) / (3 * sd(machine1_output)),
-                    (spec_upper - mean(machine1_output)) / (3 * sd(machine1_output)))
-machine2_cpk <- min((mean(machine2_output) - spec_lower) / (3 * sd(machine2_output)),
-                    (spec_upper - mean(machine2_output)) / (3 * sd(machine2_output)))
+machine1_cpk = min((machine1_output.mean() - spec_lower) / (3 * machine1_output.std()),
+                   (spec_upper - machine1_output.mean()) / (3 * machine1_output.std()))
+machine2_cpk = min((machine2_output.mean() - spec_lower) / (3 * machine2_output.std()),
+                   (spec_upper - machine2_output.mean()) / (3 * machine2_output.std()))
 
-cat("\nProcess Capability Analysis:\n")
-cat("Machine 1 Cpk:", round(machine1_cpk, 3), "\n")
-cat("Machine 2 Cpk:", round(machine2_cpk, 3), "\n")
+print("\nProcess Capability Analysis:")
+print(f"Machine 1 Cpk: {machine1_cpk:.3f}")
+print(f"Machine 2 Cpk: {machine2_cpk:.3f}")
 
 # Cpk interpretation
-interpret_cpk <- function(cpk) {
-  if (cpk >= 1.33) {
-    return("Excellent capability")
-  } else if (cpk >= 1.0) {
-    return("Adequate capability")
-  } else if (cpk >= 0.67) {
-    return("Marginal capability")
-  } else {
-    return("Poor capability")
-  }
-}
+def interpret_cpk(cpk):
+    if cpk >= 1.33:
+        return "Excellent capability"
+    elif cpk >= 1.0:
+        return "Adequate capability"
+    elif cpk >= 0.67:
+        return "Marginal capability"
+    else:
+        return "Poor capability"
 
-cat("Machine 1 capability:", interpret_cpk(machine1_cpk), "\n")
-cat("Machine 2 capability:", interpret_cpk(machine2_cpk), "\n")
+print(f"Machine 1 capability: {interpret_cpk(machine1_cpk)}")
+print(f"Machine 2 capability: {interpret_cpk(machine2_cpk)}")
 
 # Quality control interpretation
-alpha <- 0.05
-mean_diff <- mean(machine1_output) - mean(machine2_output)
+alpha = 0.05
+mean_diff = machine1_output.mean() - machine2_output.mean()
 
-if (quality_test$p.value < alpha) {
-  cat("\nQUALITY CONTROL CONCLUSION:\n")
-  cat("✓ Machines produce significantly different outputs (p <", alpha, ")\n")
-  cat("✓ Mean difference:", round(mean_diff, 2), "units\n")
-  
-  # Practical significance
-  if (abs(mean_diff) > 2) {
-    cat("⚠️  Difference exceeds practical tolerance (2 units)\n")
-    cat("⚠️  Consider machine calibration or maintenance\n")
-  } else {
-    cat("✓ Difference within practical tolerance\n")
-  }
-  
-  # Which machine is better
-  if (mean_diff > 0) {
-    cat("✓ Machine 1 produces higher quality output\n")
-  } else {
-    cat("✓ Machine 2 produces higher quality output\n")
-  }
-} else {
-  cat("\nQUALITY CONTROL CONCLUSION:\n")
-  cat("✗ No significant difference between machines (p >=", alpha, ")\n")
-  cat("✓ Both machines perform similarly\n")
-}
+if quality_test.pvalue < alpha:
+    print("\nQUALITY CONTROL CONCLUSION:")
+    print(f"✓ Machines produce significantly different outputs (p < {alpha})")
+    print(f"✓ Mean difference: {mean_diff:.2f} units")
+    
+    # Practical significance
+    if abs(mean_diff) > 2:
+        print("⚠️  Difference exceeds practical tolerance (2 units)")
+        print("⚠️  Consider machine calibration or maintenance")
+    else:
+        print("✓ Difference within practical tolerance")
+    
+    # Which machine is better
+    if mean_diff > 0:
+        print("✓ Machine 1 produces higher quality output")
+    else:
+        print("✓ Machine 2 produces higher quality output")
+else:
+    print("\nQUALITY CONTROL CONCLUSION:")
+    print(f"✗ No significant difference between machines (p >= {alpha})")
+    print("✓ Both machines perform similarly")
 
 # Economic analysis
 # Assume cost of poor quality is $10 per unit outside specs
-cost_per_defect <- 10
-machine1_defects <- n_machine1 - machine1_capable
-machine2_defects <- n_machine2 - machine2_capable
+cost_per_defect = 10
+machine1_defects = n_machine1 - machine1_capable
+machine2_defects = n_machine2 - machine2_capable
 
-machine1_cost <- machine1_defects * cost_per_defect
-machine2_cost <- machine2_defects * cost_per_defect
+machine1_cost = machine1_defects * cost_per_defect
+machine2_cost = machine2_defects * cost_per_defect
 
-cat("\nEconomic Analysis:\n")
-cat("Machine 1 defect cost: $", machine1_cost, "\n")
-cat("Machine 2 defect cost: $", machine2_cost, "\n")
-cat("Cost difference: $", abs(machine1_cost - machine2_cost), "\n")
+print("\nEconomic Analysis:")
+print(f"Machine 1 defect cost: ${machine1_cost}")
+print(f"Machine 2 defect cost: ${machine2_cost}")
+print(f"Cost difference: ${abs(machine1_cost - machine2_cost)}")
 
 # Recommendations
-cat("\nRECOMMENDATIONS:\n")
-if (quality_test$p.value < alpha) {
-  if (machine1_cpk > machine2_cpk) {
-    cat("✓ Prefer Machine 1 for production\n")
-  } else {
-    cat("✓ Prefer Machine 2 for production\n")
-  }
-} else {
-  cat("✓ Both machines are equivalent\n")
-  cat("✓ Choose based on other factors (speed, cost, availability)\n")
-}
+print("\nRECOMMENDATIONS:")
+if quality_test.pvalue < alpha:
+    if machine1_cpk > machine2_cpk:
+        print("✓ Prefer Machine 1 for production")
+    else:
+        print("✓ Prefer Machine 2 for production")
+else:
+    print("✓ Both machines are equivalent")
+    print("✓ Choose based on other factors (speed, cost, availability)")
 ```
 
 ## Advanced Topics
@@ -1486,73 +1477,86 @@ CI_{1-\alpha} = [\hat{\theta}_{\alpha/2}^*, \hat{\theta}_{1-\alpha/2}^*]
 
 where $\hat{\theta}_\alpha^*$ is the $\alpha$-th percentile of bootstrap estimates.
 
-```r
-library(boot)
-
+```python
 # Bootstrap function for mean difference
-boot_mean_diff <- function(data, indices) {
-  d <- data[indices, ]
-  group1 <- d$value[d$group == "Group1"]
-  group2 <- d$value[d$group == "Group2"]
-  return(mean(group1) - mean(group2))
-}
+def boot_mean_diff(data, indices):
+    d = data.iloc[indices]
+    group1 = d[d['group'] == "Group1"]['value']
+    group2 = d[d['group'] == "Group2"]['value']
+    return group1.mean() - group2.mean()
 
 # Create data frame for bootstrap
-boot_data <- data.frame(
-  value = c(automatic_mpg, manual_mpg),
-  group = c(rep("Group1", length(automatic_mpg)), 
-           rep("Group2", length(manual_mpg)))
-)
+boot_data = pd.DataFrame({
+    'value': np.concatenate([species_0_sepal_length, species_1_sepal_length]),
+    'group': ["Group1"] * len(species_0_sepal_length) + ["Group2"] * len(species_1_sepal_length)
+})
 
 # Comprehensive bootstrap analysis
-cat("=== BOOTSTRAP ANALYSIS ===\n")
-cat("Original sample sizes:", length(automatic_mpg), "and", length(manual_mpg), "\n")
-cat("Bootstrap replications: 1000\n")
+print("=== BOOTSTRAP ANALYSIS ===")
+print(f"Original sample sizes: {len(species_0_sepal_length)} and {len(species_1_sepal_length)}")
+print("Bootstrap replications: 1000")
 
-# Bootstrap confidence interval
-boot_results <- boot(boot_data, boot_mean_diff, R = 1000)
-boot_ci_perc <- boot.ci(boot_results, type = "perc")
-boot_ci_bca <- boot.ci(boot_results, type = "bca")
+# Manual bootstrap implementation
+n_bootstrap = 1000
+bootstrap_estimates = []
 
-cat("\nBootstrap Results:\n")
-cat("Original mean difference:", round(boot_results$t0, 3), "\n")
-cat("Bootstrap mean:", round(mean(boot_results$t), 3), "\n")
-cat("Bootstrap SE:", round(sd(boot_results$t), 3), "\n")
+for i in range(n_bootstrap):
+    # Resample with replacement
+    indices = np.random.choice(len(boot_data), len(boot_data), replace=True)
+    bootstrap_estimate = boot_mean_diff(boot_data, indices)
+    bootstrap_estimates.append(bootstrap_estimate)
 
-cat("\nBootstrap Confidence Intervals:\n")
-cat("Percentile 95% CI:", round(boot_ci_perc$percent[4:5], 3), "\n")
-cat("BCa 95% CI:", round(boot_ci_bca$bca[4:5], 3), "\n")
+bootstrap_estimates = np.array(bootstrap_estimates)
+original_estimate = species_0_sepal_length.mean() - species_1_sepal_length.mean()
+
+print("\nBootstrap Results:")
+print(f"Original mean difference: {original_estimate:.3f}")
+print(f"Bootstrap mean: {bootstrap_estimates.mean():.3f}")
+print(f"Bootstrap SE: {bootstrap_estimates.std():.3f}")
+
+# Bootstrap confidence intervals
+boot_ci_perc_lower = np.percentile(bootstrap_estimates, 2.5)
+boot_ci_perc_upper = np.percentile(bootstrap_estimates, 97.5)
+
+print("\nBootstrap Confidence Intervals:")
+print(f"Percentile 95% CI: [{boot_ci_perc_lower:.3f}, {boot_ci_perc_upper:.3f}]")
 
 # Compare with parametric CI
-t_ci <- t.test(automatic_mpg, manual_mpg)$conf.int
-cat("t-test 95% CI:", round(t_ci, 3), "\n")
+t_ci_lower, t_ci_upper = ci_lower, ci_upper
+print(f"t-test 95% CI: [{t_ci_lower:.3f}, {t_ci_upper:.3f}]")
 
 # Bootstrap bias and acceleration
-bias <- mean(boot_results$t) - boot_results$t0
-cat("\nBootstrap Diagnostics:\n")
-cat("Bias:", round(bias, 4), "\n")
-cat("Bias-corrected estimate:", round(boot_results$t0 - bias, 3), "\n")
+bias = bootstrap_estimates.mean() - original_estimate
+print("\nBootstrap Diagnostics:")
+print(f"Bias: {bias:.4f}")
+print(f"Bias-corrected estimate: {original_estimate - bias:.3f}")
 
 # Bootstrap distribution analysis
-cat("\nBootstrap Distribution:\n")
-cat("2.5th percentile:", round(quantile(boot_results$t, 0.025), 3), "\n")
-cat("50th percentile (median):", round(quantile(boot_results$t, 0.5), 3), "\n")
-cat("97.5th percentile:", round(quantile(boot_results$t, 0.975), 3), "\n")
+print("\nBootstrap Distribution:")
+print(f"2.5th percentile: {np.percentile(bootstrap_estimates, 2.5):.3f}")
+print(f"50th percentile (median): {np.percentile(bootstrap_estimates, 50):.3f}")
+print(f"97.5th percentile: {np.percentile(bootstrap_estimates, 97.5):.3f}")
 
 # Compare CI widths
-t_ci_width <- t_ci[2] - t_ci[1]
-boot_ci_width <- boot_ci_perc$percent[5] - boot_ci_perc$percent[4]
+t_ci_width = t_ci_upper - t_ci_lower
+boot_ci_width = boot_ci_perc_upper - boot_ci_perc_lower
 
-cat("\nConfidence Interval Comparison:\n")
-cat("t-test CI width:", round(t_ci_width, 3), "\n")
-cat("Bootstrap CI width:", round(boot_ci_width, 3), "\n")
-cat("Width ratio (Bootstrap/t-test):", round(boot_ci_width/t_ci_width, 3), "\n")
+print("\nConfidence Interval Comparison:")
+print(f"t-test CI width: {t_ci_width:.3f}")
+print(f"Bootstrap CI width: {boot_ci_width:.3f}")
+print(f"Width ratio (Bootstrap/t-test): {boot_ci_width/t_ci_width:.3f}")
 
 # Bootstrap histogram
-hist(boot_results$t, main = "Bootstrap Distribution of Mean Difference",
-     xlab = "Mean Difference", col = "lightblue", border = "white")
-abline(v = boot_results$t0, col = "red", lwd = 2)
-abline(v = boot_ci_perc$percent[4:5], col = "blue", lty = 2)
+plt.figure(figsize=(10, 6))
+plt.hist(bootstrap_estimates, bins=30, alpha=0.7, color='lightblue', edgecolor='black')
+plt.axvline(original_estimate, color='red', linewidth=2, label='Original estimate')
+plt.axvline(boot_ci_perc_lower, color='blue', linestyle='--', label='95% CI lower')
+plt.axvline(boot_ci_perc_upper, color='blue', linestyle='--', label='95% CI upper')
+plt.xlabel('Mean Difference')
+plt.ylabel('Frequency')
+plt.title('Bootstrap Distribution of Mean Difference')
+plt.legend()
+plt.show()
 ```
 
 ### Robust Two-Sample Tests
@@ -1584,130 +1588,126 @@ c \cdot \text{sign}(x) & \text{if } |x| > c
 \end{cases}
 ```
 
-```r
+```python
 # Comprehensive robust testing function
-robust_two_sample_test <- function(group1, group2, group_names = c("Group 1", "Group 2")) {
-  cat("=== ROBUST TWO-SAMPLE ANALYSIS ===\n")
-  
-  # Basic statistics
-  n1 <- length(group1)
-  n2 <- length(group2)
-  
-  cat("Sample sizes:", n1, "and", n2, "\n")
-  cat("Original means:", round(mean(group1), 3), "and", round(mean(group2), 3), "\n")
-  cat("Original SDs:", round(sd(group1), 3), "and", round(sd(group2), 3), "\n")
-  
-  # Yuen's t-test for trimmed means
-  yuen_test <- function(group1, group2, trim = 0.1) {
-    # Trim the data
-    n1 <- length(group1)
-    n2 <- length(group2)
-    k1 <- floor(n1 * trim)
-    k2 <- floor(n2 * trim)
+def robust_two_sample_test(group1, group2, group_names=["Group 1", "Group 2"]):
+    print("=== ROBUST TWO-SAMPLE ANALYSIS ===")
     
-    # Sort and trim
-    sorted1 <- sort(group1)
-    sorted2 <- sort(group2)
+    # Basic statistics
+    n1 = len(group1)
+    n2 = len(group2)
     
-    trimmed1 <- sorted1[(k1 + 1):(n1 - k1)]
-    trimmed2 <- sorted2[(k2 + 1):(n2 - k2)]
+    print(f"Sample sizes: {n1} and {n2}")
+    print(f"Original means: {group1.mean():.3f} and {group2.mean():.3f}")
+    print(f"Original SDs: {group1.std():.3f} and {group2.std():.3f}")
     
-    # Calculate trimmed statistics
-    mean1 <- mean(trimmed1)
-    mean2 <- mean(trimmed2)
-    var1 <- var(trimmed1)
-    var2 <- var(trimmed2)
+    # Yuen's t-test for trimmed means
+    def yuen_test(group1, group2, trim=0.1):
+        # Trim the data
+        n1 = len(group1)
+        n2 = len(group2)
+        k1 = int(n1 * trim)
+        k2 = int(n2 * trim)
+        
+        # Sort and trim
+        sorted1 = np.sort(group1)
+        sorted2 = np.sort(group2)
+        
+        trimmed1 = sorted1[k1:(n1 - k1)]
+        trimmed2 = sorted2[k2:(n2 - k2)]
+        
+        # Calculate trimmed statistics
+        mean1 = trimmed1.mean()
+        mean2 = trimmed2.mean()
+        var1 = trimmed1.var()
+        var2 = trimmed2.var()
+        
+        # Calculate test statistic
+        se = np.sqrt(var1 / (n1 - 2 * k1) + var2 / (n2 - 2 * k2))
+        t_stat = (mean1 - mean2) / se
+        
+        # Degrees of freedom
+        df = (var1 / (n1 - 2 * k1) + var2 / (n2 - 2 * k2))**2 / \
+             ((var1 / (n1 - 2 * k1))**2 / (n1 - 2 * k1 - 1) + 
+              (var2 / (n2 - 2 * k2))**2 / (n2 - 2 * k2 - 1))
+        
+        p_value = 2 * (1 - stats.t.cdf(abs(t_stat), df))
+        
+        return {
+            't_statistic': t_stat,
+            'p_value': p_value,
+            'df': df,
+            'trimmed_means': [mean1, mean2],
+            'trimmed_sds': [np.sqrt(var1), np.sqrt(var2)],
+            'trim_proportion': trim
+        }
     
-    # Calculate test statistic
-    se <- sqrt(var1 / (n1 - 2 * k1) + var2 / (n2 - 2 * k2))
-    t_stat <- (mean1 - mean2) / se
+    # Apply Yuen's test with different trim levels
+    yuen_10 = yuen_test(group1, group2, trim=0.1)
+    yuen_20 = yuen_test(group1, group2, trim=0.2)
     
-    # Degrees of freedom
-    df <- (var1 / (n1 - 2 * k1) + var2 / (n2 - 2 * k2))^2 /
-          ((var1 / (n1 - 2 * k1))^2 / (n1 - 2 * k1 - 1) + 
-           (var2 / (n2 - 2 * k2))^2 / (n2 - 2 * k2 - 1))
+    print("\nYuen's t-test Results:")
+    print(f"10% trimmed means: {yuen_10['trimmed_means']}")
+    print(f"20% trimmed means: {yuen_20['trimmed_means']}")
     
-    p_value <- 2 * (1 - pt(abs(t_stat), df))
+    print("\n10% Trim Results:")
+    print(f"t-statistic: {yuen_10['t_statistic']:.3f}")
+    print(f"p-value: {yuen_10['p_value']:.4f}")
+    print(f"df: {yuen_10['df']:.1f}")
     
-    return(list(
-      t_statistic = t_stat,
-      p_value = p_value,
-      df = df,
-      trimmed_means = c(mean1, mean2),
-      trimmed_sds = c(sqrt(var1), sqrt(var2)),
-      trim_proportion = trim
-    ))
-  }
-  
-  # Apply Yuen's test with different trim levels
-  yuen_10 <- yuen_test(group1, group2, trim = 0.1)
-  yuen_20 <- yuen_test(group1, group2, trim = 0.2)
-  
-  cat("\nYuen's t-test Results:\n")
-  cat("10% trimmed means:", round(yuen_10$trimmed_means, 3), "\n")
-  cat("20% trimmed means:", round(yuen_20$trimmed_means, 3), "\n")
-  
-  cat("\n10% Trim Results:\n")
-  cat("t-statistic:", round(yuen_10$t_statistic, 3), "\n")
-  cat("p-value:", round(yuen_10$p_value, 4), "\n")
-  cat("df:", round(yuen_10$df, 1), "\n")
-  
-  cat("\n20% Trim Results:\n")
-  cat("t-statistic:", round(yuen_20$t_statistic, 3), "\n")
-  cat("p-value:", round(yuen_20$p_value, 4), "\n")
-  cat("df:", round(yuen_20$df, 1), "\n")
-  
-  # Compare with standard t-test
-  standard_t <- t.test(group1, group2)
-  
-  cat("\nComparison with Standard t-test:\n")
-  cat("Standard t-test p-value:", round(standard_t$p.value, 4), "\n")
-  cat("Yuen 10% p-value:", round(yuen_10$p_value, 4), "\n")
-  cat("Yuen 20% p-value:", round(yuen_20$p_value, 4), "\n")
-  
-  # Outlier detection
-  outliers1 <- sum(abs(scale(group1)) > 2)
-  outliers2 <- sum(abs(scale(group2)) > 2)
-  
-  cat("\nOutlier Analysis:\n")
-  cat(group_names[1], "outliers (|z| > 2):", outliers1, "\n")
-  cat(group_names[2], "outliers (|z| > 2):", outliers2, "\n")
-  
-  # Robust effect size
-  robust_effect_10 <- (yuen_10$trimmed_means[1] - yuen_10$trimmed_means[2]) / 
-                      sqrt((yuen_10$trimmed_sds[1]^2 + yuen_10$trimmed_sds[2]^2) / 2)
-  
-  cat("\nRobust Effect Size (10% trim):", round(robust_effect_10, 3), "\n")
-  cat("Effect interpretation:", interpret_effect_size(robust_effect_10), "\n")
-  
-  # Recommendations
-  cat("\nRobust Analysis Recommendations:\n")
-  if (outliers1 > 0 || outliers2 > 0) {
-    cat("⚠️  Outliers detected - robust methods recommended\n")
-    if (abs(yuen_10$p_value - standard_t$p.value) > 0.01) {
-      cat("⚠️  Results differ from standard t-test\n")
-      cat("✓ Use robust methods for inference\n")
-    } else {
-      cat("✓ Results consistent with standard t-test\n")
+    print("\n20% Trim Results:")
+    print(f"t-statistic: {yuen_20['t_statistic']:.3f}")
+    print(f"p-value: {yuen_20['p_value']:.4f}")
+    print(f"df: {yuen_20['df']:.1f}")
+    
+    # Compare with standard t-test
+    standard_t = stats.ttest_ind(group1, group2)
+    
+    print("\nComparison with Standard t-test:")
+    print(f"Standard t-test p-value: {standard_t.pvalue:.4f}")
+    print(f"Yuen 10% p-value: {yuen_10['p_value']:.4f}")
+    print(f"Yuen 20% p-value: {yuen_20['p_value']:.4f}")
+    
+    # Outlier detection
+    outliers1 = (np.abs(stats.zscore(group1)) > 2).sum()
+    outliers2 = (np.abs(stats.zscore(group2)) > 2).sum()
+    
+    print("\nOutlier Analysis:")
+    print(f"{group_names[0]} outliers (|z| > 2): {outliers1}")
+    print(f"{group_names[1]} outliers (|z| > 2): {outliers2}")
+    
+    # Robust effect size
+    robust_effect_10 = (yuen_10['trimmed_means'][0] - yuen_10['trimmed_means'][1]) / \
+                       np.sqrt((yuen_10['trimmed_sds'][0]**2 + yuen_10['trimmed_sds'][1]**2) / 2)
+    
+    print(f"\nRobust Effect Size (10% trim): {robust_effect_10:.3f}")
+    print(f"Effect interpretation: {interpret_effect_size(robust_effect_10)}")
+    
+    # Recommendations
+    print("\nRobust Analysis Recommendations:")
+    if outliers1 > 0 or outliers2 > 0:
+        print("⚠️  Outliers detected - robust methods recommended")
+        if abs(yuen_10['p_value'] - standard_t.pvalue) > 0.01:
+            print("⚠️  Results differ from standard t-test")
+            print("✓ Use robust methods for inference")
+        else:
+            print("✓ Results consistent with standard t-test")
+    else:
+        print("✓ No outliers detected")
+        print("✓ Standard t-test is appropriate")
+    
+    return {
+        'yuen_10': yuen_10,
+        'yuen_20': yuen_20,
+        'standard_t': standard_t,
+        'outliers1': outliers1,
+        'outliers2': outliers2,
+        'robust_effect': robust_effect_10
     }
-  } else {
-    cat("✓ No outliers detected\n")
-    cat("✓ Standard t-test is appropriate\n")
-  }
-  
-  return(list(
-    yuen_10 = yuen_10,
-    yuen_20 = yuen_20,
-    standard_t = standard_t,
-    outliers1 = outliers1,
-    outliers2 = outliers2,
-    robust_effect = robust_effect_10
-  ))
-}
 
 # Apply robust analysis
-robust_results <- robust_two_sample_test(automatic_mpg, manual_mpg, 
-                                        c("Automatic", "Manual"))
+robust_results = robust_two_sample_test(species_0_sepal_length, species_1_sepal_length, 
+                                       ["Species 0", "Species 1"])
 ```
 
 ## Best Practices
@@ -1726,145 +1726,137 @@ Proper test selection is crucial for valid statistical inference. The choice dep
 4. **Variance Equality:** For independent samples
 5. **Outliers:** Assess influence of extreme values
 
-```r
+```python
 # Comprehensive test selection function
-choose_two_sample_test <- function(group1, group2, paired = FALSE, alpha = 0.05) {
-  cat("=== COMPREHENSIVE TWO-SAMPLE TEST SELECTION ===\n")
-  
-  n1 <- length(group1)
-  n2 <- length(group2)
-  
-  cat("Sample sizes:", n1, "and", n2, "\n")
-  cat("Design:", ifelse(paired, "Paired samples", "Independent samples"), "\n\n")
-  
-  if (paired) {
-    cat("PAIRED SAMPLES ANALYSIS:\n")
+def choose_two_sample_test(group1, group2, paired=False, alpha=0.05):
+    print("=== COMPREHENSIVE TWO-SAMPLE TEST SELECTION ===")
     
-    # Check normality of differences
-    differences <- group1 - group2
-    shapiro_diff <- shapiro.test(differences)
-    cat("Normality of differences p-value:", round(shapiro_diff$p.value, 4), "\n")
+    n1 = len(group1)
+    n2 = len(group2)
     
-    # Sample size considerations
-    if (n1 >= 30) {
-      cat("✓ Large sample size: Central Limit Theorem applies\n")
-      cat("✓ Parametric tests are robust\n")
-    } else {
-      cat("⚠️  Small sample size: Check normality carefully\n")
+    print(f"Sample sizes: {n1} and {n2}")
+    print(f"Design: {'Paired samples' if paired else 'Independent samples'}\n")
+    
+    if paired:
+        print("PAIRED SAMPLES ANALYSIS:")
+        
+        # Check normality of differences
+        differences = group1 - group2
+        shapiro_diff = stats.shapiro(differences)
+        print(f"Normality of differences p-value: {shapiro_diff.pvalue:.4f}")
+        
+        # Sample size considerations
+        if n1 >= 30:
+            print("✓ Large sample size: Central Limit Theorem applies")
+            print("✓ Parametric tests are robust")
+        else:
+            print("⚠️  Small sample size: Check normality carefully")
+        
+        # Test recommendation
+        if shapiro_diff.pvalue >= alpha or n1 >= 30:
+            print("RECOMMENDATION: Paired t-test")
+            print("REASON: Normal differences or large sample size")
+        else:
+            print("RECOMMENDATION: Wilcoxon signed-rank test")
+            print("REASON: Non-normal differences in small sample")
+        
+    else:
+        print("INDEPENDENT SAMPLES ANALYSIS:")
+        
+        # Check normality
+        shapiro1 = stats.shapiro(group1)
+        shapiro2 = stats.shapiro(group2)
+        print(f"Group 1 normality p-value: {shapiro1.pvalue:.4f}")
+        print(f"Group 2 normality p-value: {shapiro2.pvalue:.4f}")
+        
+        # Check homogeneity of variance
+        var_stat, var_p_value = stats.levene(group1, group2)
+        print(f"Homogeneity of variance p-value: {var_p_value:.4f}")
+        
+        # Sample size considerations
+        if n1 >= 30 and n2 >= 30:
+            print("✓ Large sample sizes: Central Limit Theorem applies")
+            print("✓ Parametric tests are robust to moderate violations")
+        elif n1 >= 15 and n2 >= 15:
+            print("⚠️  Moderate sample sizes: Check assumptions carefully")
+        else:
+            print("⚠️  Small sample sizes: Nonparametric tests recommended")
+        
+        # Test recommendation logic
+        print("\nTEST SELECTION LOGIC:")
+        
+        # Normality assessment
+        if shapiro1.pvalue >= alpha and shapiro2.pvalue >= alpha:
+            print("✓ Both groups appear normally distributed")
+            normality_ok = True
+        elif n1 >= 30 and n2 >= 30:
+            print("✓ Large sample sizes compensate for non-normality")
+            normality_ok = True
+        else:
+            print("✗ Non-normal distributions in small samples")
+            normality_ok = False
+        
+        # Variance assessment
+        if var_p_value >= alpha:
+            print("✓ Variances appear equal")
+            variance_ok = True
+        else:
+            print("✗ Variances are significantly different")
+            variance_ok = False
+        
+        # Final recommendation
+        print("\nFINAL RECOMMENDATION:")
+        if normality_ok:
+            if variance_ok:
+                print("✓ Standard t-test (equal variances)")
+                print("REASON: Normal distributions and equal variances")
+            else:
+                print("✓ Welch's t-test (unequal variances)")
+                print("REASON: Normal distributions but unequal variances")
+        else:
+            print("✓ Mann-Whitney U test")
+            print("REASON: Non-normal distributions or small samples")
+    
+    # Effect size calculation
+    if paired:
+        effect_size = abs(differences.mean()) / differences.std()
+    else:
+        effect_size = calculate_cohens_d_independent(group1, group2)['cohens_d']
+    
+    print("\nEFFECT SIZE ANALYSIS:")
+    print(f"Cohen's d: {effect_size:.3f}")
+    print(f"Interpretation: {interpret_effect_size(effect_size)}")
+    
+    # Power considerations
+    if paired:
+        power_est = power_analysis.power(effect_size=effect_size, 
+                                        nobs=n1, 
+                                        alpha=alpha)
+    else:
+        power_est = power_analysis.power(effect_size=effect_size, 
+                                        nobs1=n1, 
+                                        nobs2=n2, 
+                                        alpha=alpha)
+    
+    print(f"Estimated power: {power_est:.3f}")
+    
+    if power_est < 0.8:
+        print("⚠️  Power below 80% - consider larger sample size")
+    else:
+        print("✓ Adequate power for detecting effects")
+    
+    return {
+        'paired': paired,
+        'n1': n1,
+        'n2': n2,
+        'effect_size': effect_size,
+        'power': power_est,
+        'normality_ok': shapiro_diff.pvalue >= alpha if paired else (shapiro1.pvalue >= alpha and shapiro2.pvalue >= alpha),
+        'variance_ok': None if paired else var_p_value >= alpha
     }
-    
-    # Test recommendation
-    if (shapiro_diff$p.value >= alpha || n1 >= 30) {
-      cat("RECOMMENDATION: Paired t-test\n")
-      cat("REASON: Normal differences or large sample size\n")
-    } else {
-      cat("RECOMMENDATION: Wilcoxon signed-rank test\n")
-      cat("REASON: Non-normal differences in small sample\n")
-    }
-    
-  } else {
-    cat("INDEPENDENT SAMPLES ANALYSIS:\n")
-    
-    # Check normality
-    shapiro1 <- shapiro.test(group1)
-    shapiro2 <- shapiro.test(group2)
-    cat("Group 1 normality p-value:", round(shapiro1$p.value, 4), "\n")
-    cat("Group 2 normality p-value:", round(shapiro2$p.value, 4), "\n")
-    
-    # Check homogeneity of variance
-    var_test <- var.test(group1, group2)
-    cat("Homogeneity of variance p-value:", round(var_test$p.value, 4), "\n")
-    
-    # Sample size considerations
-    if (n1 >= 30 && n2 >= 30) {
-      cat("✓ Large sample sizes: Central Limit Theorem applies\n")
-      cat("✓ Parametric tests are robust to moderate violations\n")
-    } else if (n1 >= 15 && n2 >= 15) {
-      cat("⚠️  Moderate sample sizes: Check assumptions carefully\n")
-    } else {
-      cat("⚠️  Small sample sizes: Nonparametric tests recommended\n")
-    }
-    
-    # Test recommendation logic
-    cat("\nTEST SELECTION LOGIC:\n")
-    
-    # Normality assessment
-    if (shapiro1$p.value >= alpha && shapiro2$p.value >= alpha) {
-      cat("✓ Both groups appear normally distributed\n")
-      normality_ok <- TRUE
-    } else if (n1 >= 30 && n2 >= 30) {
-      cat("✓ Large sample sizes compensate for non-normality\n")
-      normality_ok <- TRUE
-    } else {
-      cat("✗ Non-normal distributions in small samples\n")
-      normality_ok <- FALSE
-    }
-    
-    # Variance assessment
-    if (var_test$p.value >= alpha) {
-      cat("✓ Variances appear equal\n")
-      variance_ok <- TRUE
-    } else {
-      cat("✗ Variances are significantly different\n")
-      variance_ok <- FALSE
-    }
-    
-    # Final recommendation
-    cat("\nFINAL RECOMMENDATION:\n")
-    if (normality_ok) {
-      if (variance_ok) {
-        cat("✓ Standard t-test (equal variances)\n")
-        cat("REASON: Normal distributions and equal variances\n")
-      } else {
-        cat("✓ Welch's t-test (unequal variances)\n")
-        cat("REASON: Normal distributions but unequal variances\n")
-      }
-    } else {
-      cat("✓ Mann-Whitney U test\n")
-      cat("REASON: Non-normal distributions or small samples\n")
-    }
-  }
-  
-  # Effect size calculation
-  if (paired) {
-    effect_size <- abs(mean(differences)) / sd(differences)
-  } else {
-    effect_size <- calculate_cohens_d_independent(group1, group2)$cohens_d
-  }
-  
-  cat("\nEFFECT SIZE ANALYSIS:\n")
-  cat("Cohen's d:", round(effect_size, 3), "\n")
-  cat("Interpretation:", interpret_effect_size(effect_size), "\n")
-  
-  # Power considerations
-  if (paired) {
-    power_est <- pwr.t.test(n = n1, d = effect_size, sig.level = alpha, type = "paired")$power
-  } else {
-    power_est <- pwr.t2n.test(n1 = n1, n2 = n2, d = effect_size, sig.level = alpha)$power
-  }
-  
-  cat("Estimated power:", round(power_est, 3), "\n")
-  
-  if (power_est < 0.8) {
-    cat("⚠️  Power below 80% - consider larger sample size\n")
-  } else {
-    cat("✓ Adequate power for detecting effects\n")
-  }
-  
-  return(list(
-    paired = paired,
-    n1 = n1,
-    n2 = n2,
-    effect_size = effect_size,
-    power = power_est,
-    normality_ok = ifelse(paired, shapiro_diff$p.value >= alpha, 
-                         shapiro1$p.value >= alpha && shapiro2$p.value >= alpha),
-    variance_ok = ifelse(paired, NA, var_test$p.value >= alpha)
-  ))
-}
 
 # Apply comprehensive test selection
-test_selection <- choose_two_sample_test(automatic_mpg, manual_mpg, paired = FALSE)
+test_selection = choose_two_sample_test(species_0_sepal_length, species_1_sepal_length, paired=False)
 ```
 
 ### Reporting Guidelines
@@ -1881,184 +1873,182 @@ Proper reporting of two-sample test results is essential for transparency, repro
 6. **Assumption Checks:** Normality, homogeneity of variance
 7. **Practical Significance:** Clinical or practical relevance
 
-```r
+```python
 # Comprehensive reporting function for two-sample tests
-generate_two_sample_report <- function(test_result, group1, group2, test_type = "t-test", 
-                                      paired = FALSE, alpha = 0.05) {
-  cat("=== COMPREHENSIVE TWO-SAMPLE TEST REPORT ===\n\n")
-  
-  # Basic information
-  n1 <- length(group1)
-  n2 <- length(group2)
-  mean1 <- mean(group1)
-  mean2 <- mean(group2)
-  sd1 <- sd(group1)
-  sd2 <- sd(group2)
-  
-  cat("STUDY DESIGN:\n")
-  cat("Test type:", test_type, "\n")
-  cat("Design:", ifelse(paired, "Paired samples", "Independent samples"), "\n")
-  cat("Group 1 sample size:", n1, "\n")
-  cat("Group 2 sample size:", n2, "\n")
-  cat("Total sample size:", n1 + n2, "\n")
-  cat("Significance level (α):", alpha, "\n\n")
-  
-  cat("DESCRIPTIVE STATISTICS:\n")
-  cat("Group 1: M =", round(mean1, 2), ", SD =", round(sd1, 2), "\n")
-  cat("Group 2: M =", round(mean2, 2), ", SD =", round(sd2, 2), "\n")
-  
-  if (paired) {
-    differences <- group1 - group2
-    mean_diff <- mean(differences)
-    sd_diff <- sd(differences)
-    cat("Differences: M =", round(mean_diff, 2), ", SD =", round(sd_diff, 2), "\n")
-  } else {
-    mean_diff <- mean1 - mean2
-    cat("Mean difference (Group 1 - Group 2):", round(mean_diff, 2), "\n")
-  }
-  cat("\n")
-  
-  # Test results
-  if (test_type == "t-test") {
-    cat("T-TEST RESULTS:\n")
-    cat("t(", round(test_result$parameter, 1), ") =", round(test_result$statistic, 3), "\n")
-    cat("p-value:", round(test_result$p.value, 4), "\n")
-    cat("95% CI:", round(test_result$conf.int, 3), "\n")
+def generate_two_sample_report(test_result, group1, group2, test_type="t-test", 
+                              paired=False, alpha=0.05):
+    print("=== COMPREHENSIVE TWO-SAMPLE TEST REPORT ===\n")
     
-    # Effect size
-    if (paired) {
-      effect_size <- abs(mean_diff) / sd_diff
-    } else {
-      effect_size <- calculate_cohens_d_independent(group1, group2)$cohens_d
-    }
+    # Basic information
+    n1 = len(group1)
+    n2 = len(group2)
+    mean1 = group1.mean()
+    mean2 = group2.mean()
+    sd1 = group1.std()
+    sd2 = group2.std()
     
-    cat("Cohen's d =", round(effect_size, 3), "\n")
-    cat("Effect size interpretation:", interpret_effect_size(effect_size), "\n\n")
+    print("STUDY DESIGN:")
+    print(f"Test type: {test_type}")
+    print(f"Design: {'Paired samples' if paired else 'Independent samples'}")
+    print(f"Group 1 sample size: {n1}")
+    print(f"Group 2 sample size: {n2}")
+    print(f"Total sample size: {n1 + n2}")
+    print(f"Significance level (α): {alpha}\n")
     
-  } else if (test_type == "wilcoxon") {
-    cat("WILCOXON TEST RESULTS:\n")
-    cat("W =", test_result$statistic, "\n")
-    cat("p-value:", round(test_result$p.value, 4), "\n")
+    print("DESCRIPTIVE STATISTICS:")
+    print(f"Group 1: M = {mean1:.2f}, SD = {sd1:.2f}")
+    print(f"Group 2: M = {mean2:.2f}, SD = {sd2:.2f}")
     
-    # Effect size for nonparametric test
-    wilcox_effect <- abs(qnorm(test_result$p.value / 2)) / sqrt(n1 + n2)
-    cat("Effect size (r) =", round(wilcox_effect, 3), "\n")
-    cat("Effect size interpretation:", interpret_wilcox_effect(wilcox_effect), "\n\n")
-  }
-  
-  # Assumption checks
-  cat("ASSUMPTION CHECKS:\n")
-  
-  if (paired) {
-    differences <- group1 - group2
-    shapiro_diff <- shapiro.test(differences)
-    cat("Normality of differences: Shapiro-Wilk p =", round(shapiro_diff$p.value, 4), "\n")
-    if (shapiro_diff$p.value < alpha) {
-      cat("⚠️  Differences are not normally distributed\n")
-    } else {
-      cat("✓ Differences appear normally distributed\n")
-    }
-  } else {
-    shapiro1 <- shapiro.test(group1)
-    shapiro2 <- shapiro.test(group2)
-    cat("Group 1 normality: Shapiro-Wilk p =", round(shapiro1$p.value, 4), "\n")
-    cat("Group 2 normality: Shapiro-Wilk p =", round(shapiro2$p.value, 4), "\n")
+    if paired:
+        differences = group1 - group2
+        mean_diff = differences.mean()
+        sd_diff = differences.std()
+        print(f"Differences: M = {mean_diff:.2f}, SD = {sd_diff:.2f}")
+    else:
+        mean_diff = mean1 - mean2
+        print(f"Mean difference (Group 1 - Group 2): {mean_diff:.2f}")
+    print()
     
-    var_test <- var.test(group1, group2)
-    cat("Homogeneity of variance: F-test p =", round(var_test$p.value, 4), "\n")
+    # Test results
+    if test_type == "t-test":
+        print("T-TEST RESULTS:")
+        print(f"t({test_result.df:.1f}) = {test_result.statistic:.3f}")
+        print(f"p-value: {test_result.pvalue:.4f}")
+        
+        # Calculate confidence interval
+        se_diff = np.sqrt(group1.var()/n1 + group2.var()/n2)
+        t_critical = stats.t.ppf(0.975, test_result.df)
+        ci_lower = mean_diff - t_critical * se_diff
+        ci_upper = mean_diff + t_critical * se_diff
+        print(f"95% CI: [{ci_lower:.3f}, {ci_upper:.3f}]")
+        
+        # Effect size
+        if paired:
+            effect_size = abs(mean_diff) / sd_diff
+        else:
+            effect_size = calculate_cohens_d_independent(group1, group2)['cohens_d']
+        
+        print(f"Cohen's d = {effect_size:.3f}")
+        print(f"Effect size interpretation: {interpret_effect_size(effect_size)}\n")
+        
+    elif test_type == "wilcoxon":
+        print("WILCOXON TEST RESULTS:")
+        print(f"W = {test_result.statistic}")
+        print(f"p-value: {test_result.pvalue:.4f}")
+        
+        # Effect size for nonparametric test
+        wilcox_effect = abs(stats.norm.ppf(test_result.pvalue / 2)) / np.sqrt(n1 + n2)
+        print(f"Effect size (r) = {wilcox_effect:.3f}")
+        print(f"Effect size interpretation: {interpret_wilcox_effect(wilcox_effect)}\n")
     
-    if (shapiro1$p.value < alpha || shapiro2$p.value < alpha) {
-      cat("⚠️  At least one group is not normally distributed\n")
-    } else {
-      cat("✓ Both groups appear normally distributed\n")
-    }
+    # Assumption checks
+    print("ASSUMPTION CHECKS:")
     
-    if (var_test$p.value < alpha) {
-      cat("⚠️  Variances are significantly different\n")
-    } else {
-      cat("✓ Variances appear equal\n")
-    }
-  }
-  cat("\n")
-  
-  # Power analysis
-  if (test_type == "t-test") {
-    if (paired) {
-      power_est <- pwr.t.test(n = n1, d = effect_size, sig.level = alpha, type = "paired")$power
-    } else {
-      power_est <- pwr.t2n.test(n1 = n1, n2 = n2, d = effect_size, sig.level = alpha)$power
-    }
-    cat("POWER ANALYSIS:\n")
-    cat("Estimated power =", round(power_est, 3), "\n")
-    if (power_est < 0.8) {
-      cat("⚠️  Power below 80% - results should be interpreted cautiously\n")
-    } else {
-      cat("✓ Adequate power for detecting effects\n")
-    }
-    cat("\n")
-  }
-  
-  # Statistical conclusion
-  cat("STATISTICAL CONCLUSION:\n")
-  if (test_result$p.value < alpha) {
-    cat("✓ Reject the null hypothesis (p <", alpha, ")\n")
-    cat("✓ There is significant evidence of a difference between groups\n")
-  } else {
-    cat("✗ Fail to reject the null hypothesis (p >=", alpha, ")\n")
-    cat("✗ There is insufficient evidence of a difference between groups\n")
-  }
-  cat("\n")
-  
-  # Practical significance
-  cat("PRACTICAL SIGNIFICANCE:\n")
-  if (test_type == "t-test") {
-    if (abs(effect_size) >= 0.8) {
-      cat("✓ Large practical effect\n")
-    } else if (abs(effect_size) >= 0.5) {
-      cat("✓ Medium practical effect\n")
-    } else if (abs(effect_size) >= 0.2) {
-      cat("✓ Small practical effect\n")
-    } else {
-      cat("⚠️  Very small practical effect\n")
-    }
-  }
-  
-  # APA style reporting
-  cat("\nAPA STYLE REPORTING:\n")
-  if (test_type == "t-test") {
-    if (test_result$p.value < 0.001) {
-      p_report <- "p < .001"
-    } else {
-      p_report <- paste("p =", round(test_result$p.value, 3))
-    }
+    if paired:
+        differences = group1 - group2
+        shapiro_diff = stats.shapiro(differences)
+        print(f"Normality of differences: Shapiro-Wilk p = {shapiro_diff.pvalue:.4f}")
+        if shapiro_diff.pvalue < alpha:
+            print("⚠️  Differences are not normally distributed")
+        else:
+            print("✓ Differences appear normally distributed")
+    else:
+        shapiro1 = stats.shapiro(group1)
+        shapiro2 = stats.shapiro(group2)
+        print(f"Group 1 normality: Shapiro-Wilk p = {shapiro1.pvalue:.4f}")
+        print(f"Group 2 normality: Shapiro-Wilk p = {shapiro2.pvalue:.4f}")
+        
+        var_stat, var_p_value = stats.levene(group1, group2)
+        print(f"Homogeneity of variance: F-test p = {var_p_value:.4f}")
+        
+        if shapiro1.pvalue < alpha or shapiro2.pvalue < alpha:
+            print("⚠️  At least one group is not normally distributed")
+        else:
+            print("✓ Both groups appear normally distributed")
+        
+        if var_p_value < alpha:
+            print("⚠️  Variances are significantly different")
+        else:
+            print("✓ Variances appear equal")
+    print()
     
-    cat("A", ifelse(paired, "paired", "independent"), "samples t-test was conducted to compare", 
-        ifelse(paired, "the two conditions", "the two groups"), ".\n")
-    cat("There was", ifelse(test_result$p.value < alpha, "", "no"), "significant difference between groups, ",
-        "t(", round(test_result$parameter, 1), ") =", round(test_result$statistic, 3), ",", p_report, 
-        ", d =", round(effect_size, 3), ".\n")
-  }
-  
-  return(list(
-    test_type = test_type,
-    paired = paired,
-    n1 = n1,
-    n2 = n2,
-    mean1 = mean1,
-    mean2 = mean2,
-    sd1 = sd1,
-    sd2 = sd2,
-    test_statistic = test_result$statistic,
-    p_value = test_result$p.value,
-    effect_size = ifelse(test_type == "t-test", effect_size, wilcox_effect),
-    significant = test_result$p.value < alpha
-  ))
-}
+    # Power analysis
+    if test_type == "t-test":
+        if paired:
+            power_est = power_analysis.power(effect_size=effect_size, 
+                                            nobs=n1, 
+                                            alpha=alpha)
+        else:
+            power_est = power_analysis.power(effect_size=effect_size, 
+                                            nobs1=n1, 
+                                            nobs2=n2, 
+                                            alpha=alpha)
+        print("POWER ANALYSIS:")
+        print(f"Estimated power = {power_est:.3f}")
+        if power_est < 0.8:
+            print("⚠️  Power below 80% - results should be interpreted cautiously")
+        else:
+            print("✓ Adequate power for detecting effects")
+        print()
+    
+    # Statistical conclusion
+    print("STATISTICAL CONCLUSION:")
+    if test_result.pvalue < alpha:
+        print(f"✓ Reject the null hypothesis (p < {alpha})")
+        print("✓ There is significant evidence of a difference between groups")
+    else:
+        print(f"✗ Fail to reject the null hypothesis (p >= {alpha})")
+        print("✗ There is insufficient evidence of a difference between groups")
+    print()
+    
+    # Practical significance
+    print("PRACTICAL SIGNIFICANCE:")
+    if test_type == "t-test":
+        if abs(effect_size) >= 0.8:
+            print("✓ Large practical effect")
+        elif abs(effect_size) >= 0.5:
+            print("✓ Medium practical effect")
+        elif abs(effect_size) >= 0.2:
+            print("✓ Small practical effect")
+        else:
+            print("⚠️  Very small practical effect")
+    
+    # APA style reporting
+    print("\nAPA STYLE REPORTING:")
+    if test_type == "t-test":
+        if test_result.pvalue < 0.001:
+            p_report = "p < .001"
+        else:
+            p_report = f"p = {test_result.pvalue:.3f}"
+        
+        design_type = "paired" if paired else "independent"
+        condition_type = "the two conditions" if paired else "the two groups"
+        significant_text = "" if test_result.pvalue < alpha else "no "
+        
+        print(f"A {design_type} samples t-test was conducted to compare {condition_type}.")
+        print(f"There was {significant_text}significant difference between groups, "
+              f"t({test_result.df:.1f}) = {test_result.statistic:.3f}, {p_report}, "
+              f"d = {effect_size:.3f}.")
+    
+    return {
+        'test_type': test_type,
+        'paired': paired,
+        'n1': n1,
+        'n2': n2,
+        'mean1': mean1,
+        'mean2': mean2,
+        'sd1': sd1,
+        'sd2': sd2,
+        'test_statistic': test_result.statistic,
+        'p_value': test_result.pvalue,
+        'effect_size': effect_size if test_type == "t-test" else wilcox_effect,
+        'significant': test_result.pvalue < alpha
+    }
 
-# Generate comprehensive report for transmission comparison
-transmission_t_test <- t.test(automatic_mpg, manual_mpg)
-transmission_report <- generate_two_sample_report(transmission_t_test, automatic_mpg, manual_mpg, 
-                                                 "t-test", paired = FALSE)
+# Generate comprehensive report for species comparison
+species_t_test = stats.ttest_ind(species_0_sepal_length, species_1_sepal_length)
+species_report = generate_two_sample_report(species_t_test, species_0_sepal_length, species_1_sepal_length, 
+                                           "t-test", paired=False)
 ```
 
 ## Exercises
@@ -2067,12 +2057,12 @@ These exercises provide hands-on practice with two-sample tests, helping you dev
 
 ### Exercise 1: Independent Samples t-Test
 
-**Objective:** Compare the horsepower of cars with different cylinder counts using independent samples t-tests.
+**Objective:** Compare the sepal length of different iris species using independent samples t-tests.
 
-**Data:** Use the `mtcars` dataset.
+**Data:** Use the iris dataset from sklearn.
 
 **Tasks:**
-1. Create two groups: cars with 4 cylinders vs cars with 8 cylinders
+1. Create two groups: species 0 vs species 1
 2. Perform descriptive statistics for both groups
 3. Check assumptions (normality, homogeneity of variance)
 4. Conduct independent samples t-test
@@ -2080,7 +2070,7 @@ These exercises provide hands-on practice with two-sample tests, helping you dev
 6. Generate a comprehensive report
 
 **Hints:**
-- Use `mtcars$cyl == 4` and `mtcars$cyl == 8` to create groups
+- Use `iris.target == 0` and `iris.target == 1` to create groups
 - Remember to handle unequal sample sizes
 - Consider both pooled and Welch's t-tests
 
@@ -2104,7 +2094,7 @@ These exercises provide hands-on practice with two-sample tests, helping you dev
 6. Calculate paired effect size
 
 **Hints:**
-- Use `rnorm()` to generate realistic weight data
+- Use `np.random.normal()` to generate realistic weight data
 - Ensure positive correlation between before and after scores
 - Consider the power advantage of paired designs
 
@@ -2117,23 +2107,23 @@ These exercises provide hands-on practice with two-sample tests, helping you dev
 
 **Objective:** Calculate and interpret effect sizes for various two-sample comparisons.
 
-**Data:** Use multiple variables from the `mtcars` dataset.
+**Data:** Use multiple variables from the iris dataset.
 
 **Tasks:**
-1. Compare multiple variables between transmission types
+1. Compare multiple variables between species
 2. Calculate Cohen's d for each comparison
 3. Create a table of effect sizes and interpretations
 4. Identify which comparisons show the largest effects
 5. Discuss practical significance vs statistical significance
 
 **Variables to Compare:**
-- MPG (miles per gallon)
-- HP (horsepower)
-- WT (weight)
-- QSEC (quarter mile time)
+- Sepal length
+- Sepal width
+- Petal length
+- Petal width
 
 **Hints:**
-- Use a loop or apply function for efficiency
+- Use a loop or list comprehension for efficiency
 - Consider creating a function for effect size calculation
 - Think about which effects are most practically meaningful
 
@@ -2159,7 +2149,7 @@ These exercises provide hands-on practice with two-sample tests, helping you dev
 5. Discuss the robustness of different methods
 
 **Hints:**
-- Use `rnorm()`, `rgamma()`, and `c()` with outliers
+- Use `np.random.normal()`, `np.random.gamma()`, and concatenate with outliers
 - Test normality with multiple methods
 - Consider sample size effects on assumption violations
 
@@ -2182,7 +2172,7 @@ These exercises provide hands-on practice with two-sample tests, helping you dev
 5. Make recommendations for study design
 
 **Hints:**
-- Use the `pwr` package
+- Use the `statsmodels.stats.power` module
 - Consider practical constraints (time, cost, availability)
 - Think about minimum important differences
 
@@ -2231,7 +2221,7 @@ These exercises provide hands-on practice with two-sample tests, helping you dev
 5. Analyze the trade-offs between methods
 
 **Hints:**
-- Use the `boot` package for bootstrap analysis
+- Use manual bootstrap implementation or `scipy.stats.bootstrap`
 - Consider different trim levels
 - Compare computational efficiency
 
@@ -2245,7 +2235,7 @@ These exercises provide hands-on practice with two-sample tests, helping you dev
 **For each exercise:**
 - Start with small datasets to verify your approach
 - Use the functions developed in this chapter
-- Check your results with built-in R functions
+- Check your results with built-in Python functions
 - Consider multiple approaches to the same problem
 
 **Common Mistakes to Avoid:**
