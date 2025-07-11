@@ -1697,26 +1697,43 @@ def comprehensive_nonparametric(data, group_var, response_var, alpha=0.05):
 nonparametric_results = comprehensive_nonparametric(mtcars, "cyl_factor", "mpg")
 
 # Additional robust methods
-cat("\n=== ADDITIONAL ROBUST METHODS ===\n")
+print("\n=== ADDITIONAL ROBUST METHODS ===")
 
 # Bootstrap confidence intervals for group differences
-library(boot)
-
-bootstrap_group_diff <- function(data, indices, group1, group2) {
-  d <- data[indices, ]
-  mean1 <- mean(d[[response_var]][d[[group_var]] == group1])
-  mean2 <- mean(d[[response_var]][d[[group_var]] == group2])
-  return(mean1 - mean2)
-}
+def bootstrap_group_diff(data, group1, group2, group_var, response_var, n_bootstrap=1000):
+    """Bootstrap function to estimate confidence intervals for group differences"""
+    np.random.seed(123)
+    differences = []
+    
+    for _ in range(n_bootstrap):
+        # Resample with replacement
+        boot_indices = np.random.choice(len(data), size=len(data), replace=True)
+        boot_data = data.iloc[boot_indices]
+        
+        # Calculate means for each group
+        mean1 = boot_data[boot_data[group_var] == group1][response_var].mean()
+        mean2 = boot_data[boot_data[group_var] == group2][response_var].mean()
+        
+        differences.append(mean1 - mean2)
+    
+    # Calculate confidence intervals
+    ci_lower = np.percentile(differences, 2.5)
+    ci_upper = np.percentile(differences, 97.5)
+    
+    return {
+        'differences': differences,
+        'ci_lower': ci_lower,
+        'ci_upper': ci_upper,
+        'mean_diff': np.mean(differences)
+    }
 
 # Example bootstrap for 4-cylinder vs 8-cylinder
-boot_result <- boot(mtcars, bootstrap_group_diff, R = 1000, 
-                   group1 = "4-cylinder", group2 = "8-cylinder")
-boot_ci <- boot.ci(boot_result, type = "perc")
+boot_result = bootstrap_group_diff(mtcars, "4-cylinder", "8-cylinder", "cyl_factor", "mpg")
 
-cat("Bootstrap 95% CI for 4-cylinder vs 8-cylinder difference:\n")
-cat("  Lower:", round(boot_ci$percent[4], 3), "\n")
-cat("  Upper:", round(boot_ci$percent[5], 3), "\n")
+print("Bootstrap 95% CI for 4-cylinder vs 8-cylinder difference:")
+print(f"  Lower: {round(boot_result['ci_lower'], 3)}")
+print(f"  Upper: {round(boot_result['ci_upper'], 3)}")
+print(f"  Mean difference: {round(boot_result['mean_diff'], 3)}")
 ```
 
 ### Post Hoc Tests for Nonparametric ANOVA
@@ -2497,471 +2514,445 @@ Following best practices ensures robust statistical analysis and valid conclusio
 
 ### Comprehensive Test Selection Guidelines
 
-```r
+```python
 # Comprehensive function to help choose appropriate ANOVA test
-comprehensive_test_selection <- function(data, group_var, response_var, alpha = 0.05) {
-  cat("=== COMPREHENSIVE ANOVA TEST SELECTION ===\n")
-  
-  # Get basic information
-  groups <- unique(data[[group_var]])
-  k <- length(groups)
-  n_per_group <- sapply(groups, function(g) sum(data[[group_var]] == g))
-  total_n <- sum(n_per_group)
-  
-  cat("Study characteristics:\n")
-  cat("  Number of groups:", k, "\n")
-  cat("  Sample sizes per group:", n_per_group, "\n")
-  cat("  Total sample size:", total_n, "\n")
-  cat("  Significance level:", alpha, "\n\n")
-  
-  # 1. Check all assumptions comprehensively
-  cat("=== 1. ASSUMPTION ASSESSMENT ===\n")
-  
-  assumption_results <- comprehensive_assumption_check(data, group_var, response_var)
-  
-  # 2. Evaluate assumption violations
-  cat("\n=== 2. ASSUMPTION VIOLATION EVALUATION ===\n")
-  
-  violations <- assumption_results$violations
-  violation_details <- assumption_results$violation_details
-  
-  cat("Total assumption violations:", violations, "\n")
-  if (violations > 0) {
-    cat("Violated assumptions:", paste(violation_details, collapse = ", "), "\n")
-  }
-  
-  # 3. Sample size considerations
-  cat("\n=== 3. SAMPLE SIZE CONSIDERATIONS ===\n")
-  
-  min_n <- min(n_per_group)
-  max_n <- max(n_per_group)
-  balanced <- length(unique(n_per_group)) == 1
-  
-  cat("Sample size analysis:\n")
-  cat("  Minimum sample size per group:", min_n, "\n")
-  cat("  Maximum sample size per group:", max_n, "\n")
-  cat("  Balanced design:", balanced, "\n")
-  
-  if (min_n < 10) {
-    cat("  ⚠️  Small sample sizes - consider nonparametric alternatives\n")
-  } else if (min_n < 30) {
-    cat("  ⚠️  Moderate sample sizes - check normality carefully\n")
-  } else {
-    cat("  ✓ Adequate sample sizes for parametric tests\n")
-  }
-  
-  # 4. Effect size considerations
-  cat("\n=== 4. EFFECT SIZE CONSIDERATIONS ===\n")
-  
-  # Perform ANOVA to get effect size
-  anova_model <- aov(as.formula(paste(response_var, "~", group_var)), data = data)
-  anova_summary <- summary(anova_model)
-  eta_squared <- anova_summary[[1]]$`Sum Sq`[1] / sum(anova_summary[[1]]$`Sum Sq`)
-  
-  cat("Observed effect size (η²):", round(eta_squared, 3), "\n")
-  
-  if (eta_squared < 0.01) {
-    cat("  ⚠️  Very small effect size - consider practical significance\n")
-  } else if (eta_squared < 0.06) {
-    cat("  ⚠️  Small effect size - may not be practically meaningful\n")
-  } else if (eta_squared < 0.14) {
-    cat("  ✓ Medium effect size - likely practically meaningful\n")
-  } else {
-    cat("  ✓ Large effect size - clearly practically meaningful\n")
-  }
-  
-  # 5. Decision tree for test selection
-  cat("\n=== 5. TEST SELECTION DECISION TREE ===\n")
-  
-  # Check specific assumptions
-  normality_ok <- all(sapply(assumption_results$normality$group_tests, function(x) x$p.value >= alpha))
-  homogeneity_ok <- assumption_results$homoscedasticity$levene$`Pr(>F)`[1] >= alpha
-  independence_ok <- assumption_results$independence$independent
-  outliers_ok <- length(unlist(assumption_results$outliers)) <= total_n * 0.1
-  
-  cat("Assumption status:\n")
-  cat("  Normality:", normality_ok, "\n")
-  cat("  Homogeneity of variance:", homogeneity_ok, "\n")
-  cat("  Independence:", independence_ok, "\n")
-  cat("  Outliers acceptable:", outliers_ok, "\n")
-  
-  # Decision logic
-  cat("\n=== 6. RECOMMENDED APPROACH ===\n")
-  
-  if (normality_ok && homogeneity_ok && independence_ok && outliers_ok) {
-    cat("✓ RECOMMENDATION: Standard one-way ANOVA\n")
-    cat("  - All assumptions are met\n")
-    cat("  - Most powerful parametric approach\n")
-    cat("  - Use Tukey's HSD for post hoc tests\n")
-  } else if (normality_ok && !homogeneity_ok && independence_ok) {
-    cat("✓ RECOMMENDATION: Welch's ANOVA\n")
-    cat("  - Data is normal but variances are unequal\n")
-    cat("  - More robust to variance heterogeneity\n")
-    cat("  - Use Games-Howell for post hoc tests\n")
-  } else if (!normality_ok && min_n >= 15) {
-    cat("✓ RECOMMENDATION: Kruskal-Wallis test\n")
-    cat("  - Data is not normally distributed\n")
-    cat("  - Nonparametric alternative\n")
-    cat("  - Use Dunn's test for post hoc comparisons\n")
-  } else if (min_n < 15) {
-    cat("✓ RECOMMENDATION: Kruskal-Wallis test\n")
-    cat("  - Small sample sizes\n")
-    cat("  - Nonparametric approach is more robust\n")
-    cat("  - Use Dunn's test for post hoc comparisons\n")
-  } else {
-    cat("⚠️  RECOMMENDATION: Multiple approaches\n")
-    cat("  - Complex assumption violations\n")
-    cat("  - Consider both parametric and nonparametric approaches\n")
-    cat("  - Report results from both methods\n")
-  }
-  
-  # 7. Additional considerations
-  cat("\n=== 7. ADDITIONAL CONSIDERATIONS ===\n")
-  
-  # Power analysis
-  f_effect_size <- sqrt(eta_squared / (1 - eta_squared))
-  current_power <- pwr.anova.test(k = k, n = min_n, f = f_effect_size, sig.level = alpha)$power
-  
-  cat("Power analysis:\n")
-  cat("  Current power:", round(current_power, 3), "\n")
-  
-  if (current_power < 0.8) {
-    cat("  ⚠️  Low power - consider larger sample size\n")
-    required_n <- pwr.anova.test(k = k, f = f_effect_size, sig.level = alpha, power = 0.8)$n
-    cat("  Required sample size per group for 80% power:", ceiling(required_n), "\n")
-  } else {
-    cat("  ✓ Adequate power for detecting effects\n")
-  }
-  
-  # Multiple comparison considerations
-  m <- k * (k - 1) / 2
-  cat("\nMultiple comparison considerations:\n")
-  cat("  Number of pairwise comparisons:", m, "\n")
-  cat("  Family-wise error rate without correction:", round(1 - (1 - alpha)^m, 4), "\n")
-  
-  if (m > 6) {
-    cat("  ⚠️  Many comparisons - use conservative correction methods\n")
-  } else {
-    cat("  ✓ Reasonable number of comparisons\n")
-  }
-  
-  # 8. Reporting recommendations
-  cat("\n=== 8. REPORTING RECOMMENDATIONS ===\n")
-  
-  cat("Essential elements to report:\n")
-  cat("  - Descriptive statistics for each group\n")
-  cat("  - Assumption checking results\n")
-  cat("  - Test statistic and p-value\n")
-  cat("  - Effect size measures\n")
-  cat("  - Post hoc test results (if significant)\n")
-  cat("  - Power analysis results\n")
-  cat("  - Practical significance assessment\n")
-  
-  return(list(
-    assumptions = assumption_results,
-    effect_size = eta_squared,
-    power = current_power,
-    violations = violations,
-    violation_details = violation_details,
-    recommendation = ifelse(normality_ok && homogeneity_ok && independence_ok && outliers_ok,
-                           "Standard ANOVA",
-                           ifelse(normality_ok && !homogeneity_ok && independence_ok,
-                                  "Welch's ANOVA",
-                                  "Kruskal-Wallis"))
-  ))
-}
+def comprehensive_test_selection(data, group_var, response_var, alpha=0.05):
+    """Comprehensive function to help choose appropriate ANOVA test"""
+    print("=== COMPREHENSIVE ANOVA TEST SELECTION ===")
+    
+    # Get basic information
+    groups = data[group_var].unique()
+    k = len(groups)
+    n_per_group = [sum(data[group_var] == group) for group in groups]
+    total_n = sum(n_per_group)
+    
+    print("Study characteristics:")
+    print(f"  Number of groups: {k}")
+    print(f"  Sample sizes per group: {n_per_group}")
+    print(f"  Total sample size: {total_n}")
+    print(f"  Significance level: {alpha}\n")
+    
+    # 1. Check all assumptions comprehensively
+    print("=== 1. ASSUMPTION ASSESSMENT ===")
+    
+    assumption_results = comprehensive_assumption_check(data, group_var, response_var, alpha)
+    
+    # 2. Evaluate assumption violations
+    print("\n=== 2. ASSUMPTION VIOLATION EVALUATION ===")
+    
+    violations = assumption_results['violations']
+    violation_details = assumption_results['violation_details']
+    
+    print(f"Total assumption violations: {violations}")
+    if violations > 0:
+        print(f"Violated assumptions: {', '.join(violation_details)}")
+    
+    # 3. Sample size considerations
+    print("\n=== 3. SAMPLE SIZE CONSIDERATIONS ===")
+    
+    min_n = min(n_per_group)
+    max_n = max(n_per_group)
+    balanced = len(set(n_per_group)) == 1
+    
+    print("Sample size analysis:")
+    print(f"  Minimum sample size per group: {min_n}")
+    print(f"  Maximum sample size per group: {max_n}")
+    print(f"  Balanced design: {balanced}")
+    
+    if min_n < 10:
+        print("  ⚠️  Small sample sizes - consider nonparametric alternatives")
+    elif min_n < 30:
+        print("  ⚠️  Moderate sample sizes - check normality carefully")
+    else:
+        print("  ✓ Adequate sample sizes for parametric tests")
+    
+    # 4. Effect size considerations
+    print("\n=== 4. EFFECT SIZE CONSIDERATIONS ===")
+    
+    # Perform ANOVA to get effect size
+    model = ols(f'{response_var} ~ {group_var}', data=data).fit()
+    anova_table = anova_lm(model, typ=2)
+    eta_squared = anova_table.loc[group_var, 'sum_sq'] / anova_table['sum_sq'].sum()
+    
+    print(f"Observed effect size (η²): {round(eta_squared, 3)}")
+    
+    if eta_squared < 0.01:
+        print("  ⚠️  Very small effect size - consider practical significance")
+    elif eta_squared < 0.06:
+        print("  ⚠️  Small effect size - may not be practically meaningful")
+    elif eta_squared < 0.14:
+        print("  ✓ Medium effect size - likely practically meaningful")
+    else:
+        print("  ✓ Large effect size - clearly practically meaningful")
+    
+    # 5. Decision tree for test selection
+    print("\n=== 5. TEST SELECTION DECISION TREE ===")
+    
+    # Check specific assumptions
+    normality_ok = all(assumption_results['normality']['group_tests'][str(g)]['p_value'] >= alpha 
+                      for g in groups)
+    homogeneity_ok = assumption_results['homoscedasticity']['levene']['p_value'] >= alpha
+    independence_ok = assumption_results['independence']['independent']
+    outliers_ok = len([item for sublist in assumption_results['outliers'].values() 
+                      for item in sublist]) <= total_n * 0.1
+    
+    print("Assumption status:")
+    print(f"  Normality: {normality_ok}")
+    print(f"  Homogeneity of variance: {homogeneity_ok}")
+    print(f"  Independence: {independence_ok}")
+    print(f"  Outliers acceptable: {outliers_ok}")
+    
+    # Decision logic
+    print("\n=== 6. RECOMMENDED APPROACH ===")
+    
+    if normality_ok and homogeneity_ok and independence_ok and outliers_ok:
+        print("✓ RECOMMENDATION: Standard one-way ANOVA")
+        print("  - All assumptions are met")
+        print("  - Most powerful parametric approach")
+        print("  - Use Tukey's HSD for post hoc tests")
+    elif normality_ok and not homogeneity_ok and independence_ok:
+        print("✓ RECOMMENDATION: Welch's ANOVA")
+        print("  - Data is normal but variances are unequal")
+        print("  - More robust to variance heterogeneity")
+        print("  - Use Games-Howell for post hoc tests")
+    elif not normality_ok and min_n >= 15:
+        print("✓ RECOMMENDATION: Kruskal-Wallis test")
+        print("  - Data is not normally distributed")
+        print("  - Nonparametric alternative")
+        print("  - Use Dunn's test for post hoc comparisons")
+    elif min_n < 15:
+        print("✓ RECOMMENDATION: Kruskal-Wallis test")
+        print("  - Small sample sizes")
+        print("  - Nonparametric approach is more robust")
+        print("  - Use Dunn's test for post hoc comparisons")
+    else:
+        print("⚠️  RECOMMENDATION: Multiple approaches")
+        print("  - Complex assumption violations")
+        print("  - Consider both parametric and nonparametric approaches")
+        print("  - Report results from both methods")
+    
+    # 7. Additional considerations
+    print("\n=== 7. ADDITIONAL CONSIDERATIONS ===")
+    
+    # Power analysis
+    f_effect_size = np.sqrt(eta_squared / (1 - eta_squared))
+    current_power = power_analysis_anova(k, min_n, f_effect_size, alpha)
+    
+    print("Power analysis:")
+    print(f"  Current power: {round(current_power, 3)}")
+    
+    if current_power < 0.8:
+        print("  ⚠️  Low power - consider larger sample size")
+        required_n = estimate_sample_size_for_power(k, f_effect_size, alpha, 0.8)
+        print(f"  Required sample size per group for 80% power: {required_n}")
+    else:
+        print("  ✓ Adequate power for detecting effects")
+    
+    # Multiple comparison considerations
+    m = k * (k - 1) / 2
+    print("\nMultiple comparison considerations:")
+    print(f"  Number of pairwise comparisons: {m}")
+    print(f"  Family-wise error rate without correction: {round(1 - (1 - alpha)**m, 4)}")
+    
+    if m > 6:
+        print("  ⚠️  Many comparisons - use conservative correction methods")
+    else:
+        print("  ✓ Reasonable number of comparisons")
+    
+    # 8. Reporting recommendations
+    print("\n=== 8. REPORTING RECOMMENDATIONS ===")
+    
+    print("Essential elements to report:")
+    print("  - Descriptive statistics for each group")
+    print("  - Assumption checking results")
+    print("  - Test statistic and p-value")
+    print("  - Effect size measures")
+    print("  - Post hoc test results (if significant)")
+    print("  - Power analysis results")
+    print("  - Practical significance assessment")
+    
+    return {
+        'assumptions': assumption_results,
+        'effect_size': eta_squared,
+        'power': current_power,
+        'violations': violations,
+        'violation_details': violation_details,
+        'recommendation': ("Standard ANOVA" if normality_ok and homogeneity_ok and independence_ok and outliers_ok
+                          else "Welch's ANOVA" if normality_ok and not homogeneity_ok and independence_ok
+                          else "Kruskal-Wallis")
+    }
 
 # Apply comprehensive test selection
-test_selection_results <- comprehensive_test_selection(mtcars, "cyl_factor", "mpg")
+test_selection_results = comprehensive_test_selection(mtcars, "cyl_factor", "mpg")
 ```
 
 ### Comprehensive Reporting Guidelines
 
 Proper reporting of ANOVA results is essential for transparency and reproducibility. This section provides a comprehensive template for reporting one-way ANOVA analyses.
 
-```r
+```python
 # Comprehensive function to generate detailed ANOVA report
-generate_comprehensive_anova_report <- function(data, group_var, response_var, alpha = 0.05) {
-  cat("=== COMPREHENSIVE ONE-WAY ANOVA REPORT ===\n")
-  cat("Analysis Date:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
-  
-  # Study Information
-  cat("=== STUDY INFORMATION ===\n")
-  groups <- unique(data[[group_var]])
-  k <- length(groups)
-  n_per_group <- sapply(groups, function(g) sum(data[[group_var]] == g))
-  total_n <- sum(n_per_group)
-  
-  cat("Research Design: One-way ANOVA\n")
-  cat("Number of groups:", k, "\n")
-  cat("Group names:", paste(groups, collapse = ", "), "\n")
-  cat("Sample sizes per group:", paste(n_per_group, collapse = ", "), "\n")
-  cat("Total sample size:", total_n, "\n")
-  cat("Significance level (α):", alpha, "\n\n")
-  
-  # 1. Descriptive Statistics
-  cat("=== 1. DESCRIPTIVE STATISTICS ===\n")
-  
-  desc_stats <- data %>%
-    group_by(!!sym(group_var)) %>%
-    summarise(
-      n = n(),
-      mean = mean(!!sym(response_var), na.rm = TRUE),
-      sd = sd(!!sym(response_var), na.rm = TRUE),
-      median = median(!!sym(response_var), na.rm = TRUE),
-      min = min(!!sym(response_var), na.rm = TRUE),
-      max = max(!!sym(response_var), na.rm = TRUE),
-      se = sd / sqrt(n)
-    )
-  
-  print(desc_stats)
-  
-  # Overall statistics
-  overall_stats <- data %>%
-    summarise(
-      n = n(),
-      mean = mean(!!sym(response_var), na.rm = TRUE),
-      sd = sd(!!sym(response_var), na.rm = TRUE),
-      median = median(!!sym(response_var), na.rm = TRUE)
-    )
-  
-  cat("\nOverall statistics:\n")
-  print(overall_stats)
-  cat("\n")
-  
-  # 2. Assumption Checking
-  cat("=== 2. ASSUMPTION CHECKING ===\n")
-  
-  assumption_results <- comprehensive_assumption_check(data, group_var, response_var)
-  
-  cat("Assumption violations:", assumption_results$violations, "\n")
-  if (assumption_results$violations > 0) {
-    cat("Violated assumptions:", paste(assumption_results$violation_details, collapse = ", "), "\n")
-  } else {
-    cat("All assumptions met ✓\n")
-  }
-  cat("\n")
-  
-  # 3. Primary Analysis
-  cat("=== 3. PRIMARY ANALYSIS ===\n")
-  
-  # Perform ANOVA
-  anova_model <- aov(as.formula(paste(response_var, "~", group_var)), data = data)
-  anova_summary <- summary(anova_model)
-  
-  # Extract key statistics
-  f_stat <- anova_summary[[1]]$`F value`[1]
-  p_value <- anova_summary[[1]]$`Pr(>F)`[1]
-  df_between <- anova_summary[[1]]$Df[1]
-  df_within <- anova_summary[[1]]$Df[2]
-  ss_between <- anova_summary[[1]]$`Sum Sq`[1]
-  ss_within <- anova_summary[[1]]$`Sum Sq`[2]
-  ms_between <- anova_summary[[1]]$`Mean Sq`[1]
-  ms_within <- anova_summary[[1]]$`Mean Sq`[2]
-  
-  cat("ANOVA Results:\n")
-  cat("  F-statistic:", round(f_stat, 3), "\n")
-  cat("  Degrees of freedom:", df_between, ",", df_within, "\n")
-  cat("  p-value:", round(p_value, 4), "\n")
-  cat("  Critical F-value:", round(qf(1 - alpha, df_between, df_within), 3), "\n")
-  cat("  Significant:", p_value < alpha, "\n\n")
-  
-  # 4. Effect Size Analysis
-  cat("=== 4. EFFECT SIZE ANALYSIS ===\n")
-  
-  # Calculate effect sizes
-  ss_total <- ss_between + ss_within
-  eta_squared <- ss_between / ss_total
-  omega_squared <- (ss_between - (df_between * ms_within)) / (ss_total + ms_within)
-  cohens_f <- sqrt(eta_squared / (1 - eta_squared))
-  
-  cat("Effect size measures:\n")
-  cat("  Eta-squared (η²):", round(eta_squared, 3), "\n")
-  cat("  Omega-squared (ω²):", round(omega_squared, 3), "\n")
-  cat("  Cohen's f:", round(cohens_f, 3), "\n")
-  
-  # Interpret effect size
-  if (eta_squared < 0.01) {
-    effect_interpretation <- "Negligible"
-  } else if (eta_squared < 0.06) {
-    effect_interpretation <- "Small"
-  } else if (eta_squared < 0.14) {
-    effect_interpretation <- "Medium"
-  } else {
-    effect_interpretation <- "Large"
-  }
-  
-  cat("  Effect size interpretation:", effect_interpretation, "\n\n")
-  
-  # 5. Post Hoc Analysis
-  cat("=== 5. POST HOC ANALYSIS ===\n")
-  
-  if (p_value < alpha) {
-    cat("Post hoc tests performed (ANOVA was significant):\n")
+def generate_comprehensive_anova_report(data, group_var, response_var, alpha=0.05):
+    """Generate comprehensive ANOVA report"""
+    from datetime import datetime
     
-    # Tukey's HSD
-    tukey_result <- TukeyHSD(anova_model)
-    significant_tukey <- tukey_result[[1]][tukey_result[[1]][, "p adj"] < alpha, ]
+    print("=== COMPREHENSIVE ONE-WAY ANOVA REPORT ===")
+    print(f"Analysis Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
     
-    if (nrow(significant_tukey) > 0) {
-      cat("Significant pairwise differences (Tukey's HSD):\n")
-      for (i in 1:nrow(significant_tukey)) {
-        row_name <- rownames(significant_tukey)[i]
-        diff <- significant_tukey[i, "diff"]
-        lwr <- significant_tukey[i, "lwr"]
-        upr <- significant_tukey[i, "upr"]
-        p_adj <- significant_tukey[i, "p adj"]
-        cat("  ", row_name, ": diff =", round(diff, 3), 
-            "95% CI [", round(lwr, 3), ",", round(upr, 3), "], p =", round(p_adj, 4), "\n")
-      }
-    } else {
-      cat("No significant pairwise differences found with Tukey's HSD.\n")
-    }
-  } else {
-    cat("Post hoc tests not performed (ANOVA was not significant).\n")
-  }
-  cat("\n")
-  
-  # 6. Power Analysis
-  cat("=== 6. POWER ANALYSIS ===\n")
-  
-  current_power <- pwr.anova.test(k = k, n = min(n_per_group), f = cohens_f, sig.level = alpha)$power
-  
-  cat("Power analysis:\n")
-  cat("  Current power:", round(current_power, 3), "\n")
-  cat("  Type II error rate (β):", round(1 - current_power, 3), "\n")
-  
-  if (current_power < 0.8) {
-    required_n <- pwr.anova.test(k = k, f = cohens_f, sig.level = alpha, power = 0.8)$n
-    cat("  Required sample size per group for 80% power:", ceiling(required_n), "\n")
-  }
-  cat("\n")
-  
-  # 7. Nonparametric Alternative
-  cat("=== 7. NONPARAMETRIC ALTERNATIVE ===\n")
-  
-  kruskal_result <- kruskal.test(as.formula(paste(response_var, "~", group_var)), data = data)
-  
-  cat("Kruskal-Wallis test results:\n")
-  cat("  H-statistic:", round(kruskal_result$statistic, 3), "\n")
-  cat("  p-value:", round(kruskal_result$p.value, 4), "\n")
-  cat("  Significant:", kruskal_result$p.value < alpha, "\n")
-  
-  # Agreement between parametric and nonparametric tests
-  agreement <- (p_value < alpha) == (kruskal_result$p.value < alpha)
-  cat("  Agreement with parametric ANOVA:", agreement, "\n\n")
-  
-  # 8. Confidence Intervals
-  cat("=== 8. CONFIDENCE INTERVALS ===\n")
-  
-  # Confidence intervals for group means
-  ci_data <- data %>%
-    group_by(!!sym(group_var)) %>%
-    summarise(
-      n = n(),
-      mean = mean(!!sym(response_var), na.rm = TRUE),
-      sd = sd(!!sym(response_var), na.rm = TRUE),
-      se = sd / sqrt(n),
-      t_critical = qt(1 - alpha/2, n - 1),
-      ci_lower = mean - t_critical * se,
-      ci_upper = mean + t_critical * se
-    )
-  
-  cat("95% Confidence intervals for group means:\n")
-  for (i in 1:nrow(ci_data)) {
-    group_name <- ci_data[[group_var]][i]
-    mean_val <- ci_data$mean[i]
-    ci_lower <- ci_data$ci_lower[i]
-    ci_upper <- ci_data$ci_upper[i]
-    cat("  ", group_name, ": ", round(mean_val, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]\n", sep = "")
-  }
-  cat("\n")
-  
-  # 9. Practical Significance
-  cat("=== 9. PRACTICAL SIGNIFICANCE ===\n")
-  
-  cat("Practical significance assessment:\n")
-  if (p_value < alpha) {
-    cat("  ✓ Statistically significant differences detected\n")
+    # Study Information
+    print("=== STUDY INFORMATION ===")
+    groups = data[group_var].unique()
+    k = len(groups)
+    n_per_group = [sum(data[group_var] == group) for group in groups]
+    total_n = sum(n_per_group)
     
-    if (eta_squared >= 0.14) {
-      cat("  ✓ Large practical effect - results are practically meaningful\n")
-    } else if (eta_squared >= 0.06) {
-      cat("  ⚠️  Medium practical effect - consider context for interpretation\n")
-    } else {
-      cat("  ⚠️  Small practical effect - may not be practically meaningful\n")
+    print("Research Design: One-way ANOVA")
+    print(f"Number of groups: {k}")
+    print(f"Group names: {', '.join(groups)}")
+    print(f"Sample sizes per group: {', '.join(map(str, n_per_group))}")
+    print(f"Total sample size: {total_n}")
+    print(f"Significance level (α): {alpha}\n")
+    
+    # 1. Descriptive Statistics
+    print("=== 1. DESCRIPTIVE STATISTICS ===")
+    
+    desc_stats = data.groupby(group_var)[response_var].agg([
+        'count', 'mean', 'std', 'median', 'min', 'max'
+    ]).rename(columns={
+        'count': 'n',
+        'mean': 'mean_val',
+        'std': 'sd',
+        'median': 'median_val',
+        'min': 'min_val',
+        'max': 'max_val'
+    })
+    desc_stats['se'] = desc_stats['sd'] / np.sqrt(desc_stats['n'])
+    
+    print(desc_stats)
+    
+    # Overall statistics
+    overall_stats = {
+        'n': len(data),
+        'mean': data[response_var].mean(),
+        'sd': data[response_var].std(),
+        'median': data[response_var].median()
     }
     
-    # Identify best performing group
-    best_group <- desc_stats[[group_var]][which.max(desc_stats$mean)]
-    cat("  - Best performing group:", best_group, "\n")
+    print("\nOverall statistics:")
+    for key, value in overall_stats.items():
+        print(f"  {key}: {round(value, 3)}")
+    print()
     
-  } else {
-    cat("  ✗ No statistically significant differences detected\n")
-    cat("  - Consider power analysis and effect size\n")
-    cat("  - May need larger sample size or different design\n")
-  }
-  cat("\n")
-  
-  # 10. Conclusions and Recommendations
-  cat("=== 10. CONCLUSIONS AND RECOMMENDATIONS ===\n")
-  
-  cat("Primary conclusion:\n")
-  if (p_value < alpha) {
-    cat("  Reject the null hypothesis (p <", alpha, ")\n")
-    cat("  There are significant differences between group means\n")
-  } else {
-    cat("  Fail to reject the null hypothesis (p >=", alpha, ")\n")
-    cat("  There is insufficient evidence of differences between group means\n")
-  }
-  
-  cat("\nRecommendations:\n")
-  if (p_value < alpha && eta_squared >= 0.06) {
-    cat("  - Results support the effectiveness of the intervention/factor\n")
-    cat("  - Consider implementing the best-performing condition\n")
-    cat("  - Conduct follow-up studies to confirm findings\n")
-  } else if (p_value < alpha && eta_squared < 0.06) {
-    cat("  - Statistically significant but small practical effect\n")
-    cat("  - Consider whether the effect is meaningful in practice\n")
-    cat("  - May need larger sample size for adequate power\n")
-  } else {
-    cat("  - No significant differences detected\n")
-    cat("  - Consider increasing sample size for future studies\n")
-    cat("  - Investigate other factors that may influence the outcome\n")
-  }
-  
-  # 11. Limitations
-  cat("\n=== 11. LIMITATIONS ===\n")
-  
-  cat("Study limitations:\n")
-  if (current_power < 0.8) {
-    cat("  - Low statistical power may have missed true effects\n")
-  }
-  if (assumption_results$violations > 0) {
-    cat("  - Some ANOVA assumptions were violated\n")
-  }
-  if (min(n_per_group) < 30) {
-    cat("  - Small sample sizes may affect robustness\n")
-  }
-  if (!length(unique(n_per_group)) == 1) {
-    cat("  - Unbalanced design may affect power\n")
-  }
-  
-  cat("\n=== END OF REPORT ===\n")
-  
-  return(list(
-    descriptive_stats = desc_stats,
-    anova_results = list(f_stat = f_stat, p_value = p_value, df = c(df_between, df_within)),
-    effect_sizes = list(eta_squared = eta_squared, omega_squared = omega_squared, cohens_f = cohens_f),
-    power = current_power,
-    assumptions = assumption_results,
-    kruskal_wallis = kruskal_result,
-    significant = p_value < alpha
-  ))
-}
+    # 2. Assumption Checking
+    print("=== 2. ASSUMPTION CHECKING ===")
+    
+    assumption_results = comprehensive_assumption_check(data, group_var, response_var, alpha)
+    
+    print(f"Assumption violations: {assumption_results['violations']}")
+    if assumption_results['violations'] > 0:
+        print(f"Violated assumptions: {', '.join(assumption_results['violation_details'])}")
+    else:
+        print("All assumptions met ✓")
+    print()
+    
+    # 3. Primary Analysis
+    print("=== 3. PRIMARY ANALYSIS ===")
+    
+    # Perform ANOVA
+    model = ols(f'{response_var} ~ {group_var}', data=data).fit()
+    anova_table = anova_lm(model, typ=2)
+    
+    # Extract key statistics
+    f_stat = anova_table.loc[group_var, 'F']
+    p_value = anova_table.loc[group_var, 'PR(>F)']
+    df_between = anova_table.loc[group_var, 'df']
+    df_within = anova_table.loc['Residual', 'df']
+    ss_between = anova_table.loc[group_var, 'sum_sq']
+    ss_within = anova_table.loc['Residual', 'sum_sq']
+    ms_between = anova_table.loc[group_var, 'mean_sq']
+    ms_within = anova_table.loc['Residual', 'mean_sq']
+    
+    # Critical F-value
+    f_critical = f.ppf(1 - alpha, df_between, df_within)
+    
+    print("ANOVA Results:")
+    print(f"  F-statistic: {round(f_stat, 3)}")
+    print(f"  Degrees of freedom: {df_between}, {df_within}")
+    print(f"  p-value: {round(p_value, 4)}")
+    print(f"  Critical F-value: {round(f_critical, 3)}")
+    print(f"  Significant: {p_value < alpha}\n")
+    
+    # 4. Effect Size Analysis
+    print("=== 4. EFFECT SIZE ANALYSIS ===")
+    
+    # Calculate effect sizes
+    ss_total = ss_between + ss_within
+    eta_squared = ss_between / ss_total
+    omega_squared = (ss_between - (df_between * ms_within)) / (ss_total + ms_within)
+    cohens_f = np.sqrt(eta_squared / (1 - eta_squared))
+    
+    print("Effect size measures:")
+    print(f"  Eta-squared (η²): {round(eta_squared, 3)}")
+    print(f"  Omega-squared (ω²): {round(omega_squared, 3)}")
+    print(f"  Cohen's f: {round(cohens_f, 3)}")
+    
+    # Interpret effect size
+    if eta_squared < 0.01:
+        effect_interpretation = "Negligible"
+    elif eta_squared < 0.06:
+        effect_interpretation = "Small"
+    elif eta_squared < 0.14:
+        effect_interpretation = "Medium"
+    else:
+        effect_interpretation = "Large"
+    
+    print(f"  Effect size interpretation: {effect_interpretation}\n")
+    
+    # 5. Post Hoc Analysis
+    print("=== 5. POST HOC ANALYSIS ===")
+    
+    if p_value < alpha:
+        print("Post hoc tests performed (ANOVA was significant):")
+        
+        # Tukey's HSD
+        mc = MultiComparison(data[response_var], data[group_var])
+        tukey_result = mc.tukeyhsd(alpha=alpha)
+        
+        significant_pairs = tukey_result.pvalues < alpha
+        if np.any(significant_pairs):
+            print("Significant pairwise differences (Tukey's HSD):")
+            for i, (group1, group2) in enumerate(tukey_result.groupsunique):
+                if significant_pairs[i]:
+                    diff = tukey_result.meandiffs[i]
+                    p_adj = tukey_result.pvalues[i]
+                    print(f"  {group1} vs {group2}: diff = {round(diff, 3)}, p = {round(p_adj, 4)}")
+        else:
+            print("No significant pairwise differences found with Tukey's HSD.")
+    else:
+        print("Post hoc tests not performed (ANOVA was not significant).")
+    print()
+    
+    # 6. Power Analysis
+    print("=== 6. POWER ANALYSIS ===")
+    
+    current_power = power_analysis_anova(k, min(n_per_group), cohens_f, alpha)
+    
+    print("Power analysis:")
+    print(f"  Current power: {round(current_power, 3)}")
+    print(f"  Type II error rate (β): {round(1 - current_power, 3)}")
+    
+    if current_power < 0.8:
+        required_n = estimate_sample_size_for_power(k, cohens_f, alpha, 0.8)
+        print(f"  Required sample size per group for 80% power: {required_n}")
+    print()
+    
+    # 7. Nonparametric Alternative
+    print("=== 7. NONPARAMETRIC ALTERNATIVE ===")
+    
+    groups_data = [data[data[group_var] == group][response_var] for group in groups]
+    kruskal_result = stats.kruskal(*groups_data)
+    
+    print("Kruskal-Wallis test results:")
+    print(f"  H-statistic: {round(kruskal_result.statistic, 3)}")
+    print(f"  p-value: {round(kruskal_result.pvalue, 4)}")
+    print(f"  Significant: {kruskal_result.pvalue < alpha}")
+    
+    # Agreement between parametric and nonparametric tests
+    agreement = (p_value < alpha) == (kruskal_result.pvalue < alpha)
+    print(f"  Agreement with parametric ANOVA: {agreement}\n")
+    
+    # 8. Confidence Intervals
+    print("=== 8. CONFIDENCE INTERVALS ===")
+    
+    # Confidence intervals for group means
+    print("95% Confidence intervals for group means:")
+    for group in groups:
+        group_data = data[data[group_var] == group][response_var]
+        n = len(group_data)
+        mean_val = group_data.mean()
+        se = group_data.std() / np.sqrt(n)
+        t_critical = stats.t.ppf(1 - alpha/2, n - 1)
+        ci_lower = mean_val - t_critical * se
+        ci_upper = mean_val + t_critical * se
+        print(f"  {group}: {round(mean_val, 2)} [{round(ci_lower, 2)}, {round(ci_upper, 2)}]")
+    print()
+    
+    # 9. Practical Significance
+    print("=== 9. PRACTICAL SIGNIFICANCE ===")
+    
+    print("Practical significance assessment:")
+    if p_value < alpha:
+        print("  ✓ Statistically significant differences detected")
+        
+        if eta_squared >= 0.14:
+            print("  ✓ Large practical effect - results are practically meaningful")
+        elif eta_squared >= 0.06:
+            print("  ⚠️  Medium practical effect - consider context for interpretation")
+        else:
+            print("  ⚠️  Small practical effect - may not be practically meaningful")
+        
+        # Identify best performing group
+        best_group = desc_stats['mean_val'].idxmax()
+        print(f"  - Best performing group: {best_group}")
+        
+    else:
+        print("  ✗ No statistically significant differences detected")
+        print("  - Consider power analysis and effect size")
+        print("  - May need larger sample size or different design")
+    print()
+    
+    # 10. Conclusions and Recommendations
+    print("=== 10. CONCLUSIONS AND RECOMMENDATIONS ===")
+    
+    print("Primary conclusion:")
+    if p_value < alpha:
+        print(f"  Reject the null hypothesis (p < {alpha})")
+        print("  There are significant differences between group means")
+    else:
+        print(f"  Fail to reject the null hypothesis (p >= {alpha})")
+        print("  There is insufficient evidence of differences between group means")
+    
+    print("\nRecommendations:")
+    if p_value < alpha and eta_squared >= 0.06:
+        print("  - Results support the effectiveness of the intervention/factor")
+        print("  - Consider implementing the best-performing condition")
+        print("  - Conduct follow-up studies to confirm findings")
+    elif p_value < alpha and eta_squared < 0.06:
+        print("  - Statistically significant but small practical effect")
+        print("  - Consider whether the effect is meaningful in practice")
+        print("  - May need larger sample size for adequate power")
+    else:
+        print("  - No significant differences detected")
+        print("  - Consider increasing sample size for future studies")
+        print("  - Investigate other factors that may influence the outcome")
+    
+    # 11. Limitations
+    print("\n=== 11. LIMITATIONS ===")
+    
+    print("Study limitations:")
+    if current_power < 0.8:
+        print("  - Low statistical power may have missed true effects")
+    if assumption_results['violations'] > 0:
+        print("  - Some ANOVA assumptions were violated")
+    if min(n_per_group) < 30:
+        print("  - Small sample sizes may affect robustness")
+    if len(set(n_per_group)) != 1:
+        print("  - Unbalanced design may affect power")
+    
+    print("\n=== END OF REPORT ===")
+    
+    return {
+        'descriptive_stats': desc_stats,
+        'anova_results': {'f_stat': f_stat, 'p_value': p_value, 'df': [df_between, df_within]},
+        'effect_sizes': {'eta_squared': eta_squared, 'omega_squared': omega_squared, 'cohens_f': cohens_f},
+        'power': current_power,
+        'assumptions': assumption_results,
+        'kruskal_wallis': kruskal_result,
+        'significant': p_value < alpha
+    }
 
 # Generate comprehensive report
-comprehensive_report <- generate_comprehensive_anova_report(mtcars, "cyl_factor", "mpg")
+comprehensive_report = generate_comprehensive_anova_report(mtcars, "cyl_factor", "mpg")
 ```
 
 ## Exercises
@@ -2988,20 +2979,6 @@ These exercises provide hands-on practice with one-way ANOVA concepts and techni
 - Calculate and interpret effect sizes
 - Perform post hoc analysis appropriately
 
-```r
-# Exercise 1 Solution Framework
-# Your code here...
-
-# 1. Data preparation
-# 2. Descriptive statistics
-# 3. Assumption checking
-# 4. ANOVA analysis
-# 5. Effect size calculation
-# 6. Post hoc tests
-# 7. Visualization
-# 8. Interpretation
-```
-
 ### Exercise 2: Comprehensive Assumption Checking
 
 **Objective:** Conduct thorough assumption checking and recommend appropriate statistical approaches.
@@ -3021,19 +2998,6 @@ These exercises provide hands-on practice with one-way ANOVA concepts and techni
 - Understand when to use alternative methods
 - Interpret assumption violation impacts
 - Make informed methodological decisions
-
-```r
-# Exercise 2 Solution Framework
-# Your code here...
-
-# 1. Load and prepare data
-# 2. Comprehensive normality testing
-# 3. Homogeneity of variance testing
-# 4. Independence assessment
-# 5. Outlier detection
-# 6. Alternative method comparison
-# 7. Recommendations
-```
 
 ### Exercise 3: Advanced Post Hoc Analysis
 
@@ -3055,18 +3019,6 @@ These exercises provide hands-on practice with one-way ANOVA concepts and techni
 - Compare conservative vs. liberal approaches
 - Interpret post hoc results correctly
 - Choose appropriate methods for different scenarios
-
-```r
-# Exercise 3 Solution Framework
-# Your code here...
-
-# 1. Generate simulated data
-# 2. Perform ANOVA
-# 3. Multiple post hoc methods
-# 4. Result comparison
-# 5. Visualization
-# 6. Interpretation
-```
 
 ### Exercise 4: Effect Size Analysis and Interpretation
 
