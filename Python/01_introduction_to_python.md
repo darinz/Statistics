@@ -51,162 +51,75 @@ Jupyter provides an interactive environment for writing and running Python code 
 
 ### Your First Python Session
 
-```python
-# Print "Hello, World!" - the traditional first program
-print("Hello, World!")
+**📁 Code Reference**: See `first_python_session()` function in `01_introduction_to_python.py`
 
-# Basic arithmetic operations
-print(2 + 3)    # Addition: 2 + 3 = 5
-print(5 * 4)    # Multiplication: 5 × 4 = 20
-print(10 / 2)   # Division: 10 ÷ 2 = 5
-print(2 ** 3)   # Exponentiation: 2³ = 8
-
-# Create simple variables and perform operations
-x = 5   # Assign value 5 to variable x
-y = 10  # Assign value 10 to variable y
-print(x + y)    # Add x and y: 5 + 10 = 15
-
-# Check the type of an object
-print(type(x))  # Returns <class 'int'>
-```
+This section demonstrates:
+- Printing "Hello, World!" - the traditional first program
+- Basic arithmetic operations (addition, multiplication, division, exponentiation)
+- Creating variables and performing operations
+- Checking the type of objects
 
 ### Understanding Python as a Calculator
 
+**📁 Code Reference**: See `python_as_calculator()` function in `01_introduction_to_python.py`
+
 Python can perform all basic mathematical operations and much more:
-
-```python
-# Basic arithmetic operations
-print(2 + 3)    # Addition: 2 + 3 = 5
-print(5 - 2)    # Subtraction: 5 - 2 = 3
-print(4 * 3)    # Multiplication: 4 × 3 = 12
-print(10 / 2)   # Division: 10 ÷ 2 = 5
-print(2 ** 3)   # Exponentiation: 2³ = 8
-
-# Mathematical functions
-import math
-print(math.sqrt(16))   # Square root: √16 = 4
-print(math.log(10))    # Natural logarithm: ln(10) ≈ 2.302585
-print(math.log10(100)) # Base-10 logarithm: log₁₀(100) = 2
-print(math.exp(1))     # Exponential function: e¹ ≈ 2.718282
-print(abs(-5))         # Absolute value: |-5| = 5
-print(round(3.14159, 2)) # Round to 2 decimal places: 3.14
-print(math.ceil(3.2))  # Ceiling function: ⌈3.2⌉ = 4
-print(math.floor(3.8)) # Floor function: ⌊3.8⌋ = 3
-
-# Trigonometric functions (angles in radians)
-print(math.sin(math.pi/2))  # Sine of 90° = 1
-print(math.cos(math.pi))    # Cosine of 180° = -1
-print(math.tan(math.pi/4))  # Tangent of 45° = 1
-```
+- Basic arithmetic operations (addition, subtraction, multiplication, division, exponentiation)
+- Mathematical functions (square root, logarithms, exponential, absolute value, rounding)
+- Trigonometric functions (sine, cosine, tangent)
 
 ### Variables and Assignment
 
+**📁 Code Reference**: See `variables_and_assignment()` function in `01_introduction_to_python.py`
+
 Variables in Python are containers that store values. Understanding variable assignment is fundamental:
-
-```python
-# Assignment using =
-x = 5    # Assign 5 to variable x
-y = 10   # Assign 10 to variable y
-
-# Print variables
-print(x)         # Display value of x
-print(y)         # Display value of y
-
-# Check variable type
-print(type(x))      # <class 'int'>
-print(isinstance(x, int)) # True if x is integer
-print(isinstance(x, float)) # False
-
-# Remove variables (not common, but possible)
-del x  # Remove variable x
-# Note: In Jupyter, use %reset to clear all variables
-```
+- Assignment using `=`
+- Printing variables
+- Checking variable types
+- Variable management
 
 ## Data Types in Python
 
 Understanding data types is crucial for statistical analysis. Python has several fundamental data types:
 
 ### Numeric
+
+**📁 Code Reference**: See `numeric_data_types()` function in `01_introduction_to_python.py`
+
 Numeric data represents numbers, including integers and floating-point numbers:
-
-```python
-# Numeric data examples
-age = 25        # Integer
-height = 175.5  # Decimal number
-temperature = -5.2 # Negative number
-pi_value = 3.14159 # Mathematical constant
-
-# Check data types
-print(type(age))       # <class 'int'>
-print(type(height))    # <class 'float'>
-print(isinstance(age, int))  # True
-print(isinstance(height, float))  # True
-
-# Integer type (explicit)
-age_int = int(25)
-print(type(age_int))   # <class 'int'>
-```
+- Integer examples (age, counts)
+- Decimal numbers (height, temperature)
+- Type checking and conversion
+- Mathematical constants
 
 ### String
+
+**📁 Code Reference**: See `string_data_types()` function in `01_introduction_to_python.py`
+
 String data represents text:
-
-```python
-# String data
-name = "John Doe"
-city = 'New York'
-email = "john.doe@email.com"
-
-# Check string data
-type(name)      # <class 'str'>
-isinstance(name, str) # True
-len(name)      # Length of string: 8
-
-# String operations
-print(name.upper())    # Convert to uppercase: "JOHN DOE"
-print(name.lower())    # Convert to lowercase: "john doe"
-print("Hello " + name) # Concatenate strings: "Hello John Doe"
-```
+- String creation and assignment
+- String properties and methods
+- String operations (uppercase, lowercase, concatenation)
+- Length and type checking
 
 ### Boolean
+
+**📁 Code Reference**: See `boolean_data_types()` function in `01_introduction_to_python.py`
+
 Boolean data represents True/False values:
-
-```python
-# Boolean data
-is_student = True
-is_working = False
-is_adult = age >= 18  # Logical expression
-
-# Logical operations
-print(True and True)    # AND: True
-print(True or False)    # OR: True
-print(not True)         # NOT: False
-
-# Comparison operators
-print(5 > 3)           # Greater than: True
-print(5 == 5)          # Equal to: True
-print(5 != 3)          # Not equal to: True
-print(5 >= 5)          # Greater than or equal: True
-```
+- Boolean variables and expressions
+- Logical operations (AND, OR, NOT)
+- Comparison operators (greater than, equal to, not equal to)
+- Conditional expressions
 
 ### List
+
+**📁 Code Reference**: See `list_data_types()` function in `01_introduction_to_python.py`
+
 Lists represent ordered collections of items (can be of mixed types):
-
-```python
-# List data
-gender = ["Male", "Female", "Male", "Female"]
-education = ["High School", "Bachelor", "Master", "PhD"]
-
-# List properties
-print(set(gender))      # Unique values: {'Female', 'Male'}
-print(len(gender))      # Number of elements: 4
-print(gender.count("Male")) # Frequency of 'Male': 2
-
-# Ordered lists
-satisfaction = ["Low", "Medium", "High", "Medium", "High"]
-# To treat as ordered, use pandas Categorical if needed
-import pandas as pd
-satisfaction_cat = pd.Categorical(satisfaction, categories=["Low", "Medium", "High"], ordered=True)
-```
+- Creating lists with different data types
+- List properties (unique values, length, frequency counts)
+- Ordered categorical data with pandas Categorical
 
 ## Working with Lists
 
@@ -214,115 +127,56 @@ Lists are a fundamental data structure in Python. They are ordered, mutable, and
 
 ### Creating Lists
 
-```python
-# Numeric list
-numbers = [1, 2, 3, 4, 5]
-print(numbers)
+**📁 Code Reference**: See `creating_lists()` function in `01_introduction_to_python.py`
 
-# String list
-names = ["Alice", "Bob", "Charlie", "Diana"]
-print(names)
-
-# Boolean list
-logical_list = [True, False, True, False, True]
-print(logical_list)
-
-# Using range and list comprehensions
-print(list(range(1, 11)))              # Sequence from 1 to 10
-print(list(range(1, 11, 2)))           # Sequence from 1 to 10, step 2: 1,3,5,7,9
-print([5] * 3)                         # Repeat 5 three times: 5,5,5
-```
+Different ways to create lists:
+- Numeric lists
+- String lists
+- Boolean lists
+- Using range and list comprehensions
+- Repeating elements
 
 ### List Operations
 
+**📁 Code Reference**: See `list_operations()` function in `01_introduction_to_python.py`
+
 Python performs operations element-wise using list comprehensions or with NumPy arrays:
-
-```python
-# Create lists
-x = [1, 2, 3, 4, 5]
-y = [10, 20, 30, 40, 50]
-
-# Element-wise operations with list comprehensions
-print([i + 2 for i in x])        # Add 2 to each element
-print([i * 3 for i in x])        # Multiply each element by 3
-print([i ** 2 for i in x])       # Square each element
-import math
-print([math.sqrt(i) for i in x]) # Square root of each element
-
-# Element-wise operations between two lists
-print([a + b for a, b in zip(x, y)])        # Addition
-print([a * b for a, b in zip(x, y)])        # Multiplication
-print([a / b for a, b in zip(x, y)])        # Division
-
-# Logical operations on lists
-print([i > 3 for i in x])        # Compare each element
-print([i == 3 for i in x])       # Check equality
-```
+- Element-wise operations with list comprehensions
+- Operations between two lists (addition, multiplication, division)
+- Logical operations on lists
+- Mathematical transformations
 
 ### List Functions and Statistics
 
-```python
-# Create a sample data list
-data = [1, 3, 5, 7, 9, 2, 4, 6, 8, 10]
+**📁 Code Reference**: See `list_statistics()` function in `01_introduction_to_python.py`
 
-# Basic summary statistics
-print(len(data))     # Number of elements: 10
-print(sum(data))     # Sum of all elements: 55
-print(sum(data) / len(data))  # Arithmetic mean: 5.5
-import statistics
-print(statistics.mean(data))  # Mean
-print(statistics.median(data)) # Median
-print(min(data))     # Minimum value: 1
-print(max(data))     # Maximum value: 10
-print((min(data), max(data))) # Range
-
-# Measures of variability
-print(statistics.variance(data)) # Variance
-print(statistics.stdev(data))    # Standard deviation
-
-# Quantiles and percentiles
-import numpy as np
-print(np.percentile(data, [0, 25, 50, 75, 100])) # Quartiles
-print(np.percentile(data, 90)) # 90th percentile
-```
+Statistical functions on lists:
+- Basic summary statistics (length, sum, mean, median, min, max, range)
+- Measures of variability (variance, standard deviation)
+- Quantiles and percentiles
+- Using both built-in functions and NumPy
 
 ### List Indexing and Slicing
 
-```python
-# Create a list
-scores = [85, 92, 78, 96, 88, 91, 87, 94, 89, 93]
+**📁 Code Reference**: See `list_indexing()` function in `01_introduction_to_python.py`
 
-# Indexing (Python uses 0-based indexing)
-print(scores[0])        # First element: 85
-print(scores[4])        # Fifth element: 88
-print([scores[i] for i in [0,2,4]]) # Multiple elements: 85, 78, 88
-
-# Logical indexing (using list comprehensions)
-print([score for score in scores if score > 90]) # Elements greater than 90: 92, 96, 91, 94, 93
-
-# Negative indexing (exclude elements)
-print(scores[1:])       # All elements except first
-print([scores[i] for i in range(len(scores)) if i not in [0,2,4]]) # Exclude 1st, 3rd, 5th
-```
+Accessing and manipulating list elements:
+- Indexing (0-based indexing in Python)
+- Accessing multiple elements
+- Logical indexing with list comprehensions
+- Excluding elements and slicing
 
 ## Getting Help in Python
+
+**📁 Code Reference**: See `getting_help()` function in `01_introduction_to_python.py`
 
 Python has excellent built-in help system and extensive online resources:
 
 ### Built-in Help
-```python
-# Get help for a function
-help(len)
-help(print)
-
-# Get information about objects
-print(type(data))        # Type of object
-print(dir(data))         # List available methods
-print(vars())            # List all variables in current scope
-
-# Package information
-help(math)  # Help for math module
-```
+- Getting help for functions with `help()`
+- Object information with `type()` and `dir()`
+- Variable scope with `vars()`
+- Package information
 
 ### Online Resources
 - **Python Documentation**: [python.org/doc/](https://docs.python.org/3/)
@@ -334,35 +188,15 @@ help(math)  # Help for math module
 ## Best Practices
 
 ### Code Style and Organization
-```python
-# Good: Use descriptive variable names
-student_scores = [85, 92, 78, 96, 88]
-class_average = sum(student_scores) / len(student_scores)
 
-# Good: Use spaces around operators for readability
-x = 5 + 3
-y = x * 2
+**📁 Code Reference**: See `code_style_examples()` function in `01_introduction_to_python.py`
 
-# Good: Use comments to explain complex code
-# Calculate the mean and standard deviation of student scores
-import statistics
-mean_score = statistics.mean(student_scores)
-sd_score = statistics.stdev(student_scores)
-
-# Good: Use consistent indentation for control structures
-if mean_score > 85:
-    print("High performing class")
-    print(f"Average score: {mean_score:.2f}")
-else:
-    print("Needs improvement")
-    print(f"Current average: {mean_score:.2f}")
-
-# Good: Use functions to organize code
-def calculate_stats(data):
-    mean_val = statistics.mean(data)
-    sd_val = statistics.stdev(data)
-    return {"mean": mean_val, "sd": sd_val}
-```
+Good coding practices:
+- Using descriptive variable names
+- Proper spacing around operators
+- Adding comments to explain complex code
+- Consistent indentation for control structures
+- Organizing code into functions
 
 ### File Organization and Project Management
 - **Organize scripts**: Keep related Python scripts in organized folders
@@ -373,136 +207,93 @@ def calculate_stats(data):
 - **Project structure**: Organize projects with clear folder structure
 
 ### Error Handling and Debugging
-```python
-# Check for errors and handle them gracefully
-try:
-    result = mean(non_existent_variable)
-except Exception as e:
-    print(f"Error occurred: {e}")
 
-# Use print statements for debugging
-x = 5
-print(f"x = {x}")
-print(f"x squared = {x ** 2}")
-```
+**📁 Code Reference**: See `error_handling_examples()` function in `01_introduction_to_python.py`
+
+Debugging techniques:
+- Using try-except blocks for error handling
+- Print statements for debugging
+- Graceful error handling
+- Understanding error messages
 
 ## Mathematical Concepts in Python
+
+**📁 Code Reference**: See `mathematical_concepts()` function in `01_introduction_to_python.py`
 
 ### Understanding Statistical Measures
 
 **Mean (Arithmetic Average)**: The sum of all values divided by the number of values
-```python
-# Mathematical formula: μ = (Σxᵢ) / n
-data = [2, 4, 6, 8, 10]
-mean_value = sum(data) / len(data)  # Manual calculation
-import statistics
-mean_value_auto = statistics.mean(data)           # Python function
-```
+- Mathematical formula: μ = (Σxᵢ) / n
+- Manual calculation vs. Python functions
 
 **Median**: The middle value when data is ordered
-```python
-# For odd number of values: middle value
-# For even number of values: average of two middle values
-data = [1, 3, 5, 7, 9]
-import statistics
-median_value = statistics.median(data)
-```
+- For odd number of values: middle value
+- For even number of values: average of two middle values
 
 **Variance**: Average squared deviation from the mean
-```python
-# Mathematical formula: σ² = Σ(xᵢ - μ)² / (n-1)
-data = [2, 4, 6, 8, 10]
-mean_data = sum(data) / len(data)
-variance_manual = sum((x - mean_data) ** 2 for x in data) / (len(data) - 1)
-import statistics
-variance_auto = statistics.variance(data)
-```
+- Mathematical formula: σ² = Σ(xᵢ - μ)² / (n-1)
+- Manual calculation vs. Python functions
 
 **Standard Deviation**: Square root of variance
-```python
-# Mathematical formula: σ = √σ²
-import math
-sd_manual = math.sqrt(statistics.variance(data))
-sd_auto = statistics.stdev(data)
-```
+- Mathematical formula: σ = √σ²
+- Manual calculation vs. Python functions
 
 ## Exercises
 
 ### Exercise 1: Basic Operations and Variables
-Create variables for your age, height (in cm), and favorite color. Then perform some basic operations with the numeric variables.
 
-```python
-# Your solution here
-age = 25
-height = 175
-favorite_color = "blue"
+**📁 Code Reference**: See `exercise_1_basic_operations()` function in `01_introduction_to_python.py`
 
-# Basic operations
-age_in_months = age * 12
-height_in_meters = height / 100
-bmi = 70 / (height_in_meters ** 2)  # Assuming weight of 70kg
-```
+Create variables for your age, height (in cm), and favorite color. Then perform some basic operations with the numeric variables:
+- Convert age to months
+- Convert height to meters
+- Calculate BMI (assuming a weight)
 
 ### Exercise 2: List Creation and Manipulation
+
+**📁 Code Reference**: See `exercise_2_list_creation()` function in `01_introduction_to_python.py`
+
 Create lists for:
 - Your last 5 test scores
 - Names of 3 friends
 - Whether you like different foods (True/False)
 
-```python
-# Your solution here
-test_scores = [85, 92, 78, 96, 88]
-friend_names = ["Alice", "Bob", "Charlie"]
-food_preferences = [True, False, True, True, False]
-```
-
 ### Exercise 3: Summary Statistics
+
+**📁 Code Reference**: See `exercise_3_summary_statistics()` function in `01_introduction_to_python.py`
+
 Calculate the mean, median, and standard deviation of your test scores. Interpret what these values tell you about your performance.
 
-```python
-# Your solution here
-import statistics
-mean_score = statistics.mean(test_scores)
-median_score = statistics.median(test_scores)
-sd_score = statistics.stdev(test_scores)
-
-# Interpretation
-print("Mean score:", mean_score)
-print("Median score:", median_score)
-print("Standard deviation:", sd_score)
-```
-
 ### Exercise 4: Data Types and Type Conversion
-Create different types of data and practice converting between types.
 
-```python
-# Your solution here
-numeric_var = 42
-character_var = "42"
-logical_var = True
+**📁 Code Reference**: See `exercise_4_data_types()` function in `01_introduction_to_python.py`
 
-# Type conversions
-print(str(numeric_var))
-print(int(character_var))
-print(bool(1))  # 1 becomes True
-print(bool(0))  # 0 becomes False
-```
+Create different types of data and practice converting between types:
+- Converting numbers to strings
+- Converting strings to numbers
+- Converting numbers to booleans
 
 ### Exercise 5: List Operations
-Create two numeric lists and perform various operations on them.
 
-```python
-# Your solution here
-vector1 = [1, 2, 3, 4, 5]
-vector2 = [10, 20, 30, 40, 50]
+**📁 Code Reference**: See `exercise_5_list_operations()` function in `01_introduction_to_python.py`
 
-# Operations
-sum_vectors = [a + b for a, b in zip(vector1, vector2)]
-product_vectors = [a * b for a, b in zip(vector1, vector2)]
-mean_vector1 = sum(vector1) / len(vector1)
-import statistics
-sd_vector2 = statistics.stdev(vector2)
-```
+Create two numeric lists and perform various operations on them:
+- Element-wise addition and multiplication
+- Calculating mean and standard deviation
+- Working with multiple vectors
+
+## Running the Code Examples
+
+To run all the code examples in this lesson:
+
+1. **Run the entire file**: Execute `python 01_introduction_to_python.py` in your terminal
+2. **Run individual sections**: In a Python environment, import and call specific functions:
+   ```python
+   from introduction_to_python import first_python_session, python_as_calculator
+   first_python_session()
+   python_as_calculator()
+   ```
+3. **Interactive learning**: Copy individual functions into Jupyter notebooks for interactive exploration
 
 ## Next Steps
 
@@ -525,4 +316,5 @@ In the next chapter, we'll explore more complex data structures like tuples, dic
 - Practice regularly to build proficiency
 - Understanding data types is crucial for proper analysis
 - Python performs element-wise operations using comprehensions or NumPy
-- The built-in help system and online resources are comprehensive and useful 
+- The built-in help system and online resources are comprehensive and useful
+- All code examples are available in the companion Python file for hands-on practice 
