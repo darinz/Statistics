@@ -64,42 +64,72 @@ Under the null hypothesis, this statistic follows a chi-square distribution with
 
 **Degrees of Freedom:** $`df = k - 1 - p`$ where $`p`$ is the number of parameters estimated from the data.
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
+import numpy as np
+import pandas as pd
+from scipy import stats
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 # Basic goodness of fit test
-observed <- c(45, 52, 38, 65)
-expected <- c(50, 50, 50, 50)  # Equal expected frequencies
+observed = np.array([45, 52, 38, 65])
+expected = np.array([50, 50, 50, 50])  # Equal expected frequencies
 
 # Perform chi-square goodness of fit test
-chi_square_test <- chisq.test(observed, p = rep(1/length(observed), length(observed)))
+chi_square_test = stats.chisquare(observed, f_exp=expected)
 
 # Extract and display results
-cat("Chi-Square Goodness of Fit Test Results:\n")
-cat("Chi-square statistic:", round(chi_square_test$statistic, 3), "\n")
-cat("Degrees of freedom:", chi_square_test$parameter, "\n")
-cat("p-value:", round(chi_square_test$p.value, 4), "\n")
-cat("Expected frequencies:", expected, "\n")
-cat("Observed frequencies:", observed, "\n")
+print("Chi-Square Goodness of Fit Test Results:")
+print(f"Chi-square statistic: {chi_square_test.statistic:.3f}")
+print(f"p-value: {chi_square_test.pvalue:.4f}")
+print(f"Expected frequencies: {expected}")
+print(f"Observed frequencies: {observed}")
 
 # Manual calculation for understanding
-manual_chi_square <- function(observed, expected) {
-  chi_square <- sum((observed - expected)^2 / expected)
-  df <- length(observed) - 1
-  p_value <- 1 - pchisq(chi_square, df)
-  residuals <- (observed - expected) / sqrt(expected)
-  
-  return(list(
-    chi_square = chi_square,
-    df = df,
-    p_value = p_value,
-    residuals = residuals
-  ))
-}
+def manual_chi_square(observed, expected):
+    chi_square = np.sum((observed - expected)**2 / expected)
+    df = len(observed) - 1
+    p_value = 1 - stats.chi2.cdf(chi_square, df)
+    residuals = (observed - expected) / np.sqrt(expected)
+    
+    return {
+        'chi_square': chi_square,
+        'df': df,
+        'p_value': p_value,
+        'residuals': residuals
+    }
 
-manual_result <- manual_chi_square(observed, expected)
-cat("\nManual Calculation:\n")
-cat("Chi-square statistic:", round(manual_result$chi_square, 3), "\n")
-cat("Standardized residuals:", round(manual_result$residuals, 3), "\n")
+manual_result = manual_chi_square(observed, expected)
+print("\nManual Calculation:")
+print(f"Chi-square statistic: {manual_result['chi_square']:.3f}")
+print(f"Standardized residuals: {manual_result['residuals']:.3f}")
+
+# Visualize goodness of fit
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+categories = ['Category 1', 'Category 2', 'Category 3', 'Category 4']
+x = np.arange(len(categories))
+width = 0.35
+
+plt.bar(x - width/2, observed, width, label='Observed', alpha=0.8)
+plt.bar(x + width/2, expected, width, label='Expected', alpha=0.8)
+plt.xlabel('Categories')
+plt.ylabel('Frequency')
+plt.title('Observed vs Expected Frequencies')
+plt.xticks(x, categories)
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.bar(categories, manual_result['residuals'])
+plt.axhline(y=0, color='red', linestyle='--')
+plt.xlabel('Categories')
+plt.ylabel('Standardized Residuals')
+plt.title('Standardized Residuals')
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ### 2. Chi-Square Test of Independence
@@ -118,45 +148,72 @@ where $`E_{ij} = \frac{R_i \times C_j}{N}`$ is the expected frequency for cell $
 
 **Degrees of Freedom:** $`df = (r-1) \times (c-1)`$ where $`r`$ and $`c`$ are the number of rows and columns.
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Create contingency table
-contingency_table <- matrix(c(45, 35, 25, 55, 40, 30, 30, 25, 15), nrow = 3, ncol = 3)
-rownames(contingency_table) <- c("Low", "Medium", "High")
-colnames(contingency_table) <- c("Group A", "Group B", "Group C")
+contingency_table = np.array([
+    [45, 35, 25],
+    [55, 40, 30],
+    [30, 25, 15]
+])
+row_names = ['Low', 'Medium', 'High']
+col_names = ['Group A', 'Group B', 'Group C']
 
+# Create DataFrame for better display
+df_table = pd.DataFrame(contingency_table, index=row_names, columns=col_names)
 print("Contingency Table:")
-print(contingency_table)
+print(df_table)
 
 # Perform chi-square test of independence
-independence_test <- chisq.test(contingency_table)
+independence_test = stats.chi2_contingency(contingency_table)
 
 # Display results
-cat("Chi-Square Test of Independence Results:\n")
-cat("Chi-square statistic:", round(independence_test$statistic, 3), "\n")
-cat("Degrees of freedom:", independence_test$parameter, "\n")
-cat("p-value:", round(independence_test$p.value, 4), "\n")
+print("\nChi-Square Test of Independence Results:")
+print(f"Chi-square statistic: {independence_test.statistic:.3f}")
+print(f"Degrees of freedom: {independence_test.dof}")
+print(f"p-value: {independence_test.pvalue:.4f}")
 
 # Expected frequencies and residuals
-cat("\nExpected Frequencies:\n")
-print(round(independence_test$expected, 2))
+print("\nExpected Frequencies:")
+expected_df = pd.DataFrame(independence_test.expected, index=row_names, columns=col_names)
+print(expected_df.round(2))
 
-cat("\nStandardized Residuals:\n")
-print(round(independence_test$residuals, 3))
+# Calculate standardized residuals
+observed = contingency_table
+expected = independence_test.expected
+residuals = (observed - expected) / np.sqrt(expected)
+
+print("\nStandardized Residuals:")
+residuals_df = pd.DataFrame(residuals, index=row_names, columns=col_names)
+print(residuals_df.round(3))
 
 # Identify significant cells
-significant_cells <- which(abs(independence_test$residuals) > 2, arr.ind = TRUE)
-if (nrow(significant_cells) > 0) {
-  cat("\nSignificant cells (|residual| > 2):\n")
-  for (i in 1:nrow(significant_cells)) {
-    row_idx <- significant_cells[i, 1]
-    col_idx <- significant_cells[i, 2]
-    row_name <- rownames(contingency_table)[row_idx]
-    col_name <- colnames(contingency_table)[col_idx]
-    residual <- independence_test$residuals[row_idx, col_idx]
-    cat(row_name, "-", col_name, ":", round(residual, 3), "\n")
-  }
-}
+significant_cells = np.where(np.abs(residuals) > 2)
+if len(significant_cells[0]) > 0:
+    print("\nSignificant cells (|residual| > 2):")
+    for i, j in zip(significant_cells[0], significant_cells[1]):
+        row_name = row_names[i]
+        col_name = col_names[j]
+        residual = residuals[i, j]
+        print(f"  {row_name} - {col_name}: {residual:.3f}")
+
+# Visualize contingency table
+plt.figure(figsize=(15, 5))
+
+plt.subplot(1, 3, 1)
+sns.heatmap(df_table, annot=True, fmt='d', cmap='Blues')
+plt.title('Observed Frequencies')
+
+plt.subplot(1, 3, 2)
+sns.heatmap(expected_df, annot=True, fmt='.1f', cmap='Greens')
+plt.title('Expected Frequencies')
+
+plt.subplot(1, 3, 3)
+sns.heatmap(residuals_df, annot=True, fmt='.3f', cmap='RdBu_r', center=0)
+plt.title('Standardized Residuals')
+
+plt.tight_layout()
+plt.show()
 ```
 
 ### 3. Chi-Square Test of Homogeneity
@@ -168,23 +225,46 @@ if (nrow(significant_cells) > 0) {
 
 **Test Statistic:** Same as independence test, but interpretation differs.
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Create homogeneity test data
-homogeneity_data <- matrix(c(20, 30, 25, 15, 25, 20, 10, 15, 10), nrow = 3, ncol = 3)
-rownames(homogeneity_data) <- c("Treatment A", "Treatment B", "Treatment C")
-colnames(homogeneity_data) <- c("Success", "Partial", "Failure")
+homogeneity_data = np.array([
+    [20, 30, 25],
+    [15, 25, 20],
+    [10, 15, 10]
+])
+row_names = ['Treatment A', 'Treatment B', 'Treatment C']
+col_names = ['Success', 'Partial', 'Failure']
 
+df_homogeneity = pd.DataFrame(homogeneity_data, index=row_names, columns=col_names)
 print("Homogeneity Test Data:")
-print(homogeneity_data)
+print(df_homogeneity)
 
 # Perform chi-square test of homogeneity
-homogeneity_test <- chisq.test(homogeneity_data)
+homogeneity_test = stats.chi2_contingency(homogeneity_data)
 
-cat("Chi-Square Test of Homogeneity Results:\n")
-cat("Chi-square statistic:", round(homogeneity_test$statistic, 3), "\n")
-cat("Degrees of freedom:", homogeneity_test$parameter, "\n")
-cat("p-value:", round(homogeneity_test$p.value, 4), "\n")
+print("\nChi-Square Test of Homogeneity Results:")
+print(f"Chi-square statistic: {homogeneity_test.statistic:.3f}")
+print(f"Degrees of freedom: {homogeneity_test.dof}")
+print(f"p-value: {homogeneity_test.pvalue:.4f}")
+
+# Visualize homogeneity test
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+sns.heatmap(df_homogeneity, annot=True, fmt='d', cmap='Blues')
+plt.title('Observed Frequencies')
+
+plt.subplot(1, 2, 2)
+# Stacked bar chart
+df_homogeneity.plot(kind='bar', stacked=True, ax=plt.gca())
+plt.title('Stacked Bar Chart by Treatment')
+plt.xlabel('Treatment')
+plt.ylabel('Count')
+plt.legend(title='Outcome')
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## Effect Size Measures
@@ -218,56 +298,51 @@ where $`k = \min(r, c)`$ is the smaller of the number of rows or columns.
 C = \sqrt{\frac{\chi^2}{\chi^2 + N}}
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Function to calculate effect sizes
-calculate_chi_square_effect_sizes <- function(chi_square_result, n) {
-  # Cramer's V
-  df <- chi_square_result$parameter
-  min_dim <- min(nrow(chi_square_result$observed), ncol(chi_square_result$observed))
-  cramers_v <- sqrt(chi_square_result$statistic / (n * (min_dim - 1)))
-  
-  # Phi coefficient (for 2x2 tables)
-  if (nrow(chi_square_result$observed) == 2 && ncol(chi_square_result$observed) == 2) {
-    phi <- sqrt(chi_square_result$statistic / n)
-  } else {
-    phi <- NA
-  }
-  
-  # Contingency coefficient
-  contingency_coef <- sqrt(chi_square_result$statistic / (chi_square_result$statistic + n))
-  
-  return(list(
-    cramers_v = cramers_v,
-    phi = phi,
-    contingency_coef = contingency_coef
-  ))
-}
+def calculate_chi_square_effect_sizes(chi_square_result, n):
+    # Cramer's V
+    df = chi_square_result.dof
+    min_dim = min(chi_square_result.expected.shape)
+    cramers_v = np.sqrt(chi_square_result.statistic / (n * (min_dim - 1)))
+    
+    # Phi coefficient (for 2x2 tables)
+    if chi_square_result.expected.shape == (2, 2):
+        phi = np.sqrt(chi_square_result.statistic / n)
+    else:
+        phi = np.nan
+    
+    # Contingency coefficient
+    contingency_coef = np.sqrt(chi_square_result.statistic / (chi_square_result.statistic + n))
+    
+    return {
+        'cramers_v': cramers_v,
+        'phi': phi,
+        'contingency_coef': contingency_coef
+    }
 
 # Apply to independence test
-effect_sizes <- calculate_chi_square_effect_sizes(independence_test, sum(contingency_table))
+effect_sizes = calculate_chi_square_effect_sizes(independence_test, np.sum(contingency_table))
 
-cat("Effect Size Analysis:\n")
-cat("Cramer's V:", round(effect_sizes$cramers_v, 3), "\n")
-if (!is.na(effect_sizes$phi)) {
-  cat("Phi coefficient:", round(effect_sizes$phi, 3), "\n")
-}
-cat("Contingency coefficient:", round(effect_sizes$contingency_coef, 3), "\n")
+print("Effect Size Analysis:")
+print(f"Cramer's V: {effect_sizes['cramers_v']:.3f}")
+if not np.isnan(effect_sizes['phi']):
+    print(f"Phi coefficient: {effect_sizes['phi']:.3f}")
+print(f"Contingency coefficient: {effect_sizes['contingency_coef']:.3f}")
 
 # Interpretation function
-interpret_cramers_v <- function(v) {
-  if (v < 0.1) {
-    return("Negligible effect")
-  } else if (v < 0.3) {
-    return("Small effect")
-  } else if (v < 0.5) {
-    return("Medium effect")
-  } else {
-    return("Large effect")
-  }
-}
+def interpret_cramers_v(v):
+    if v < 0.1:
+        return "Negligible effect"
+    elif v < 0.3:
+        return "Small effect"
+    elif v < 0.5:
+        return "Medium effect"
+    else:
+        return "Large effect"
 
-cat("Effect size interpretation:", interpret_cramers_v(effect_sizes$cramers_v), "\n")
+print(f"Effect size interpretation: {interpret_cramers_v(effect_sizes['cramers_v'])}")
 ```
 
 ## Assumptions and Violations
@@ -281,52 +356,47 @@ cat("Effect size interpretation:", interpret_cramers_v(effect_sizes$cramers_v), 
 
 ### Checking Assumptions
 
-```r
+```python
 # Function to check chi-square assumptions
-check_chi_square_assumptions <- function(contingency_table) {
-  cat("=== CHI-SQUARE ASSUMPTIONS CHECK ===\n")
-  
-  # Calculate expected frequencies
-  chi_square_result <- chisq.test(contingency_table)
-  expected_freq <- chi_square_result$expected
-  
-  cat("Expected frequencies:\n")
-  print(round(expected_freq, 2))
-  
-  # Check minimum expected frequency
-  min_expected <- min(expected_freq)
-  cat("Minimum expected frequency:", round(min_expected, 2), "\n")
-  
-  # Check for cells with expected frequency < 5
-  low_expected_cells <- which(expected_freq < 5, arr.ind = TRUE)
-  
-  if (nrow(low_expected_cells) > 0) {
-    cat("WARNING: Cells with expected frequency < 5:\n")
-    for (i in 1:nrow(low_expected_cells)) {
-      row_idx <- low_expected_cells[i, 1]
-      col_idx <- low_expected_cells[i, 2]
-      row_name <- rownames(contingency_table)[row_idx]
-      col_name <- colnames(contingency_table)[col_idx]
-      expected_val <- expected_freq[row_idx, col_idx]
-      cat("  ", row_name, "-", col_name, ":", round(expected_val, 2), "\n")
+def check_chi_square_assumptions(contingency_table):
+    print("=== CHI-SQUARE ASSUMPTIONS CHECK ===")
+    
+    # Calculate expected frequencies
+    chi_square_result = stats.chi2_contingency(contingency_table)
+    expected_freq = chi_square_result.expected
+    
+    print("Expected frequencies:")
+    print(pd.DataFrame(expected_freq, 
+                      index=[f'Row {i+1}' for i in range(expected_freq.shape[0])],
+                      columns=[f'Col {j+1}' for j in range(expected_freq.shape[1])]).round(2))
+    
+    # Check minimum expected frequency
+    min_expected = np.min(expected_freq)
+    print(f"Minimum expected frequency: {min_expected:.2f}")
+    
+    # Check for cells with expected frequency < 5
+    low_expected_cells = np.where(expected_freq < 5)
+    
+    if len(low_expected_cells[0]) > 0:
+        print("WARNING: Cells with expected frequency < 5:")
+        for i, j in zip(low_expected_cells[0], low_expected_cells[1]):
+            expected_val = expected_freq[i, j]
+            print(f"  Row {i+1} - Col {j+1}: {expected_val:.2f}")
+        print("Consider using Fisher's exact test or combining categories")
+    else:
+        print("All expected frequencies ≥ 5. Chi-square test is appropriate.")
+    
+    # Check for independence
+    print("\nIndependence assumption: Data should be from independent observations.")
+    
+    return {
+        'expected_frequencies': expected_freq,
+        'min_expected': min_expected,
+        'low_expected_cells': low_expected_cells
     }
-    cat("Consider using Fisher's exact test or combining categories\n")
-  } else {
-    cat("All expected frequencies ≥ 5. Chi-square test is appropriate.\n")
-  }
-  
-  # Check for independence
-  cat("\nIndependence assumption: Data should be from independent observations.\n")
-  
-  return(list(
-    expected_frequencies = expected_freq,
-    min_expected = min_expected,
-    low_expected_cells = low_expected_cells
-  ))
-}
 
 # Check assumptions
-assumption_results <- check_chi_square_assumptions(contingency_table)
+assumption_results = check_chi_square_assumptions(contingency_table)
 ```
 
 ## Alternative Tests
@@ -338,20 +408,29 @@ assumption_results <- check_chi_square_assumptions(contingency_table)
 - 2x2 contingency tables
 - Exact p-values needed
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Fisher's exact test for small expected frequencies
-fisher_test <- fisher.test(contingency_table)
+fisher_test = stats.fisher_exact(contingency_table)
 
-cat("Fisher's Exact Test Results:\n")
-cat("p-value:", round(fisher_test$p.value, 4), "\n")
-cat("Odds ratio:", round(fisher_test$estimate, 3), "\n")
-cat("95% Confidence interval:", round(fisher_test$conf.int, 3), "\n")
+print("Fisher's Exact Test Results:")
+print(f"p-value: {fisher_test.pvalue:.4f}")
+print(f"Odds ratio: {fisher_test.statistic:.3f}")
 
 # Compare with chi-square results
-cat("\nComparison:\n")
-cat("Chi-square p-value:", round(independence_test$p.value, 4), "\n")
-cat("Fisher's exact p-value:", round(fisher_test$p.value, 4), "\n")
+print("\nComparison:")
+print(f"Chi-square p-value: {independence_test.pvalue:.4f}")
+print(f"Fisher's exact p-value: {fisher_test.pvalue:.4f}")
+
+# Visualize 2x2 table for Fisher's test
+if contingency_table.shape == (2, 2):
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(pd.DataFrame(contingency_table, 
+                            index=['Row 1', 'Row 2'], 
+                            columns=['Col 1', 'Col 2']), 
+               annot=True, fmt='d', cmap='Reds')
+    plt.title('Fisher\'s Exact Test Table')
+    plt.show()
 ```
 
 ### Likelihood Ratio Test
@@ -361,306 +440,357 @@ cat("Fisher's exact p-value:", round(fisher_test$p.value, 4), "\n")
 G = 2 \sum_{i=1}^{r} \sum_{j=1}^{c} O_{ij} \ln\left(\frac{O_{ij}}{E_{ij}}\right)
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Likelihood ratio test
-likelihood_ratio_test <- function(observed) {
-  # Calculate expected frequencies under independence
-  row_totals <- rowSums(observed)
-  col_totals <- colSums(observed)
-  total <- sum(observed)
-  
-  expected <- outer(row_totals, col_totals) / total
-  
-  # Calculate likelihood ratio statistic
-  lr_statistic <- 2 * sum(observed * log(observed / expected))
-  
-  # Degrees of freedom
-  df <- (nrow(observed) - 1) * (ncol(observed) - 1)
-  
-  # p-value
-  p_value <- 1 - pchisq(lr_statistic, df)
-  
-  return(list(
-    statistic = lr_statistic,
-    df = df,
-    p_value = p_value
-  ))
-}
+def likelihood_ratio_test(observed):
+    # Calculate expected frequencies under independence
+    row_totals = np.sum(observed, axis=1)
+    col_totals = np.sum(observed, axis=0)
+    total = np.sum(observed)
+    
+    expected = np.outer(row_totals, col_totals) / total
+    
+    # Calculate likelihood ratio statistic
+    lr_statistic = 2 * np.sum(observed * np.log(observed / expected))
+    
+    # Degrees of freedom
+    df = (observed.shape[0] - 1) * (observed.shape[1] - 1)
+    
+    # p-value
+    p_value = 1 - stats.chi2.cdf(lr_statistic, df)
+    
+    return {
+        'statistic': lr_statistic,
+        'df': df,
+        'p_value': p_value
+    }
 
 # Apply likelihood ratio test
-lr_result <- likelihood_ratio_test(contingency_table)
+lr_result = likelihood_ratio_test(contingency_table)
 
-cat("Likelihood Ratio Test Results:\n")
-cat("G-statistic:", round(lr_result$statistic, 3), "\n")
-cat("Degrees of freedom:", lr_result$df, "\n")
-cat("p-value:", round(lr_result$p_value, 4), "\n")
+print("Likelihood Ratio Test Results:")
+print(f"G-statistic: {lr_result['statistic']:.3f}")
+print(f"Degrees of freedom: {lr_result['df']}")
+print(f"p-value: {lr_result['p_value']:.4f}")
 ```
 
 ## Post Hoc Analysis
 
 ### Pairwise Chi-Square Tests
 
-```r
+```python
 # Function to perform pairwise chi-square tests
-pairwise_chi_square <- function(contingency_table, alpha = 0.05) {
-  n_rows <- nrow(contingency_table)
-  n_cols <- ncol(contingency_table)
-  
-  # Calculate number of pairwise comparisons
-  n_comparisons <- choose(n_rows, 2)
-  
-  # Bonferroni correction
-  alpha_corrected <- alpha / n_comparisons
-  
-  results <- list()
-  pair_count <- 1
-  
-  for (i in 1:(n_rows-1)) {
-    for (j in (i+1):n_rows) {
-      # Extract 2x2 subtable
-      subtable <- contingency_table[c(i, j), ]
-      
-      # Perform chi-square test
-      test_result <- chisq.test(subtable)
-      
-      results[[pair_count]] <- list(
-        comparison = paste(rownames(contingency_table)[i], "vs", rownames(contingency_table)[j]),
-        chi_square = test_result$statistic,
-        p_value = test_result$p.value,
-        significant = test_result$p.value < alpha_corrected
-      )
-      
-      pair_count <- pair_count + 1
-    }
-  }
-  
-  return(results)
-}
+def pairwise_chi_square(contingency_table, alpha=0.05):
+    n_rows = contingency_table.shape[0]
+    n_cols = contingency_table.shape[1]
+    
+    # Calculate number of pairwise comparisons
+    n_comparisons = int(n_rows * (n_rows - 1) / 2)
+    
+    # Bonferroni correction
+    alpha_corrected = alpha / n_comparisons
+    
+    results = []
+    pair_count = 0
+    
+    for i in range(n_rows - 1):
+        for j in range(i + 1, n_rows):
+            # Extract 2x2 subtable
+            subtable = contingency_table[[i, j], :]
+            
+            # Perform chi-square test
+            test_result = stats.chi2_contingency(subtable)
+            
+            results.append({
+                'comparison': f"Row {i+1} vs Row {j+1}",
+                'chi_square': test_result.statistic,
+                'p_value': test_result.pvalue,
+                'significant': test_result.pvalue < alpha_corrected
+            })
+            
+            pair_count += 1
+    
+    return results
 
 # Apply pairwise tests
-pairwise_results <- pairwise_chi_square(contingency_table)
+pairwise_results = pairwise_chi_square(contingency_table)
 
-cat("Pairwise Chi-Square Tests (Bonferroni-corrected α = 0.017):\n")
-for (result in pairwise_results) {
-  cat(result$comparison, ":\n")
-  cat("  Chi-square:", round(result$chi_square, 3), "\n")
-  cat("  p-value:", round(result$p_value, 4), "\n")
-  cat("  Significant:", result$significant, "\n\n")
-}
+print(f"Pairwise Chi-Square Tests (Bonferroni-corrected α = {0.05/len(pairwise_results):.3f}):")
+for result in pairwise_results:
+    print(f"{result['comparison']}:")
+    print(f"  Chi-square: {result['chi_square']:.3f}")
+    print(f"  p-value: {result['p_value']:.4f}")
+    print(f"  Significant: {result['significant']}\n")
 ```
 
 ## Power Analysis
 
 ### Power Analysis for Chi-Square
 
-```r
-library(pwr)
-
+```python
 # Power analysis for chi-square test
-power_analysis_chi_square <- function(n, w, df, alpha = 0.05) {
-  # Calculate power
-  power_result <- pwr.chisq.test(w = w, N = n, df = df, sig.level = alpha)
-  
-  # Calculate required sample size for 80% power
-  sample_size_result <- pwr.chisq.test(w = w, df = df, sig.level = alpha, power = 0.8)
-  
-  return(list(
-    power = power_result$power,
-    required_n = ceiling(sample_size_result$N),
-    effect_size = w,
-    alpha = alpha
-  ))
-}
+def power_analysis_chi_square(n, w, df, alpha=0.05):
+    # Calculate power using chi-square distribution
+    # This is a simplified approximation
+    critical_value = stats.chi2.ppf(1 - alpha, df)
+    power = 1 - stats.chi2.cdf(critical_value, df, ncp=n * w**2)
+    
+    # Estimate required sample size for 80% power
+    # This is a rough approximation
+    target_power = 0.8
+    required_n = int(critical_value / (w**2 * (1 - target_power)))
+    
+    return {
+        'power': power,
+        'required_n': required_n,
+        'effect_size': w,
+        'alpha': alpha
+    }
 
 # Apply power analysis
 # For 2x2 table, df = 1, w = 0.3 (medium effect)
-power_result <- power_analysis_chi_square(n = 100, w = 0.3, df = 1)
+power_result = power_analysis_chi_square(n=100, w=0.3, df=1)
 
-cat("Power Analysis Results:\n")
-cat("Current power:", round(power_result$power, 3), "\n")
-cat("Required sample size for 80% power:", power_result$required_n, "\n")
+print("Power Analysis Results:")
+print(f"Current power: {power_result['power']:.3f}")
+print(f"Required sample size for 80% power: {power_result['required_n']}")
 ```
 
 ## Practical Examples
 
 ### Example 1: Survey Analysis
 
-```r
+```python
 # Simulate survey data
-set.seed(123)
-n_responses <- 200
+np.random.seed(123)
+n_responses = 200
 
 # Generate survey responses
-age_group <- sample(c("18-25", "26-35", "36-45", "46+"), n_responses, replace = TRUE, 
-                   prob = c(0.3, 0.35, 0.25, 0.1))
-satisfaction <- sample(c("Very Satisfied", "Satisfied", "Neutral", "Dissatisfied"), 
-                      n_responses, replace = TRUE, prob = c(0.4, 0.3, 0.2, 0.1))
+age_group = np.random.choice(['18-25', '26-35', '36-45', '46+'], 
+                           n_responses, p=[0.3, 0.35, 0.25, 0.1])
+satisfaction = np.random.choice(['Very Satisfied', 'Satisfied', 'Neutral', 'Dissatisfied'], 
+                              n_responses, p=[0.4, 0.3, 0.2, 0.1])
 
 # Create contingency table
-survey_table <- table(age_group, satisfaction)
+survey_data = pd.DataFrame({'Age Group': age_group, 'Satisfaction': satisfaction})
+survey_table = pd.crosstab(survey_data['Age Group'], survey_data['Satisfaction'])
 print("Survey Results:")
 print(survey_table)
 
 # Perform chi-square test
-survey_test <- chisq.test(survey_table)
+survey_test = stats.chi2_contingency(survey_table.values)
 
 # Effect size
-survey_effect <- calculate_chi_square_effect_sizes(survey_test, n_responses)
-cat("Cramer's V:", round(survey_effect$cramers_v, 3), "\n")
-cat("Interpretation:", interpret_cramers_v(survey_effect$cramers_v), "\n")
+survey_effect = calculate_chi_square_effect_sizes(survey_test, n_responses)
+print(f"Cramer's V: {survey_effect['cramers_v']:.3f}")
+print(f"Interpretation: {interpret_cramers_v(survey_effect['cramers_v'])}")
+
+# Visualize survey results
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+sns.heatmap(survey_table, annot=True, fmt='d', cmap='Blues')
+plt.title('Survey Results')
+
+plt.subplot(1, 2, 2)
+survey_table.plot(kind='bar', stacked=True, ax=plt.gca())
+plt.title('Satisfaction by Age Group')
+plt.xlabel('Age Group')
+plt.ylabel('Count')
+plt.legend(title='Satisfaction')
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ### Example 2: Clinical Trial
 
-```r
+```python
 # Simulate clinical trial data
-set.seed(123)
+np.random.seed(123)
 
 # Create 2x2 contingency table
-clinical_data <- matrix(c(45, 15, 30, 25), nrow = 2, ncol = 2)
-rownames(clinical_data) <- c("Treatment", "Control")
-colnames(clinical_data) <- c("Improved", "No Improvement")
+clinical_data = np.array([[45, 15], [30, 25]])
+row_names = ['Treatment', 'Control']
+col_names = ['Improved', 'No Improvement']
 
+df_clinical = pd.DataFrame(clinical_data, index=row_names, columns=col_names)
 print("Clinical Trial Results:")
-print(clinical_data)
+print(df_clinical)
 
 # Chi-square test
-clinical_test <- chisq.test(clinical_data)
+clinical_test = stats.chi2_contingency(clinical_data)
 
 # Fisher's exact test
-clinical_fisher <- fisher.test(clinical_data)
+clinical_fisher = stats.fisher_exact(clinical_data)
 
 # Effect size
-clinical_effect <- calculate_chi_square_effect_sizes(clinical_test, sum(clinical_data))
-cat("Phi coefficient:", round(clinical_effect$phi, 3), "\n")
+clinical_effect = calculate_chi_square_effect_sizes(clinical_test, np.sum(clinical_data))
+print(f"Phi coefficient: {clinical_effect['phi']:.3f}")
+
+# Visualize clinical trial results
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+sns.heatmap(df_clinical, annot=True, fmt='d', cmap='Blues')
+plt.title('Clinical Trial Results')
+
+plt.subplot(1, 2, 2)
+df_clinical.plot(kind='bar', ax=plt.gca())
+plt.title('Improvement by Treatment Group')
+plt.xlabel('Group')
+plt.ylabel('Count')
+plt.legend(title='Outcome')
+plt.xticks(rotation=0)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ### Example 3: Quality Control
 
-```r
+```python
 # Simulate quality control data
-set.seed(123)
+np.random.seed(123)
 
 # Create 3x3 contingency table
-quality_data <- matrix(c(85, 10, 5, 70, 20, 10, 60, 25, 15), nrow = 3, ncol = 3)
-rownames(quality_data) <- c("Machine A", "Machine B", "Machine C")
-colnames(quality_data) <- c("Excellent", "Good", "Poor")
+quality_data = np.array([
+    [85, 10, 5],
+    [70, 20, 10],
+    [60, 25, 15]
+])
+row_names = ['Machine A', 'Machine B', 'Machine C']
+col_names = ['Excellent', 'Good', 'Poor']
 
+df_quality = pd.DataFrame(quality_data, index=row_names, columns=col_names)
 print("Quality Control Results:")
-print(quality_data)
+print(df_quality)
 
 # Chi-square test of homogeneity
-quality_test <- chisq.test(quality_data)
+quality_test = stats.chi2_contingency(quality_data)
 
 # Check assumptions
-quality_assumptions <- check_chi_square_assumptions(quality_data)
+quality_assumptions = check_chi_square_assumptions(quality_data)
 
 # Effect size
-quality_effect <- calculate_chi_square_effect_sizes(quality_test, sum(quality_data))
-cat("Cramer's V:", round(quality_effect$cramers_v, 3), "\n")
+quality_effect = calculate_chi_square_effect_sizes(quality_test, np.sum(quality_data))
+print(f"Cramer's V: {quality_effect['cramers_v']:.3f}")
+
+# Visualize quality control results
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+sns.heatmap(df_quality, annot=True, fmt='d', cmap='Blues')
+plt.title('Quality Control Results')
+
+plt.subplot(1, 2, 2)
+df_quality.plot(kind='bar', stacked=True, ax=plt.gca())
+plt.title('Quality by Machine')
+plt.xlabel('Machine')
+plt.ylabel('Count')
+plt.legend(title='Quality')
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## Best Practices
 
 ### Test Selection Guidelines
 
-```r
+```python
 # Function to help choose appropriate chi-square test
-choose_chi_square_test <- function(contingency_table) {
-  cat("=== CHI-SQUARE TEST SELECTION ===\n")
-  
-  # Check expected frequencies
-  chi_square_result <- chisq.test(contingency_table)
-  expected_freq <- chi_square_result$expected
-  min_expected <- min(expected_freq)
-  
-  cat("Minimum expected frequency:", round(min_expected, 2), "\n")
-  
-  # Check table dimensions
-  n_rows <- nrow(contingency_table)
-  n_cols <- ncol(contingency_table)
-  cat("Table dimensions:", n_rows, "x", n_cols, "\n")
-  
-  cat("\nRECOMMENDATIONS:\n")
-  
-  if (min_expected >= 5) {
-    cat("- Use chi-square test of independence\n")
-    cat("- All expected frequencies ≥ 5\n")
-  } else if (min_expected >= 1 && n_rows == 2 && n_cols == 2) {
-    cat("- Use Fisher's exact test\n")
-    cat("- Small expected frequencies in 2x2 table\n")
-  } else {
-    cat("- Use Fisher's exact test or combine categories\n")
-    cat("- Very small expected frequencies\n")
-  }
-  
-  # Effect size calculation
-  effect_sizes <- calculate_chi_square_effect_sizes(chi_square_result, sum(contingency_table))
-  cat("- Effect size (Cramer's V):", round(effect_sizes$cramers_v, 3), "\n")
-  cat("- Interpretation:", interpret_cramers_v(effect_sizes$cramers_v), "\n")
-  
-  return(list(
-    min_expected = min_expected,
-    table_dimensions = c(n_rows, n_cols),
-    effect_sizes = effect_sizes
-  ))
-}
+def choose_chi_square_test(contingency_table):
+    print("=== CHI-SQUARE TEST SELECTION ===")
+    
+    # Check expected frequencies
+    chi_square_result = stats.chi2_contingency(contingency_table)
+    expected_freq = chi_square_result.expected
+    min_expected = np.min(expected_freq)
+    
+    print(f"Minimum expected frequency: {min_expected:.2f}")
+    
+    # Check table dimensions
+    n_rows, n_cols = contingency_table.shape
+    print(f"Table dimensions: {n_rows} x {n_cols}")
+    
+    print("\nRECOMMENDATIONS:")
+    
+    if min_expected >= 5:
+        print("- Use chi-square test of independence")
+        print("- All expected frequencies ≥ 5")
+    elif min_expected >= 1 and n_rows == 2 and n_cols == 2:
+        print("- Use Fisher's exact test")
+        print("- Small expected frequencies in 2x2 table")
+    else:
+        print("- Use Fisher's exact test or combine categories")
+        print("- Very small expected frequencies")
+    
+    # Effect size calculation
+    effect_sizes = calculate_chi_square_effect_sizes(chi_square_result, np.sum(contingency_table))
+    print(f"- Effect size (Cramer's V): {effect_sizes['cramers_v']:.3f}")
+    print(f"- Interpretation: {interpret_cramers_v(effect_sizes['cramers_v'])}")
+    
+    return {
+        'min_expected': min_expected,
+        'table_dimensions': (n_rows, n_cols),
+        'effect_sizes': effect_sizes
+    }
 
 # Apply to contingency table
-test_selection <- choose_chi_square_test(contingency_table)
+test_selection = choose_chi_square_test(contingency_table)
 ```
 
 ### Reporting Guidelines
 
-```r
+```python
 # Function to generate comprehensive chi-square report
-generate_chi_square_report <- function(chi_square_result, contingency_table, test_type = "independence") {
-  cat("=== CHI-SQUARE TEST REPORT ===\n\n")
-  
-  cat("CONTINGENCY TABLE:\n")
-  print(contingency_table)
-  cat("\n")
-  
-  cat("TEST RESULTS:\n")
-  cat("Test type:", test_type, "\n")
-  cat("Chi-square statistic:", round(chi_square_result$statistic, 3), "\n")
-  cat("Degrees of freedom:", chi_square_result$parameter, "\n")
-  cat("p-value:", round(chi_square_result$p.value, 4), "\n")
-  
-  # Effect size
-  effect_sizes <- calculate_chi_square_effect_sizes(chi_square_result, sum(contingency_table))
-  cat("Cramer's V:", round(effect_sizes$cramers_v, 3), "\n")
-  cat("Effect size interpretation:", interpret_cramers_v(effect_sizes$cramers_v), "\n\n")
-  
-  # Expected frequencies
-  cat("EXPECTED FREQUENCIES:\n")
-  print(round(chi_square_result$expected, 2))
-  cat("\n")
-  
-  # Standardized residuals
-  cat("STANDARDIZED RESIDUALS:\n")
-  print(round(chi_square_result$residuals, 3))
-  cat("\n")
-  
-  # Conclusion
-  alpha <- 0.05
-  if (chi_square_result$p.value < alpha) {
-    cat("CONCLUSION:\n")
-    cat("Reject the null hypothesis (p <", alpha, ")\n")
-    if (test_type == "independence") {
-      cat("There is a significant relationship between the variables\n")
-    } else if (test_type == "homogeneity") {
-      cat("The proportions are significantly different across groups\n")
-    } else {
-      cat("The observed frequencies differ significantly from expected\n")
-    }
-  } else {
-    cat("CONCLUSION:\n")
-    cat("Fail to reject the null hypothesis (p >=", alpha, ")\n")
-    cat("There is insufficient evidence of a relationship\n")
-  }
-}
+def generate_chi_square_report(chi_square_result, contingency_table, test_type="independence"):
+    print("=== CHI-SQUARE TEST REPORT ===\n")
+    
+    print("CONTINGENCY TABLE:")
+    print(pd.DataFrame(contingency_table))
+    print()
+    
+    print("TEST RESULTS:")
+    print(f"Test type: {test_type}")
+    print(f"Chi-square statistic: {chi_square_result.statistic:.3f}")
+    print(f"Degrees of freedom: {chi_square_result.dof}")
+    print(f"p-value: {chi_square_result.pvalue:.4f}")
+    
+    # Effect size
+    effect_sizes = calculate_chi_square_effect_sizes(chi_square_result, np.sum(contingency_table))
+    print(f"Cramer's V: {effect_sizes['cramers_v']:.3f}")
+    print(f"Effect size interpretation: {interpret_cramers_v(effect_sizes['cramers_v'])}\n")
+    
+    # Expected frequencies
+    print("EXPECTED FREQUENCIES:")
+    print(pd.DataFrame(chi_square_result.expected).round(2))
+    print()
+    
+    # Standardized residuals
+    observed = contingency_table
+    expected = chi_square_result.expected
+    residuals = (observed - expected) / np.sqrt(expected)
+    print("STANDARDIZED RESIDUALS:")
+    print(pd.DataFrame(residuals).round(3))
+    print()
+    
+    # Conclusion
+    alpha = 0.05
+    if chi_square_result.pvalue < alpha:
+        print("CONCLUSION:")
+        print(f"Reject the null hypothesis (p < {alpha})")
+        if test_type == "independence":
+            print("There is a significant relationship between the variables")
+        elif test_type == "homogeneity":
+            print("The proportions are significantly different across groups")
+        else:
+            print("The observed frequencies differ significantly from expected")
+    else:
+        print("CONCLUSION:")
+        print(f"Fail to reject the null hypothesis (p >= {alpha})")
+        print("There is insufficient evidence of a relationship")
 
 # Generate report
 generate_chi_square_report(independence_test, contingency_table, "independence")
@@ -671,22 +801,22 @@ generate_chi_square_report(independence_test, contingency_table, "independence")
 ### Exercise 1: Goodness of Fit Test
 - **Objective:** Test whether observed frequencies match expected frequencies in a categorical variable.
 - **Data:** Create a dataset with observed frequencies and test against equal expected frequencies.
-- **Hint:** Use `chisq.test()` with the `p` parameter for expected proportions.
+- **Hint:** Use `stats.chisquare()` with the `f_exp` parameter for expected frequencies.
 
 ### Exercise 2: Independence Test
 - **Objective:** Analyze the relationship between two categorical variables using chi-square test of independence.
 - **Data:** Create a contingency table and test for independence.
-- **Hint:** Use `chisq.test()` on a matrix or table object.
+- **Hint:** Use `stats.chi2_contingency()` on a numpy array.
 
 ### Exercise 3: Homogeneity Test
 - **Objective:** Test whether proportions are the same across different groups.
 - **Data:** Create data with multiple groups and test for homogeneity.
-- **Hint:** Use `chisq.test()` and interpret as homogeneity test.
+- **Hint:** Use `stats.chi2_contingency()` and interpret as homogeneity test.
 
 ### Exercise 4: Assumption Checking
 - **Objective:** Check chi-square assumptions and recommend appropriate alternatives when violated.
 - **Data:** Create data with small expected frequencies.
-- **Hint:** Use `check_chi_square_assumptions()` and `fisher.test()`.
+- **Hint:** Use `check_chi_square_assumptions()` and `stats.fisher_exact()`.
 
 ### Exercise 5: Effect Size Analysis
 - **Objective:** Calculate and interpret different effect size measures for chi-square tests.
@@ -701,7 +831,7 @@ generate_chi_square_report(independence_test, contingency_table, "independence")
 ### Exercise 7: Power Analysis
 - **Objective:** Conduct power analysis for a chi-square test.
 - **Data:** Determine required sample size for desired power.
-- **Hint:** Use `pwr.chisq.test()` from the `pwr` package.
+- **Hint:** Use `power_analysis_chi_square()` function.
 
 ### Exercise 8: Comprehensive Analysis
 - **Objective:** Perform a complete chi-square analysis including assumption checking, test selection, and reporting.
