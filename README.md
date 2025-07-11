@@ -71,49 +71,6 @@ install.packages(c("tidyverse", "rmarkdown", "caret", "shiny", "corrplot", "mome
 pip install pandas numpy scipy scikit-learn matplotlib seaborn statsmodels plotly jupyter
 ```
 
-## Project Structure
-
-```
-Statistics/
-├── R/                    # Complete statistical analysis track
-│   ├── 01_intro.md      # Introduction to R
-│   ├── 02_data_types.md # R data types
-│   ├── 03_data_structures.md # R data structures
-│   ├── 04_programming_basics.md # R programming
-│   ├── 05_summarizing_data.md # Data summarization
-│   ├── 06_exploratory_data_analysis.md # EDA
-│   ├── 07_measures_central_tendency.md # Central tendency
-│   ├── 08_measures_variability.md # Variability
-│   ├── 09_data_visualization.md # Visualization
-│   ├── 10_probability_distributions.md # Probability
-│   ├── 11_sampling_distributions.md # Sampling
-│   ├── 12_confidence_intervals.md # Confidence intervals
-│   ├── 13_hypothesis_testing.md # Hypothesis testing
-│   ├── 14_one_sample_tests.md # One-sample tests
-│   ├── 15_two_sample_tests.md # Two-sample tests
-│   ├── 16_one_way_anova.md # One-way ANOVA
-│   ├── 17_two_way_anova.md # Two-way ANOVA
-│   ├── 18_repeated_measures_anova.md # Repeated measures ANOVA
-│   ├── 19_correlation_analysis.md # Correlation
-│   ├── 20_simple_linear_regression.md # Simple regression
-│   ├── 21_multiple_linear_regression.md # Multiple regression
-│   ├── 22_model_diagnostics.md # Model diagnostics
-│   ├── 23_nonparametric_tests.md # Nonparametric tests
-│   ├── 24_chi_square_tests.md # Chi-square tests
-│   ├── 25_time_series_analysis.md # Time series
-│   ├── 26_multivariate_analysis.md # Multivariate analysis
-│   ├── 27_variable_selection_model_building.md # Variable selection
-│   ├── 28_logistic_regression.md # Logistic regression
-│   └── README.md # R track overview
-├── Python/               # Foundational Python track
-│   ├── 01_introduction_to_python.md # Python introduction
-│   ├── 02_data_types_structures.md # Data types/structures
-│   ├── 03_data_import_manipulation.md # Data import/manipulation
-│   └── README.md # Python track overview
-├── LICENSE
-└── README.md            # This file
-```
-
 ## Key Features
 
 - **Mathematical rigor**: LaTeX-formatted equations and derivations
