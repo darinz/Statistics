@@ -228,7 +228,6 @@ anova_result = manual_anova([mpg_4cyl, mpg_6cyl, mpg_8cyl])
 # Verify with Python's built-in function
 print("=== VERIFICATION WITH PYTHON'S BUILT-IN FUNCTION ===")
 ```
-```
 
 ### Using Python's Built-in ANOVA
 
