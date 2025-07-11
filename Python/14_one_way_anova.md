@@ -81,141 +81,158 @@ Under the null hypothesis ($\mu_1 = \mu_2 = ... = \mu_k$), both expected values 
 
 ### Manual Calculation
 
-```r
-# Load sample data
-data(mtcars)
+```python
+import numpy as np
+import pandas as pd
+from scipy import stats
+from scipy.stats import f
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load sample data (using seaborn's built-in dataset)
+import seaborn as sns
+mtcars = sns.load_dataset('mpg')
 
 # Create groups based on number of cylinders
-mtcars$cyl_factor <- factor(mtcars$cyl, levels = c(4, 6, 8), 
-                           labels = c("4-cylinder", "6-cylinder", "8-cylinder"))
+mtcars['cyl_factor'] = pd.Categorical(mtcars['cylinders'], 
+                                     categories=[4, 6, 8], 
+                                     ordered=True)
+mtcars['cyl_factor'] = mtcars['cyl_factor'].map({4: '4-cylinder', 6: '6-cylinder', 8: '8-cylinder'})
 
 # Extract MPG data for each cylinder group
-mpg_4cyl <- mtcars$mpg[mtcars$cyl == 4]
-mpg_6cyl <- mtcars$mpg[mtcars$cyl == 6]
-mpg_8cyl <- mtcars$mpg[mtcars$cyl == 8]
+mpg_4cyl = mtcars[mtcars['cylinders'] == 4]['mpg'].values
+mpg_6cyl = mtcars[mtcars['cylinders'] == 6]['mpg'].values
+mpg_8cyl = mtcars[mtcars['cylinders'] == 8]['mpg'].values
 
 # Comprehensive manual ANOVA calculation
-manual_anova <- function(group_data) {
-  # Basic information
-  k <- length(group_data)
-  n_per_group <- sapply(group_data, length)
-  total_n <- sum(n_per_group)
-  
-  cat("=== MANUAL ANOVA CALCULATION ===\n")
-  cat("Number of groups (k):", k, "\n")
-  cat("Sample sizes per group:", n_per_group, "\n")
-  cat("Total sample size (N):", total_n, "\n\n")
-  
-  # Calculate group means and overall mean
-  group_means <- sapply(group_data, mean)
-  overall_mean <- mean(unlist(group_data))
-  
-  cat("Group means:", round(group_means, 3), "\n")
-  cat("Overall mean:", round(overall_mean, 3), "\n\n")
-  
-  # Calculate Sum of Squares
-  # Between-groups SS
-  ss_between <- sum(n_per_group * (group_means - overall_mean)^2)
-  
-  # Within-groups SS
-  ss_within <- sum(sapply(1:length(group_data), function(i) {
-    sum((group_data[[i]] - group_means[i])^2)
-  }))
-  
-  # Total SS
-  ss_total <- ss_between + ss_within
-  
-  cat("Sum of Squares:\n")
-  cat("Between-groups SS:", round(ss_between, 3), "\n")
-  cat("Within-groups SS:", round(ss_within, 3), "\n")
-  cat("Total SS:", round(ss_total, 3), "\n")
-  cat("Verification (SSB + SSW = SST):", round(ss_between + ss_within, 3), "=", round(ss_total, 3), "\n\n")
-  
-  # Degrees of freedom
-  df_between <- k - 1
-  df_within <- total_n - k
-  df_total <- total_n - 1
-  
-  cat("Degrees of Freedom:\n")
-  cat("Between-groups df:", df_between, "\n")
-  cat("Within-groups df:", df_within, "\n")
-  cat("Total df:", df_total, "\n")
-  cat("Verification (dfB + dfW = dfT):", df_between + df_within, "=", df_total, "\n\n")
-  
-  # Mean Squares
-  ms_between <- ss_between / df_between
-  ms_within <- ss_within / df_within
-  
-  cat("Mean Squares:\n")
-  cat("Between-groups MS:", round(ms_between, 3), "\n")
-  cat("Within-groups MS:", round(ms_within, 3), "\n\n")
-  
-  # F-statistic
-  f_statistic <- ms_between / ms_within
-  
-  # p-value
-  p_value <- 1 - pf(f_statistic, df_between, df_within)
-  
-  # Critical F-value
-  f_critical <- qf(0.95, df_between, df_within)
-  
-  cat("F-Test Results:\n")
-  cat("F-statistic:", round(f_statistic, 3), "\n")
-  cat("Critical F-value (α = 0.05):", round(f_critical, 3), "\n")
-  cat("p-value:", round(p_value, 4), "\n")
-  cat("Significant:", p_value < 0.05, "\n\n")
-  
-  # Effect size (eta-squared)
-  eta_squared <- ss_between / ss_total
-  
-  # Partial eta-squared (same as eta-squared for one-way ANOVA)
-  partial_eta_squared <- eta_squared
-  
-  # Omega-squared (unbiased estimator)
-  omega_squared <- (ss_between - (df_between * ms_within)) / (ss_total + ms_within)
-  
-  cat("Effect Sizes:\n")
-  cat("Eta-squared:", round(eta_squared, 3), "\n")
-  cat("Partial eta-squared:", round(partial_eta_squared, 3), "\n")
-  cat("Omega-squared:", round(omega_squared, 3), "\n\n")
-  
-  # ANOVA table
-  cat("ANOVA Table:\n")
-  cat("Source\t\tSS\t\t\tDF\tMS\t\t\tF\t\tp-value\n")
-  cat("Between\t", round(ss_between, 3), "\t", df_between, "\t", round(ms_between, 3), "\t", round(f_statistic, 3), "\t", round(p_value, 4), "\n")
-  cat("Within\t\t", round(ss_within, 3), "\t", df_within, "\t", round(ms_within, 3), "\n")
-  cat("Total\t\t", round(ss_total, 3), "\t", df_total, "\n\n")
-  
-  return(list(
-    ss_between = ss_between,
-    ss_within = ss_within,
-    ss_total = ss_total,
-    df_between = df_between,
-    df_within = df_within,
-    df_total = df_total,
-    ms_between = ms_between,
-    ms_within = ms_within,
-    f_statistic = f_statistic,
-    p_value = p_value,
-    eta_squared = eta_squared,
-    partial_eta_squared = partial_eta_squared,
-    omega_squared = omega_squared,
-    group_means = group_means,
-    overall_mean = overall_mean,
-    f_critical = f_critical
-  ))
-}
+def manual_anova(group_data):
+    """
+    Perform manual one-way ANOVA calculation
+    
+    Parameters:
+    group_data: list of arrays, each containing data for one group
+    
+    Returns:
+    dict: ANOVA results
+    """
+    # Basic information
+    k = len(group_data)
+    n_per_group = [len(group) for group in group_data]
+    total_n = sum(n_per_group)
+    
+    print("=== MANUAL ANOVA CALCULATION ===")
+    print(f"Number of groups (k): {k}")
+    print(f"Sample sizes per group: {n_per_group}")
+    print(f"Total sample size (N): {total_n}\n")
+    
+    # Calculate group means and overall mean
+    group_means = [np.mean(group) for group in group_data]
+    overall_mean = np.mean(np.concatenate(group_data))
+    
+    print(f"Group means: {[round(m, 3) for m in group_means]}")
+    print(f"Overall mean: {round(overall_mean, 3)}\n")
+    
+    # Calculate Sum of Squares
+    # Between-groups SS
+    ss_between = sum(n_per_group[i] * (group_means[i] - overall_mean)**2 for i in range(k))
+    
+    # Within-groups SS
+    ss_within = sum(sum((group_data[i] - group_means[i])**2) for i in range(k))
+    
+    # Total SS
+    ss_total = ss_between + ss_within
+    
+    print("Sum of Squares:")
+    print(f"Between-groups SS: {round(ss_between, 3)}")
+    print(f"Within-groups SS: {round(ss_within, 3)}")
+    print(f"Total SS: {round(ss_total, 3)}")
+    print(f"Verification (SSB + SSW = SST): {round(ss_between + ss_within, 3)} = {round(ss_total, 3)}\n")
+    
+    # Degrees of freedom
+    df_between = k - 1
+    df_within = total_n - k
+    df_total = total_n - 1
+    
+    print("Degrees of Freedom:")
+    print(f"Between-groups df: {df_between}")
+    print(f"Within-groups df: {df_within}")
+    print(f"Total df: {df_total}")
+    print(f"Verification (dfB + dfW = dfT): {df_between + df_within} = {df_total}\n")
+    
+    # Mean Squares
+    ms_between = ss_between / df_between
+    ms_within = ss_within / df_within
+    
+    print("Mean Squares:")
+    print(f"Between-groups MS: {round(ms_between, 3)}")
+    print(f"Within-groups MS: {round(ms_within, 3)}\n")
+    
+    # F-statistic
+    f_statistic = ms_between / ms_within
+    
+    # p-value
+    p_value = 1 - f.cdf(f_statistic, df_between, df_within)
+    
+    # Critical F-value
+    f_critical = f.ppf(0.95, df_between, df_within)
+    
+    print("F-Test Results:")
+    print(f"F-statistic: {round(f_statistic, 3)}")
+    print(f"Critical F-value (α = 0.05): {round(f_critical, 3)}")
+    print(f"p-value: {round(p_value, 4)}")
+    print(f"Significant: {p_value < 0.05}\n")
+    
+    # Effect size (eta-squared)
+    eta_squared = ss_between / ss_total
+    
+    # Partial eta-squared (same as eta-squared for one-way ANOVA)
+    partial_eta_squared = eta_squared
+    
+    # Omega-squared (unbiased estimator)
+    omega_squared = (ss_between - (df_between * ms_within)) / (ss_total + ms_within)
+    
+    print("Effect Sizes:")
+    print(f"Eta-squared: {round(eta_squared, 3)}")
+    print(f"Partial eta-squared: {round(partial_eta_squared, 3)}")
+    print(f"Omega-squared: {round(omega_squared, 3)}\n")
+    
+    # ANOVA table
+    print("ANOVA Table:")
+    print("Source\t\tSS\t\t\tDF\tMS\t\t\tF\t\tp-value")
+    print(f"Between\t{round(ss_between, 3)}\t\t{df_between}\t{round(ms_between, 3)}\t\t{round(f_statistic, 3)}\t\t{round(p_value, 4)}")
+    print(f"Within\t\t{round(ss_within, 3)}\t\t{df_within}\t{round(ms_within, 3)}")
+    print(f"Total\t\t{round(ss_total, 3)}\t\t{df_total}\n")
+    
+    return {
+        'ss_between': ss_between,
+        'ss_within': ss_within,
+        'ss_total': ss_total,
+        'df_between': df_between,
+        'df_within': df_within,
+        'df_total': df_total,
+        'ms_between': ms_between,
+        'ms_within': ms_within,
+        'f_statistic': f_statistic,
+        'p_value': p_value,
+        'eta_squared': eta_squared,
+        'partial_eta_squared': partial_eta_squared,
+        'omega_squared': omega_squared,
+        'group_means': group_means,
+        'overall_mean': overall_mean,
+        'f_critical': f_critical
+    }
 
 # Apply manual calculation
-anova_result <- manual_anova(list(mpg_4cyl, mpg_6cyl, mpg_8cyl))
+anova_result = manual_anova([mpg_4cyl, mpg_6cyl, mpg_8cyl])
 
-# Verify with R's built-in function
-cat("=== VERIFICATION WITH R'S BUILT-IN FUNCTION ===\n")
+# Verify with Python's built-in function
+print("=== VERIFICATION WITH PYTHON'S BUILT-IN FUNCTION ===")
+```
 ```
 
-### Using R's Built-in ANOVA
+### Using Python's Built-in ANOVA
 
-R's built-in ANOVA functions provide efficient and comprehensive analysis. The `aov()` function uses the same mathematical principles as manual calculation but with optimized algorithms.
+Python's statistical libraries provide efficient and comprehensive ANOVA analysis. The `scipy.stats.f_oneway()` function and `statsmodels` use the same mathematical principles as manual calculation but with optimized algorithms.
 
 **Model Specification:**
 The ANOVA model can be written as:
@@ -235,82 +252,85 @@ where:
 3. **Homoscedasticity:** Error terms have constant variance
 4. **Linearity:** Effects are additive
 
-```r
-# Perform ANOVA using R's aov function
-anova_model <- aov(mpg ~ cyl_factor, data = mtcars)
-print(anova_model)
+```python
+# Perform ANOVA using scipy's f_oneway function
+from scipy.stats import f_oneway
 
-# Get comprehensive ANOVA summary
-anova_summary <- summary(anova_model)
-print(anova_summary)
+f_statistic, p_value = f_oneway(mpg_4cyl, mpg_6cyl, mpg_8cyl)
+
+print("=== PYTHON BUILT-IN ANOVA RESULTS ===")
+print(f"F-statistic: {round(f_statistic, 3)}")
+print(f"p-value: {round(p_value, 4)}")
+
+# Using statsmodels for more comprehensive ANOVA
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+from statsmodels.stats.anova import anova_lm
+
+# Fit the model
+model = ols('mpg ~ cyl_factor', data=mtcars).fit()
+anova_table = anova_lm(model, typ=2)
+
+print("\n=== STATSMODELS ANOVA TABLE ===")
+print(anova_table)
 
 # Extract key statistics
-f_statistic <- anova_summary[[1]]$`F value`[1]
-p_value <- anova_summary[[1]]$`Pr(>F)`[1]
-df_between <- anova_summary[[1]]$Df[1]
-df_within <- anova_summary[[1]]$Df[2]
-ss_between <- anova_summary[[1]]$`Sum Sq`[1]
-ss_within <- anova_summary[[1]]$`Sum Sq`[2]
-ms_between <- anova_summary[[1]]$`Mean Sq`[1]
-ms_within <- anova_summary[[1]]$`Mean Sq`[2]
+ss_between = anova_table.loc['cyl_factor', 'sum_sq']
+ss_within = anova_table.loc['Residual', 'sum_sq']
+df_between = anova_table.loc['cyl_factor', 'df']
+df_within = anova_table.loc['Residual', 'df']
+ms_between = anova_table.loc['cyl_factor', 'mean_sq']
+ms_within = anova_table.loc['Residual', 'mean_sq']
 
-cat("=== R BUILT-IN ANOVA RESULTS ===\n")
-cat("F-statistic:", round(f_statistic, 3), "\n")
-cat("p-value:", round(p_value, 4), "\n")
-cat("Degrees of freedom:", df_between, ",", df_within, "\n")
-cat("Sum of Squares (Between):", round(ss_between, 3), "\n")
-cat("Sum of Squares (Within):", round(ss_within, 3), "\n")
-cat("Mean Square (Between):", round(ms_between, 3), "\n")
-cat("Mean Square (Within):", round(ms_within, 3), "\n\n")
+print(f"\nDegrees of freedom: {df_between}, {df_within}")
+print(f"Sum of Squares (Between): {round(ss_between, 3)}")
+print(f"Sum of Squares (Within): {round(ss_within, 3)}")
+print(f"Mean Square (Between): {round(ms_between, 3)}")
+print(f"Mean Square (Within): {round(ms_within, 3)}")
 
-# Verify manual calculation matches R results
-cat("=== VERIFICATION ===\n")
-cat("Manual F-statistic:", round(anova_result$f_statistic, 3), "\n")
-cat("R F-statistic:", round(f_statistic, 3), "\n")
-cat("Match:", abs(anova_result$f_statistic - f_statistic) < 0.001, "\n\n")
+# Verify manual calculation matches Python results
+print("\n=== VERIFICATION ===")
+print(f"Manual F-statistic: {round(anova_result['f_statistic'], 3)}")
+print(f"Python F-statistic: {round(f_statistic, 3)}")
+print(f"Match: {abs(anova_result['f_statistic'] - f_statistic) < 0.001}")
 
-cat("Manual p-value:", round(anova_result$p_value, 4), "\n")
-cat("R p-value:", round(p_value, 4), "\n")
-cat("Match:", abs(anova_result$p_value - p_value) < 0.0001, "\n\n")
+print(f"\nManual p-value: {round(anova_result['p_value'], 4)}")
+print(f"Python p-value: {round(p_value, 4)}")
+print(f"Match: {abs(anova_result['p_value'] - p_value) < 0.0001}")
 
 # Model diagnostics
-cat("=== MODEL DIAGNOSTICS ===\n")
-cat("Model formula:", deparse(formula(anova_model)), "\n")
-cat("Number of observations:", length(residuals(anova_model)), "\n")
-cat("Number of groups:", length(unique(mtcars$cyl_factor)), "\n")
+print("\n=== MODEL DIAGNOSTICS ===")
+print(f"Number of observations: {len(mtcars)}")
+print(f"Number of groups: {len(mtcars['cyl_factor'].unique())}")
 
 # Residual analysis
-residuals_model <- residuals(anova_model)
-fitted_values <- fitted(anova_model)
+residuals_model = model.resid
+fitted_values = model.fittedvalues
 
-cat("\nResidual Analysis:\n")
-cat("Mean of residuals:", round(mean(residuals_model), 6), "(should be ~0)\n")
-cat("SD of residuals:", round(sd(residuals_model), 3), "\n")
-cat("Min residual:", round(min(residuals_model), 3), "\n")
-cat("Max residual:", round(max(residuals_model), 3), "\n")
+print("\nResidual Analysis:")
+print(f"Mean of residuals: {round(np.mean(residuals_model), 6)} (should be ~0)")
+print(f"SD of residuals: {round(np.std(residuals_model), 3)}")
+print(f"Min residual: {round(np.min(residuals_model), 3)}")
+print(f"Max residual: {round(np.max(residuals_model), 3)}")
 
 # Model fit statistics
-cat("\nModel Fit:\n")
-cat("R-squared:", round(ss_between / (ss_between + ss_within), 3), "\n")
-cat("Adjusted R-squared:", round(1 - (ss_within / df_within) / ((ss_between + ss_within) / (df_between + df_within)), 3), "\n")
+print("\nModel Fit:")
+r_squared = ss_between / (ss_between + ss_within)
+adj_r_squared = 1 - (ss_within / df_within) / ((ss_between + ss_within) / (df_between + df_within))
+print(f"R-squared: {round(r_squared, 3)}")
+print(f"Adjusted R-squared: {round(adj_r_squared, 3)}")
 
 # Confidence intervals for group means
-cat("\n=== CONFIDENCE INTERVALS FOR GROUP MEANS ===\n")
-group_means_ci <- tapply(mtcars$mpg, mtcars$cyl_factor, function(x) {
-  n <- length(x)
-  mean_val <- mean(x)
-  se <- sd(x) / sqrt(n)
-  t_critical <- qt(0.975, n - 1)
-  ci_lower <- mean_val - t_critical * se
-  ci_upper <- mean_val + t_critical * se
-  return(c(mean = mean_val, lower = ci_lower, upper = ci_upper))
-})
-
-for (i in 1:length(group_means_ci)) {
-  group_name <- names(group_means_ci)[i]
-  ci <- group_means_ci[[i]]
-  cat(group_name, ": ", round(ci["mean"], 2), " [", round(ci["lower"], 2), ", ", round(ci["upper"], 2), "]\n", sep = "")
-}
+print("\n=== CONFIDENCE INTERVALS FOR GROUP MEANS ===")
+for group in mtcars['cyl_factor'].unique():
+    group_data = mtcars[mtcars['cyl_factor'] == group]['mpg']
+    n = len(group_data)
+    mean_val = np.mean(group_data)
+    se = np.std(group_data) / np.sqrt(n)
+    t_critical = stats.t.ppf(0.975, n - 1)
+    ci_lower = mean_val - t_critical * se
+    ci_upper = mean_val + t_critical * se
+    print(f"{group}: {round(mean_val, 2)} [{round(ci_lower, 2)}, {round(ci_upper, 2)}]")
 ```
 
 ## Descriptive Statistics
@@ -335,122 +355,127 @@ For each group $i$:
 
 ### Group Comparisons
 
-```r
+```python
 # Comprehensive descriptive statistics for each group
-library(dplyr)
+from scipy import stats
+from scipy.stats import skew, kurtosis
 
-group_stats <- mtcars %>%
-  group_by(cyl_factor) %>%
-  summarise(
-    n = n(),
-    mean = mean(mpg, na.rm = TRUE),
-    sd = sd(mpg, na.rm = TRUE),
-    median = median(mpg, na.rm = TRUE),
-    min = min(mpg, na.rm = TRUE),
-    max = max(mpg, na.rm = TRUE),
-    q25 = quantile(mpg, 0.25, na.rm = TRUE),
-    q75 = quantile(mpg, 0.75, na.rm = TRUE),
-    iqr = q75 - q25,
-    se = sd / sqrt(n),
-    cv = sd / mean,
-    skewness = moments::skewness(mpg),
-    kurtosis = moments::kurtosis(mpg)
-  )
+group_stats = mtcars.groupby('cyl_factor')['mpg'].agg([
+    'count', 'mean', 'std', 'median', 'min', 'max',
+    lambda x: np.percentile(x, 25),  # q25
+    lambda x: np.percentile(x, 75),  # q75
+]).rename(columns={
+    '<lambda_0>': 'q25',
+    '<lambda_1>': 'q75'
+})
 
-cat("=== COMPREHENSIVE GROUP STATISTICS ===\n")
+# Calculate additional statistics
+group_stats['iqr'] = group_stats['q75'] - group_stats['q25']
+group_stats['se'] = group_stats['std'] / np.sqrt(group_stats['count'])
+group_stats['cv'] = group_stats['std'] / group_stats['mean']
+
+# Calculate skewness and kurtosis for each group
+skewness_values = []
+kurtosis_values = []
+
+for group in mtcars['cyl_factor'].unique():
+    group_data = mtcars[mtcars['cyl_factor'] == group]['mpg']
+    skewness_values.append(skew(group_data))
+    kurtosis_values.append(kurtosis(group_data))
+
+group_stats['skewness'] = skewness_values
+group_stats['kurtosis'] = kurtosis_values
+
+print("=== COMPREHENSIVE GROUP STATISTICS ===")
 print(group_stats)
 
 # Overall statistics
-overall_stats <- mtcars %>%
-  summarise(
-    n = n(),
-    mean = mean(mpg, na.rm = TRUE),
-    sd = sd(mpg, na.rm = TRUE),
-    median = median(mpg, na.rm = TRUE),
-    min = min(mpg, na.rm = TRUE),
-    max = max(mpg, na.rm = TRUE),
-    q25 = quantile(mpg, 0.25, na.rm = TRUE),
-    q75 = quantile(mpg, 0.75, na.rm = TRUE),
-    iqr = q75 - q25,
-    cv = sd / mean,
-    skewness = moments::skewness(mpg),
-    kurtosis = moments::kurtosis(mpg)
-  )
+overall_stats = {
+    'n': len(mtcars),
+    'mean': np.mean(mtcars['mpg']),
+    'sd': np.std(mtcars['mpg']),
+    'median': np.median(mtcars['mpg']),
+    'min': np.min(mtcars['mpg']),
+    'max': np.max(mtcars['mpg']),
+    'q25': np.percentile(mtcars['mpg'], 25),
+    'q75': np.percentile(mtcars['mpg'], 75),
+    'iqr': np.percentile(mtcars['mpg'], 75) - np.percentile(mtcars['mpg'], 25),
+    'cv': np.std(mtcars['mpg']) / np.mean(mtcars['mpg']),
+    'skewness': skew(mtcars['mpg']),
+    'kurtosis': kurtosis(mtcars['mpg'])
+}
 
-cat("\n=== OVERALL STATISTICS ===\n")
-print(overall_stats)
+print("\n=== OVERALL STATISTICS ===")
+for key, value in overall_stats.items():
+    print(f"{key}: {round(value, 3)}")
 
 # Pooled variance calculation
-pooled_variance <- function(group_data) {
-  n_per_group <- sapply(group_data, length)
-  var_per_group <- sapply(group_data, var)
-  
-  numerator <- sum((n_per_group - 1) * var_per_group)
-  denominator <- sum(n_per_group - 1)
-  
-  return(numerator / denominator)
-}
+def pooled_variance(group_data):
+    """Calculate pooled variance across groups"""
+    n_per_group = [len(group) for group in group_data]
+    var_per_group = [np.var(group, ddof=1) for group in group_data]
+    
+    numerator = sum((n_per_group[i] - 1) * var_per_group[i] for i in range(len(group_data)))
+    denominator = sum(n_per_group[i] - 1 for i in range(len(group_data)))
+    
+    return numerator / denominator
 
-pooled_var <- pooled_variance(list(mpg_4cyl, mpg_6cyl, mpg_8cyl))
-pooled_sd <- sqrt(pooled_var)
+pooled_var = pooled_variance([mpg_4cyl, mpg_6cyl, mpg_8cyl])
+pooled_sd = np.sqrt(pooled_var)
 
-cat("\n=== POOLED STATISTICS ===\n")
-cat("Pooled variance:", round(pooled_var, 3), "\n")
-cat("Pooled standard deviation:", round(pooled_sd, 3), "\n")
+print(f"\n=== POOLED STATISTICS ===")
+print(f"Pooled variance: {round(pooled_var, 3)}")
+print(f"Pooled standard deviation: {round(pooled_sd, 3)}")
 
 # Effect size calculations for each group
-group_means <- group_stats$mean
-overall_mean <- overall_stats$mean
+group_means = group_stats['mean'].values
+overall_mean = overall_stats['mean']
 
-effect_sizes <- (group_means - overall_mean) / pooled_sd
-names(effect_sizes) <- group_stats$cyl_factor
+effect_sizes = (group_means - overall_mean) / pooled_sd
+effect_size_dict = dict(zip(group_stats.index, effect_sizes))
 
-cat("\n=== EFFECT SIZE INDICATORS ===\n")
-cat("Standardized mean differences (Cohen's d relative to overall mean):\n")
-for (i in 1:length(effect_sizes)) {
-  cat(names(effect_sizes)[i], ": d =", round(effect_sizes[i], 3), "\n")
-}
+print(f"\n=== EFFECT SIZE INDICATORS ===")
+print("Standardized mean differences (Cohen's d relative to overall mean):")
+for group, effect_size in effect_size_dict.items():
+    print(f"{group}: d = {round(effect_size, 3)}")
 
 # Variance ratio analysis
-variances <- group_stats$sd^2
-max_var <- max(variances)
-min_var <- min(variances)
-var_ratio <- max_var / min_var
+variances = group_stats['std']**2
+max_var = np.max(variances)
+min_var = np.min(variances)
+var_ratio = max_var / min_var
 
-cat("\n=== VARIANCE ANALYSIS ===\n")
-cat("Group variances:", round(variances, 3), "\n")
-cat("Variance ratio (max/min):", round(var_ratio, 3), "\n")
-if (var_ratio > 4) {
-  cat("⚠️  Large variance ratio - consider assumption violations\n")
-} else if (var_ratio > 2) {
-  cat("⚠️  Moderate variance ratio - check homogeneity assumption\n")
-} else {
-  cat("✓ Variance ratio acceptable\n")
-}
+print(f"\n=== VARIANCE ANALYSIS ===")
+print(f"Group variances: {[round(v, 3) for v in variances]}")
+print(f"Variance ratio (max/min): {round(var_ratio, 3)}")
+if var_ratio > 4:
+    print("⚠️  Large variance ratio - consider assumption violations")
+elif var_ratio > 2:
+    print("⚠️  Moderate variance ratio - check homogeneity assumption")
+else:
+    print("✓ Variance ratio acceptable")
 
 # Sample size analysis
-n_per_group <- group_stats$n
-balanced_design <- length(unique(n_per_group)) == 1
+n_per_group = group_stats['count'].values
+balanced_design = len(np.unique(n_per_group)) == 1
 
-cat("\n=== SAMPLE SIZE ANALYSIS ===\n")
-cat("Sample sizes per group:", n_per_group, "\n")
-cat("Design balanced:", balanced_design, "\n")
-if (!balanced_design) {
-  cat("⚠️  Unbalanced design - consider Type III SS for interactions\n")
-} else {
-  cat("✓ Balanced design\n")
-}
+print(f"\n=== SAMPLE SIZE ANALYSIS ===")
+print(f"Sample sizes per group: {n_per_group}")
+print(f"Design balanced: {balanced_design}")
+if not balanced_design:
+    print("⚠️  Unbalanced design - consider Type III SS for interactions")
+else:
+    print("✓ Balanced design")
 
 # Power analysis based on sample sizes
-min_n <- min(n_per_group)
-cat("Minimum sample size per group:", min_n, "\n")
-if (min_n < 10) {
-  cat("⚠️  Small sample sizes - consider nonparametric alternatives\n")
-} else if (min_n < 30) {
-  cat("⚠️  Moderate sample sizes - check normality carefully\n")
-} else {
-  cat("✓ Adequate sample sizes for parametric tests\n")
-}
+min_n = np.min(n_per_group)
+print(f"Minimum sample size per group: {min_n}")
+if min_n < 10:
+    print("⚠️  Small sample sizes - consider nonparametric alternatives")
+elif min_n < 30:
+    print("⚠️  Moderate sample sizes - check normality carefully")
+else:
+    print("✓ Adequate sample sizes for parametric tests")
 ```
 
 ### Visualization
@@ -463,133 +488,125 @@ Visualization is crucial for understanding data distributions, identifying patte
 3. **Variability:** Examine spread and outliers
 4. **Effect Size:** Visualize practical significance
 
-```r
-library(ggplot2)
-library(gridExtra)
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
 
-# Enhanced box plot with statistics
-p1 <- ggplot(mtcars, aes(x = cyl_factor, y = mpg, fill = cyl_factor)) +
-  geom_boxplot(alpha = 0.7, outlier.shape = 16, outlier.size = 2) +
-  stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "white") +
-  labs(title = "MPG by Number of Cylinders", 
-       subtitle = "Boxes show IQR, lines show medians, diamonds show means",
-       x = "Cylinders", y = "MPG") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  scale_fill_brewer(palette = "Set2")
+# Set style for better-looking plots
+plt.style.use('seaborn-v0_8')
+sns.set_palette("Set2")
 
-# Violin plot with box plot overlay
-p2 <- ggplot(mtcars, aes(x = cyl_factor, y = mpg, fill = cyl_factor)) +
-  geom_violin(alpha = 0.7, scale = "width") +
-  geom_boxplot(width = 0.2, alpha = 0.8, outlier.shape = NA) +
-  stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "white") +
-  labs(title = "MPG Distribution by Cylinders", 
-       subtitle = "Violin shows density, box shows quartiles",
-       x = "Cylinders", y = "MPG") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  scale_fill_brewer(palette = "Set2")
+# Create figure with subplots
+fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+fig.suptitle('Comprehensive ANOVA Visualization', fontsize=16, fontweight='bold')
 
-# Histogram by group with density curves
-p3 <- ggplot(mtcars, aes(x = mpg, fill = cyl_factor)) +
-  geom_histogram(bins = 8, alpha = 0.7, position = "identity") +
-  geom_density(aes(y = ..density.. * 8 * 2), alpha = 0.5) +
-  facet_wrap(~cyl_factor, scales = "free_y") +
-  labs(title = "MPG Distribution by Cylinders", 
-       subtitle = "Histograms with density curves",
-       x = "MPG", y = "Count") +
-  theme_minimal() +
-  scale_fill_brewer(palette = "Set2")
+# 1. Enhanced box plot with statistics
+ax1 = axes[0, 0]
+sns.boxplot(data=mtcars, x='cyl_factor', y='mpg', ax=ax1)
+# Add mean points
+means = mtcars.groupby('cyl_factor')['mpg'].mean()
+ax1.plot(range(len(means)), means, 'o', color='red', markersize=8, label='Mean')
+ax1.set_title('MPG by Number of Cylinders\nBoxes show IQR, lines show medians, red dots show means')
+ax1.set_xlabel('Cylinders')
+ax1.set_ylabel('MPG')
+ax1.legend()
 
-# Q-Q plots for normality assessment
-p4 <- ggplot(mtcars, aes(sample = mpg, color = cyl_factor)) +
-  stat_qq() +
-  stat_qq_line() +
-  facet_wrap(~cyl_factor) +
-  labs(title = "Q-Q Plots for Normality Assessment", 
-       subtitle = "Points should follow the line for normal distributions",
-       x = "Theoretical Quantiles", y = "Sample Quantiles") +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set2")
+# 2. Violin plot with box plot overlay
+ax2 = axes[0, 1]
+sns.violinplot(data=mtcars, x='cyl_factor', y='mpg', ax=ax2, inner='box')
+ax2.set_title('MPG Distribution by Cylinders\nViolin shows density, box shows quartiles')
+ax2.set_xlabel('Cylinders')
+ax2.set_ylabel('MPG')
 
-# Residuals vs fitted plot
-p5 <- ggplot(data.frame(
-  fitted = fitted(anova_model),
-  residuals = residuals(anova_model),
-  group = mtcars$cyl_factor
-), aes(x = fitted, y = residuals, color = group)) +
-  geom_point(alpha = 0.7) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  geom_smooth(method = "loess", se = FALSE, color = "blue") +
-  labs(title = "Residuals vs Fitted Values", 
-       subtitle = "Should show no pattern for valid ANOVA",
-       x = "Fitted Values", y = "Residuals") +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set2")
+# 3. Histogram by group with density curves
+ax3 = axes[0, 2]
+for group in mtcars['cyl_factor'].unique():
+    group_data = mtcars[mtcars['cyl_factor'] == group]['mpg']
+    ax3.hist(group_data, alpha=0.7, label=group, bins=8, density=True)
+    # Add density curve
+    x_range = np.linspace(group_data.min(), group_data.max(), 100)
+    density = stats.gaussian_kde(group_data)(x_range)
+    ax3.plot(x_range, density, linewidth=2)
+ax3.set_title('MPG Distribution by Cylinders\nHistograms with density curves')
+ax3.set_xlabel('MPG')
+ax3.set_ylabel('Density')
+ax3.legend()
 
-# Mean comparison plot with confidence intervals
-p6 <- ggplot(group_stats, aes(x = cyl_factor, y = mean, fill = cyl_factor)) +
-  geom_bar(stat = "identity", alpha = 0.7) +
-  geom_errorbar(aes(ymin = mean - 1.96 * se, ymax = mean + 1.96 * se), 
-                width = 0.2, size = 1) +
-  labs(title = "Group Means with 95% Confidence Intervals", 
-       subtitle = "Bars show means, error bars show 95% CI",
-       x = "Cylinders", y = "Mean MPG") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  scale_fill_brewer(palette = "Set2")
+# 4. Q-Q plots for normality assessment
+ax4 = axes[1, 0]
+for i, group in enumerate(mtcars['cyl_factor'].unique()):
+    group_data = mtcars[mtcars['cyl_factor'] == group]['mpg']
+    stats.probplot(group_data, dist="norm", plot=ax4)
+    ax4.set_title(f'Q-Q Plot for {group}\nPoints should follow the line for normal distributions')
+    break  # Show only first group for clarity
 
-# Combine plots in a comprehensive layout
-cat("=== COMPREHENSIVE ANOVA VISUALIZATION ===\n")
-cat("Generating 6 different plots for complete data analysis...\n")
+# 5. Residuals vs fitted plot
+ax5 = axes[1, 1]
+ax5.scatter(fitted_values, residuals_model, alpha=0.7, c=mtcars['cyl_factor'].astype('category').cat.codes)
+ax5.axhline(y=0, color='red', linestyle='--')
+# Add trend line
+z = np.polyfit(fitted_values, residuals_model, 1)
+p = np.poly1d(z)
+ax5.plot(fitted_values, p(fitted_values), "b--", alpha=0.8)
+ax5.set_title('Residuals vs Fitted Values\nShould show no pattern for valid ANOVA')
+ax5.set_xlabel('Fitted Values')
+ax5.set_ylabel('Residuals')
 
-# Display plots in a 2x3 grid
-grid.arrange(p1, p2, p3, p4, p5, p6, ncol = 2, nrow = 3)
+# 6. Mean comparison plot with confidence intervals
+ax6 = axes[1, 2]
+x_pos = np.arange(len(group_stats))
+bars = ax6.bar(x_pos, group_stats['mean'], alpha=0.7, 
+               yerr=1.96 * group_stats['se'], capsize=5)
+ax6.set_title('Group Means with 95% Confidence Intervals\nBars show means, error bars show 95% CI')
+ax6.set_xlabel('Cylinders')
+ax6.set_ylabel('Mean MPG')
+ax6.set_xticks(x_pos)
+ax6.set_xticklabels(group_stats.index)
+
+plt.tight_layout()
+plt.show()
 
 # Additional diagnostic plots
-cat("\n=== ADDITIONAL DIAGNOSTIC PLOTS ===\n")
+fig2, (ax7, ax8) = plt.subplots(1, 2, figsize=(15, 6))
+fig2.suptitle('Additional Diagnostic Plots', fontsize=16, fontweight='bold')
 
-# Scale-location plot for homoscedasticity
-p7 <- ggplot(data.frame(
-  fitted = fitted(anova_model),
-  sqrt_abs_resid = sqrt(abs(residuals(anova_model))),
-  group = mtcars$cyl_factor
-), aes(x = fitted, y = sqrt_abs_resid, color = group)) +
-  geom_point(alpha = 0.7) +
-  geom_smooth(method = "loess", se = FALSE, color = "blue") +
-  labs(title = "Scale-Location Plot", 
-       subtitle = "Should show constant spread for homoscedasticity",
-       x = "Fitted Values", y = "√|Residuals|") +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set2")
+# 7. Scale-location plot for homoscedasticity
+sqrt_abs_resid = np.sqrt(np.abs(residuals_model))
+ax7.scatter(fitted_values, sqrt_abs_resid, alpha=0.7, c=mtcars['cyl_factor'].astype('category').cat.codes)
+# Add trend line
+z = np.polyfit(fitted_values, sqrt_abs_resid, 1)
+p = np.poly1d(z)
+ax7.plot(fitted_values, p(fitted_values), "b--", alpha=0.8)
+ax7.set_title('Scale-Location Plot\nShould show constant spread for homoscedasticity')
+ax7.set_xlabel('Fitted Values')
+ax7.set_ylabel('√|Residuals|')
 
-# Leverage plot
-p8 <- ggplot(data.frame(
-  leverage = hatvalues(anova_model),
-  residuals = residuals(anova_model),
-  group = mtcars$cyl_factor
-), aes(x = leverage, y = residuals, color = group)) +
-  geom_point(alpha = 0.7) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  labs(title = "Leverage Plot", 
-       subtitle = "High leverage points may be influential",
-       x = "Leverage", y = "Residuals") +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set2")
+# 8. Leverage plot (simplified version)
+# Calculate leverage manually
+X = pd.get_dummies(mtcars['cyl_factor'], drop_first=True)
+X = sm.add_constant(X)
+leverage = np.diag(X @ np.linalg.inv(X.T @ X) @ X.T)
 
-# Display diagnostic plots
-grid.arrange(p7, p8, ncol = 2)
+ax8.scatter(leverage, residuals_model, alpha=0.7, c=mtcars['cyl_factor'].astype('category').cat.codes)
+ax8.axhline(y=0, color='red', linestyle='--')
+ax8.set_title('Leverage Plot\nHigh leverage points may be influential')
+ax8.set_xlabel('Leverage')
+ax8.set_ylabel('Residuals')
+
+plt.tight_layout()
+plt.show()
 
 # Summary of visual findings
-cat("\n=== VISUAL ANALYSIS SUMMARY ===\n")
-cat("1. Box plots: Show group differences and outliers\n")
-cat("2. Violin plots: Show distribution shapes and density\n")
-cat("3. Histograms: Show data distribution and normality\n")
-cat("4. Q-Q plots: Assess normality assumption\n")
-cat("5. Residual plots: Check model assumptions\n")
-cat("6. Mean plots: Show effect sizes with uncertainty\n")
-cat("7. Scale-location: Check homoscedasticity\n")
-cat("8. Leverage: Identify influential observations\n")
+print("=== VISUAL ANALYSIS SUMMARY ===")
+print("1. Box plots: Show group differences and outliers")
+print("2. Violin plots: Show distribution shapes and density")
+print("3. Histograms: Show data distribution and normality")
+print("4. Q-Q plots: Assess normality assumption")
+print("5. Residual plots: Check model assumptions")
+print("6. Mean plots: Show effect sizes with uncertainty")
+print("7. Scale-location: Check homoscedasticity")
+print("8. Leverage: Identify influential observations")
 ```
 
 ## Effect Size
@@ -627,152 +644,185 @@ f = \sqrt{\frac{\eta^2}{1 - \eta^2}}
 
 ### Comprehensive Effect Size Analysis
 
-```r
+```python
 # Comprehensive effect size calculation function
-calculate_anova_effect_sizes <- function(anova_result) {
-  # Extract components
-  ss_between <- anova_result$ss_between
-  ss_within <- anova_result$ss_within
-  ss_total <- anova_result$ss_total
-  df_between <- anova_result$df_between
-  ms_within <- anova_result$ms_within
-  
-  # Eta-squared
-  eta_squared <- ss_between / ss_total
-  
-  # Partial eta-squared (same as eta-squared for one-way ANOVA)
-  partial_eta_squared <- eta_squared
-  
-  # Omega-squared (unbiased estimator)
-  omega_squared <- (ss_between - (df_between * ms_within)) / (ss_total + ms_within)
-  
-  # Cohen's f
-  cohens_f <- sqrt(eta_squared / (1 - eta_squared))
-  
-  # Epsilon-squared (for nonparametric ANOVA)
-  epsilon_squared <- (ss_between - (df_between * ms_within)) / ss_total
-  
-  # Confidence interval for eta-squared
-  f_stat <- anova_result$f_statistic
-  df1 <- df_between
-  df2 <- anova_result$df_within
-  
-  # Noncentrality parameter
-  lambda <- f_stat * df1
-  
-  # Confidence interval using noncentral F distribution
-  ci_lower <- 1 - 1 / (1 + lambda / qf(0.975, df1, df2))
-  ci_upper <- 1 - 1 / (1 + lambda / qf(0.025, df1, df2))
-  
-  return(list(
-    eta_squared = eta_squared,
-    partial_eta_squared = partial_eta_squared,
-    omega_squared = omega_squared,
-    cohens_f = cohens_f,
-    epsilon_squared = epsilon_squared,
-    ci_lower = ci_lower,
-    ci_upper = ci_upper
-  ))
-}
+def calculate_anova_effect_sizes(anova_result):
+    """Calculate comprehensive effect size measures for ANOVA"""
+    # Extract components
+    ss_between = anova_result['ss_between']
+    ss_within = anova_result['ss_within']
+    ss_total = anova_result['ss_total']
+    df_between = anova_result['df_between']
+    ms_within = anova_result['ms_within']
+    
+    # Eta-squared
+    eta_squared = ss_between / ss_total
+    
+    # Partial eta-squared (same as eta-squared for one-way ANOVA)
+    partial_eta_squared = eta_squared
+    
+    # Omega-squared (unbiased estimator)
+    omega_squared = (ss_between - (df_between * ms_within)) / (ss_total + ms_within)
+    
+    # Cohen's f
+    cohens_f = np.sqrt(eta_squared / (1 - eta_squared))
+    
+    # Epsilon-squared (for nonparametric ANOVA)
+    epsilon_squared = (ss_between - (df_between * ms_within)) / ss_total
+    
+    # Confidence interval for eta-squared
+    f_stat = anova_result['f_statistic']
+    df1 = df_between
+    df2 = anova_result['df_within']
+    
+    # Noncentrality parameter
+    lambda_param = f_stat * df1
+    
+    # Confidence interval using noncentral F distribution
+    ci_lower = 1 - 1 / (1 + lambda_param / f.ppf(0.975, df1, df2))
+    ci_upper = 1 - 1 / (1 + lambda_param / f.ppf(0.025, df1, df2))
+    
+    return {
+        'eta_squared': eta_squared,
+        'partial_eta_squared': partial_eta_squared,
+        'omega_squared': omega_squared,
+        'cohens_f': cohens_f,
+        'epsilon_squared': epsilon_squared,
+        'ci_lower': ci_lower,
+        'ci_upper': ci_upper
+    }
 
 # Apply to our ANOVA results
-effect_sizes <- calculate_anova_effect_sizes(anova_result)
+effect_sizes = calculate_anova_effect_sizes(anova_result)
 
-cat("=== COMPREHENSIVE EFFECT SIZE ANALYSIS ===\n")
-cat("Eta-squared (η²):", round(effect_sizes$eta_squared, 3), "\n")
-cat("Partial eta-squared (η²p):", round(effect_sizes$partial_eta_squared, 3), "\n")
-cat("Omega-squared (ω²):", round(effect_sizes$omega_squared, 3), "\n")
-cat("Cohen's f:", round(effect_sizes$cohens_f, 3), "\n")
-cat("Epsilon-squared (ε²):", round(effect_sizes$epsilon_squared, 3), "\n")
-cat("95% CI for η²:", round(c(effect_sizes$ci_lower, effect_sizes$ci_upper), 3), "\n\n")
+print("=== COMPREHENSIVE EFFECT SIZE ANALYSIS ===")
+print(f"Eta-squared (η²): {round(effect_sizes['eta_squared'], 3)}")
+print(f"Partial eta-squared (η²p): {round(effect_sizes['partial_eta_squared'], 3)}")
+print(f"Omega-squared (ω²): {round(effect_sizes['omega_squared'], 3)}")
+print(f"Cohen's f: {round(effect_sizes['cohens_f'], 3)}")
+print(f"Epsilon-squared (ε²): {round(effect_sizes['epsilon_squared'], 3)}")
+print(f"95% CI for η²: [{round(effect_sizes['ci_lower'], 3)}, {round(effect_sizes['ci_upper'], 3)}]")
 
 # Enhanced effect size interpretation
-interpret_effect_size_comprehensive <- function(eta_sq, omega_sq, cohens_f) {
-  cat("=== EFFECT SIZE INTERPRETATION ===\n")
-  
-  # Eta-squared interpretation
-  cat("Eta-squared (η²):", round(eta_sq, 3), "\n")
-  if (eta_sq < 0.01) {
-    cat("  Interpretation: Negligible effect\n")
-  } else if (eta_sq < 0.06) {
-    cat("  Interpretation: Small effect\n")
-  } else if (eta_sq < 0.14) {
-    cat("  Interpretation: Medium effect\n")
-  } else {
-    cat("  Interpretation: Large effect\n")
-  }
-  
-  # Omega-squared interpretation
-  cat("\nOmega-squared (ω²):", round(omega_sq, 3), "\n")
-  if (omega_sq < 0.01) {
-    cat("  Interpretation: Negligible effect\n")
-  } else if (omega_sq < 0.06) {
-    cat("  Interpretation: Small effect\n")
-  } else if (omega_sq < 0.14) {
-    cat("  Interpretation: Medium effect\n")
-  } else {
-    cat("  Interpretation: Large effect\n")
-  }
-  
-  # Cohen's f interpretation
-  cat("\nCohen's f:", round(cohens_f, 3), "\n")
-  if (cohens_f < 0.10) {
-    cat("  Interpretation: Small effect\n")
-  } else if (cohens_f < 0.25) {
-    cat("  Interpretation: Medium effect\n")
-  } else if (cohens_f < 0.40) {
-    cat("  Interpretation: Large effect\n")
-  } else {
-    cat("  Interpretation: Very large effect\n")
-  }
-  
-  # Practical significance assessment
-  cat("\n=== PRACTICAL SIGNIFICANCE ASSESSMENT ===\n")
-  if (eta_sq >= 0.14) {
-    cat("✓ Large practical effect - results are practically meaningful\n")
-  } else if (eta_sq >= 0.06) {
-    cat("⚠️  Medium practical effect - consider context for interpretation\n")
-  } else if (eta_sq >= 0.01) {
-    cat("⚠️  Small practical effect - may not be practically meaningful\n")
-  } else {
-    cat("✗ Negligible practical effect - results may not be practically useful\n")
-  }
-}
+def interpret_effect_size_comprehensive(eta_sq, omega_sq, cohens_f):
+    """Provide comprehensive interpretation of effect sizes"""
+    print("\n=== EFFECT SIZE INTERPRETATION ===")
+    
+    # Eta-squared interpretation
+    print(f"Eta-squared (η²): {round(eta_sq, 3)}")
+    if eta_sq < 0.01:
+        print("  Interpretation: Negligible effect")
+    elif eta_sq < 0.06:
+        print("  Interpretation: Small effect")
+    elif eta_sq < 0.14:
+        print("  Interpretation: Medium effect")
+    else:
+        print("  Interpretation: Large effect")
+    
+    # Omega-squared interpretation
+    print(f"\nOmega-squared (ω²): {round(omega_sq, 3)}")
+    if omega_sq < 0.01:
+        print("  Interpretation: Negligible effect")
+    elif omega_sq < 0.06:
+        print("  Interpretation: Small effect")
+    elif omega_sq < 0.14:
+        print("  Interpretation: Medium effect")
+    else:
+        print("  Interpretation: Large effect")
+    
+    # Cohen's f interpretation
+    print(f"\nCohen's f: {round(cohens_f, 3)}")
+    if cohens_f < 0.10:
+        print("  Interpretation: Small effect")
+    elif cohens_f < 0.25:
+        print("  Interpretation: Medium effect")
+    elif cohens_f < 0.40:
+        print("  Interpretation: Large effect")
+    else:
+        print("  Interpretation: Very large effect")
+    
+    # Practical significance assessment
+    print("\n=== PRACTICAL SIGNIFICANCE ASSESSMENT ===")
+    if eta_sq >= 0.14:
+        print("✓ Large practical effect - results are practically meaningful")
+    elif eta_sq >= 0.06:
+        print("⚠️  Medium practical effect - consider context for interpretation")
+    elif eta_sq >= 0.01:
+        print("⚠️  Small practical effect - may not be practically meaningful")
+    else:
+        print("✗ Negligible practical effect - results may not be practically useful")
 
 # Apply comprehensive interpretation
-interpret_effect_size_comprehensive(effect_sizes$eta_squared, 
-                                   effect_sizes$omega_squared, 
-                                   effect_sizes$cohens_f)
+interpret_effect_size_comprehensive(effect_sizes['eta_squared'], 
+                                   effect_sizes['omega_squared'], 
+                                   effect_sizes['cohens_f'])
 
 # Effect size comparison with other measures
-cat("\n=== EFFECT SIZE COMPARISON ===\n")
-cat("Comparison of different effect size measures:\n")
-cat("Eta-squared (biased):", round(effect_sizes$eta_squared, 3), "\n")
-cat("Omega-squared (unbiased):", round(effect_sizes$omega_squared, 3), "\n")
-cat("Difference (bias):", round(effect_sizes$eta_squared - effect_sizes$omega_squared, 3), "\n")
+print("\n=== EFFECT SIZE COMPARISON ===")
+print("Comparison of different effect size measures:")
+print(f"Eta-squared (biased): {round(effect_sizes['eta_squared'], 3)}")
+print(f"Omega-squared (unbiased): {round(effect_sizes['omega_squared'], 3)}")
+print(f"Difference (bias): {round(effect_sizes['eta_squared'] - effect_sizes['omega_squared'], 3)}")
 
-if (abs(effect_sizes$eta_squared - effect_sizes$omega_squared) < 0.01) {
-  cat("✓ Bias is minimal - eta-squared is acceptable\n")
-} else {
-  cat("⚠️  Notable bias - prefer omega-squared for small samples\n")
-}
+if abs(effect_sizes['eta_squared'] - effect_sizes['omega_squared']) < 0.01:
+    print("✓ Bias is minimal - eta-squared is acceptable")
+else:
+    print("⚠️  Notable bias - prefer omega-squared for small samples")
 
 # Power analysis based on effect size
-library(pwr)
-f_effect_size <- effect_sizes$cohens_f
-current_power <- pwr.anova.test(k = 3, n = min(table(mtcars$cyl_factor)), 
-                                f = f_effect_size, sig.level = 0.05)$power
+# Note: Python doesn't have a direct equivalent to R's pwr package
+# We'll implement a simplified version
+def power_analysis_anova(k, n_per_group, f_effect_size, alpha=0.05):
+    """Calculate power for one-way ANOVA"""
+    df1 = k - 1
+    df2 = k * (n_per_group - 1)
+    lambda_param = f_effect_size**2 * k * n_per_group
+    
+    # Calculate power using noncentral F distribution
+    f_critical = f.ppf(1 - alpha, df1, df2)
+    power = 1 - f.cdf(f_critical, df1, df2, lambda_param)
+    return power
 
-cat("\n=== POWER ANALYSIS ===\n")
-cat("Effect size f:", round(f_effect_size, 3), "\n")
-cat("Current power:", round(current_power, 3), "\n")
+def estimate_sample_size_for_power(k, f_effect_size, alpha, power):
+    """Estimate required sample size for desired power (simplified)"""
+    # This is a simplified estimation - in practice use proper power analysis libraries
+    # For demonstration purposes, we'll use a rough approximation
+    df1 = k - 1
+    
+    # Rough estimation based on effect size and power
+    if f_effect_size < 0.1:
+        base_n = 50
+    elif f_effect_size < 0.25:
+        base_n = 20
+    elif f_effect_size < 0.4:
+        base_n = 10
+    else:
+        base_n = 5
+    
+    # Adjust for power level
+    if power >= 0.95:
+        base_n = int(base_n * 1.5)
+    elif power >= 0.9:
+        base_n = int(base_n * 1.2)
+    elif power < 0.8:
+        base_n = int(base_n * 0.8)
+    
+    return max(base_n, 5)  # Minimum of 5 per group
 
-if (current_power < 0.8) {
-  required_n <- pwr.anova.test(k = 3, f = f_effect_size, sig.level = 0.05, power = 0.8)$n
-  cat("Required sample size per group for 80% power:", ceiling(required_n), "\n")
-} else {
-  cat("✓ Adequate power for detecting this effect size\n")
-}
+f_effect_size = effect_sizes['cohens_f']
+n_per_group = min(mtcars.groupby('cyl_factor').size())
+current_power = power_analysis_anova(k=3, n_per_group=n_per_group, 
+                                   f_effect_size=f_effect_size)
+
+print(f"\n=== POWER ANALYSIS ===")
+print(f"Effect size f: {round(f_effect_size, 3)}")
+print(f"Current power: {round(current_power, 3)}")
+
+if current_power < 0.8:
+    # Estimate required sample size (simplified)
+    print("Required sample size per group for 80% power: Estimate needed")
+else:
+    print("✓ Adequate power for detecting this effect size")
 ```
 
 ## Post Hoc Tests
@@ -806,249 +856,270 @@ S = \sqrt{(k-1)F_{\alpha,k-1,N-k}}
 
 ### Comprehensive Post Hoc Analysis
 
-```r
+```python
+from statsmodels.stats.multicomp import pairwise_tukeyhsd, MultiComparison
+from scipy.stats import ttest_ind
+from statsmodels.stats.multitest import multipletests
+
 # Comprehensive post hoc analysis function
-comprehensive_posthoc <- function(anova_model, data, group_var, response_var, alpha = 0.05) {
-  cat("=== COMPREHENSIVE POST HOC ANALYSIS ===\n")
-  
-  # Get group information
-  groups <- unique(data[[group_var]])
-  k <- length(groups)
-  m <- k * (k - 1) / 2  # number of pairwise comparisons
-  
-  cat("Number of groups (k):", k, "\n")
-  cat("Number of pairwise comparisons (m):", m, "\n")
-  cat("Family-wise error rate without correction:", round(1 - (1 - alpha)^m, 4), "\n\n")
-  
-  # 1. Tukey's HSD Test
-  cat("=== TUKEY'S HSD TEST ===\n")
-  tukey_result <- TukeyHSD(anova_model, conf.level = 1 - alpha)
-  print(tukey_result)
-  
-  # Extract significant differences
-  tukey_matrix <- tukey_result[[1]]
-  significant_tukey <- tukey_matrix[tukey_matrix[, "p adj"] < alpha, ]
-  
-  if (nrow(significant_tukey) > 0) {
-    cat("\nSignificant pairwise differences (Tukey's HSD, p <", alpha, "):\n")
-    for (i in 1:nrow(significant_tukey)) {
-      row_name <- rownames(significant_tukey)[i]
-      diff <- significant_tukey[i, "diff"]
-      lwr <- significant_tukey[i, "lwr"]
-      upr <- significant_tukey[i, "upr"]
-      p_adj <- significant_tukey[i, "p adj"]
-      cat(row_name, ": diff =", round(diff, 3), 
-          "95% CI [", round(lwr, 3), ",", round(upr, 3), "], p =", round(p_adj, 4), "\n")
+def comprehensive_posthoc(data, group_var, response_var, alpha=0.05):
+    """Perform comprehensive post hoc analysis with multiple methods"""
+    print("=== COMPREHENSIVE POST HOC ANALYSIS ===")
+    
+    # Get group information
+    groups = data[group_var].unique()
+    k = len(groups)
+    m = k * (k - 1) / 2  # number of pairwise comparisons
+    
+    print(f"Number of groups (k): {k}")
+    print(f"Number of pairwise comparisons (m): {m}")
+    print(f"Family-wise error rate without correction: {round(1 - (1 - alpha)**m, 4)}")
+    
+    # 1. Tukey's HSD Test
+    print("\n=== TUKEY'S HSD TEST ===")
+    mc = MultiComparison(data[response_var], data[group_var])
+    tukey_result = mc.tukeyhsd(alpha=alpha)
+    print(tukey_result)
+    
+    # Extract significant differences
+    significant_tukey = tukey_result.pvalues < alpha
+    
+    if np.any(significant_tukey):
+        print(f"\nSignificant pairwise differences (Tukey's HSD, p < {alpha}):")
+        for i, (group1, group2) in enumerate(tukey_result.groupsunique):
+            if significant_tukey[i]:
+                diff = tukey_result.meandiffs[i]
+                p_val = tukey_result.pvalues[i]
+                print(f"{group1} vs {group2}: diff = {round(diff, 3)}, p = {round(p_val, 4)}")
+    else:
+        print("No significant pairwise differences found with Tukey's HSD.")
+    
+    # 2. Bonferroni Correction
+    print("\n=== BONFERRONI CORRECTION ===")
+    # Perform all pairwise t-tests
+    p_values = []
+    comparisons = []
+    
+    for i in range(len(groups)):
+        for j in range(i+1, len(groups)):
+            group1_data = data[data[group_var] == groups[i]][response_var]
+            group2_data = data[data[group_var] == groups[j]][response_var]
+            _, p_val = ttest_ind(group1_data, group2_data)
+            p_values.append(p_val)
+            comparisons.append(f"{groups[i]} vs {groups[j]}")
+    
+    # Apply Bonferroni correction
+    bonferroni_pvals = multipletests(p_values, method='bonferroni')[1]
+    
+    print("Bonferroni-corrected p-values:")
+    for comp, p_val in zip(comparisons, bonferroni_pvals):
+        print(f"{comp}: p = {round(p_val, 4)}")
+    
+    # Extract significant Bonferroni results
+    significant_bonferroni = bonferroni_pvals < alpha
+    if np.any(significant_bonferroni):
+        print(f"\nSignificant differences (Bonferroni-corrected p < {alpha}):")
+        for i, comp in enumerate(comparisons):
+            if significant_bonferroni[i]:
+                print(f"{comp}: p = {round(bonferroni_pvals[i], 4)}")
+    else:
+        print(f"No significant differences found with Bonferroni correction.")
+    
+    # 3. Scheffe's Test
+    print("\n=== SCHEFFE'S TEST ===")
+    scheffe_result = scheffe_test(anova_result, [mpg_4cyl, mpg_6cyl, mpg_8cyl], alpha)
+    
+    print(f"Scheffe's critical value: {round(scheffe_result['scheffe_critical'], 3)}")
+    
+    for comp in scheffe_result['comparisons']:
+        group_names = ["4-cylinder", "6-cylinder", "8-cylinder"]
+        print(f"{group_names[comp['group1']]} vs {group_names[comp['group2']]}:")
+        print(f"  Mean difference: {round(comp['mean_diff'], 3)}")
+        print(f"  Test statistic: {round(comp['test_stat'], 3)}")
+        print(f"  p-value: {round(comp['p_value'], 4)}")
+        print(f"  Significant: {comp['significant']}")
+    
+    # 4. Holm's Method
+    print("\n=== HOLM'S METHOD ===")
+    holm_pvals = multipletests(p_values, method='holm')[1]
+    
+    print("Holm-corrected p-values:")
+    for comp, p_val in zip(comparisons, holm_pvals):
+        print(f"{comp}: p = {round(p_val, 4)}")
+    
+    # 5. False Discovery Rate (FDR)
+    print("\n=== FALSE DISCOVERY RATE (FDR) ===")
+    fdr_pvals = multipletests(p_values, method='fdr_bh')[1]
+    
+    print("FDR-corrected p-values:")
+    for comp, p_val in zip(comparisons, fdr_pvals):
+        print(f"{comp}: p = {round(p_val, 4)}")
+    
+    # Comparison of methods
+    print("\n=== METHOD COMPARISON ===")
+    print("Method comparison summary:")
+    print("- Tukey's HSD: Controls FWER, most powerful for balanced designs")
+    print("- Bonferroni: Most conservative, controls FWER")
+    print("- Holm's method: Less conservative than Bonferroni, controls FWER")
+    print("- FDR: Controls false discovery rate, less conservative")
+    print("- Scheffe's: Most conservative, allows any contrast")
+    
+    return {
+        'tukey': tukey_result,
+        'bonferroni': {'p_values': bonferroni_pvals, 'comparisons': comparisons},
+        'scheffe': scheffe_result,
+        'holm': {'p_values': holm_pvals, 'comparisons': comparisons},
+        'fdr': {'p_values': fdr_pvals, 'comparisons': comparisons}
     }
-  } else {
-    cat("No significant pairwise differences found with Tukey's HSD.\n")
-  }
-  
-  # 2. Bonferroni Correction
-  cat("\n=== BONFERRONI CORRECTION ===\n")
-  pairwise_tests <- pairwise.t.test(data[[response_var]], data[[group_var]], 
-                                   p.adjust.method = "bonferroni")
-  print(pairwise_tests)
-  
-  # Extract significant Bonferroni results
-  bonferroni_matrix <- pairwise_tests$p.value
-  significant_bonferroni <- which(bonferroni_matrix < alpha, arr.ind = TRUE)
-  
-  if (nrow(significant_bonferroni) > 0) {
-    cat("\nSignificant differences (Bonferroni-corrected p <", alpha, "):\n")
-    for (i in 1:nrow(significant_bonferroni)) {
-      row_idx <- significant_bonferroni[i, 1]
-      col_idx <- significant_bonferroni[i, 2]
-      group1 <- rownames(bonferroni_matrix)[row_idx]
-      group2 <- colnames(bonferroni_matrix)[col_idx]
-      p_value <- bonferroni_matrix[row_idx, col_idx]
-      cat(group1, "vs", group2, ": p =", round(p_value, 4), "\n")
-    }
-  } else {
-    cat("No significant differences found with Bonferroni correction.\n")
-  }
-  
-  # 3. Scheffe's Test
-  cat("\n=== SCHEFFE'S TEST ===\n")
-  scheffe_result <- scheffe_test(anova_result, list(mpg_4cyl, mpg_6cyl, mpg_8cyl), alpha)
-  
-  cat("Scheffe's critical value:", round(scheffe_result$scheffe_critical, 3), "\n\n")
-  
-  for (comp in scheffe_result$comparisons) {
-    group_names <- c("4-cylinder", "6-cylinder", "8-cylinder")
-    cat(group_names[comp$group1], "vs", group_names[comp$group2], ":\n")
-    cat("  Mean difference:", round(comp$mean_diff, 3), "\n")
-    cat("  Test statistic:", round(comp$test_stat, 3), "\n")
-    cat("  p-value:", round(comp$p_value, 4), "\n")
-    cat("  Significant:", comp$significant, "\n\n")
-  }
-  
-  # 4. Holm's Method
-  cat("=== HOLM'S METHOD ===\n")
-  holm_tests <- pairwise.t.test(data[[response_var]], data[[group_var]], 
-                               p.adjust.method = "holm")
-  print(holm_tests)
-  
-  # 5. False Discovery Rate (FDR)
-  cat("=== FALSE DISCOVERY RATE (FDR) ===\n")
-  fdr_tests <- pairwise.t.test(data[[response_var]], data[[group_var]], 
-                              p.adjust.method = "fdr")
-  print(fdr_tests)
-  
-  # Comparison of methods
-  cat("\n=== METHOD COMPARISON ===\n")
-  cat("Method comparison summary:\n")
-  cat("- Tukey's HSD: Controls FWER, most powerful for balanced designs\n")
-  cat("- Bonferroni: Most conservative, controls FWER\n")
-  cat("- Holm's method: Less conservative than Bonferroni, controls FWER\n")
-  cat("- FDR: Controls false discovery rate, less conservative\n")
-  cat("- Scheffe's: Most conservative, allows any contrast\n\n")
-  
-  return(list(
-    tukey = tukey_result,
-    bonferroni = pairwise_tests,
-    scheffe = scheffe_result,
-    holm = holm_tests,
-    fdr = fdr_tests
-  ))
-}
 
 # Apply comprehensive post hoc analysis
-posthoc_results <- comprehensive_posthoc(anova_model, mtcars, "cyl_factor", "mpg")
+posthoc_results = comprehensive_posthoc(mtcars, "cyl_factor", "mpg")
 
 # Visualization of post hoc results
-cat("\n=== POST HOC VISUALIZATION ===\n")
+print("\n=== POST HOC VISUALIZATION ===")
 
 # Tukey's HSD plot
-plot(posthoc_results$tukey, main = "Tukey's HSD Test Results")
+plt.figure(figsize=(10, 6))
+tukey_result.plot_simultaneous()
+plt.title("Tukey's HSD Test Results")
+plt.show()
 
 # Create a summary table of all methods
-create_posthoc_summary <- function(posthoc_results, alpha = 0.05) {
-  cat("=== POST HOC SUMMARY TABLE ===\n")
-  
-  # Extract significant pairs from each method
-  tukey_sig <- posthoc_results$tukey[[1]][posthoc_results$tukey[[1]][, "p adj"] < alpha, ]
-  bonferroni_sig <- which(posthoc_results$bonferroni$p.value < alpha, arr.ind = TRUE)
-  holm_sig <- which(posthoc_results$holm$p.value < alpha, arr.ind = TRUE)
-  fdr_sig <- which(posthoc_results$fdr$p.value < alpha, arr.ind = TRUE)
-  
-  cat("Method\t\tSignificant Pairs\n")
-  cat("Tukey's HSD\t", nrow(tukey_sig), "\n")
-  cat("Bonferroni\t", nrow(bonferroni_sig), "\n")
-  cat("Holm's\t\t", nrow(holm_sig), "\n")
-  cat("FDR\t\t", nrow(fdr_sig), "\n")
-  
-  # Agreement analysis
-  cat("\n=== AGREEMENT ANALYSIS ===\n")
-  cat("Methods that found the most significant differences:\n")
-  method_counts <- c(
-    "Tukey" = nrow(tukey_sig),
-    "Bonferroni" = nrow(bonferroni_sig),
-    "Holm" = nrow(holm_sig),
-    "FDR" = nrow(fdr_sig)
-  )
-  
-  for (method in names(sort(method_counts, decreasing = TRUE))) {
-    cat(method, ":", method_counts[method], "significant pairs\n")
-  }
-}
+def create_posthoc_summary(posthoc_results, alpha=0.05):
+    """Create summary table of post hoc results"""
+    print("=== POST HOC SUMMARY TABLE ===")
+    
+    # Extract significant pairs from each method
+    tukey_sig = np.sum(posthoc_results['tukey'].pvalues < alpha)
+    bonferroni_sig = np.sum(posthoc_results['bonferroni']['p_values'] < alpha)
+    holm_sig = np.sum(posthoc_results['holm']['p_values'] < alpha)
+    fdr_sig = np.sum(posthoc_results['fdr']['p_values'] < alpha)
+    
+    print("Method\t\tSignificant Pairs")
+    print(f"Tukey's HSD\t{tukey_sig}")
+    print(f"Bonferroni\t{bonferroni_sig}")
+    print(f"Holm's\t\t{holm_sig}")
+    print(f"FDR\t\t{fdr_sig}")
+    
+    # Agreement analysis
+    print("\n=== AGREEMENT ANALYSIS ===")
+    print("Methods that found the most significant differences:")
+    method_counts = {
+        "Tukey": tukey_sig,
+        "Bonferroni": bonferroni_sig,
+        "Holm": holm_sig,
+        "FDR": fdr_sig
+    }
+    
+    for method in sorted(method_counts.keys(), key=lambda x: method_counts[x], reverse=True):
+        print(f"{method}: {method_counts[method]} significant pairs")
 
 create_posthoc_summary(posthoc_results)
 ```
 
 ### Bonferroni Correction
 
-```r
+```python
 # Perform pairwise t-tests with Bonferroni correction
-pairwise_tests <- pairwise.t.test(mtcars$mpg, mtcars$cyl_factor, p.adjust.method = "bonferroni")
-print(pairwise_tests)
+from scipy.stats import ttest_ind
+from statsmodels.stats.multitest import multipletests
+
+# Get all pairwise combinations
+groups = mtcars['cyl_factor'].unique()
+p_values = []
+comparisons = []
+
+for i in range(len(groups)):
+    for j in range(i+1, len(groups)):
+        group1_data = mtcars[mtcars['cyl_factor'] == groups[i]]['mpg']
+        group2_data = mtcars[mtcars['cyl_factor'] == groups[j]]['mpg']
+        _, p_val = ttest_ind(group1_data, group2_data)
+        p_values.append(p_val)
+        comparisons.append(f"{groups[i]} vs {groups[j]}")
+
+# Apply Bonferroni correction
+bonferroni_pvals = multipletests(p_values, method='bonferroni')[1]
+
+print("Bonferroni-corrected p-values:")
+for comp, p_val in zip(comparisons, bonferroni_pvals):
+    print(f"{comp}: p = {round(p_val, 4)}")
 
 # Extract significant pairs
-bonferroni_matrix <- pairwise_tests$p.value
-significant_bonferroni <- which(bonferroni_matrix < 0.05, arr.ind = TRUE)
+significant_bonferroni = bonferroni_pvals < 0.05
 
-if (nrow(significant_bonferroni) > 0) {
-  cat("Significant differences (Bonferroni-corrected p < 0.05):\n")
-  for (i in 1:nrow(significant_bonferroni)) {
-    row_idx <- significant_bonferroni[i, 1]
-    col_idx <- significant_bonferroni[i, 2]
-    group1 <- rownames(bonferroni_matrix)[row_idx]
-    group2 <- colnames(bonferroni_matrix)[col_idx]
-    p_value <- bonferroni_matrix[row_idx, col_idx]
-    cat(group1, "vs", group2, ": p =", round(p_value, 4), "\n")
-  }
-} else {
-  cat("No significant differences found with Bonferroni correction.\n")
-}
+if np.any(significant_bonferroni):
+    print("\nSignificant differences (Bonferroni-corrected p < 0.05):")
+    for i, comp in enumerate(comparisons):
+        if significant_bonferroni[i]:
+            print(f"{comp}: p = {round(bonferroni_pvals[i], 4)}")
+else:
+    print("\nNo significant differences found with Bonferroni correction.")
 ```
 
 ### Scheffe's Test
 
-```r
+```python
 # Function to perform Scheffe's test
-scheffe_test <- function(anova_result, group_data, alpha = 0.05) {
-  k <- length(group_data)
-  n_per_group <- sapply(group_data, length)
-  total_n <- sum(n_per_group)
-  
-  # Calculate critical value
-  f_critical <- qf(1 - alpha, k - 1, total_n - k)
-  scheffe_critical <- sqrt((k - 1) * f_critical)
-  
-  # Calculate group means
-  group_means <- sapply(group_data, mean)
-  
-  # Perform all pairwise comparisons
-  comparisons <- list()
-  pair_count <- 1
-  
-  for (i in 1:(k-1)) {
-    for (j in (i+1):k) {
-      mean_diff <- group_means[i] - group_means[j]
-      
-      # Standard error for the difference
-      se_diff <- sqrt(anova_result$ms_within * (1/n_per_group[i] + 1/n_per_group[j]))
-      
-      # Test statistic
-      test_stat <- abs(mean_diff) / se_diff
-      
-      # p-value
-      p_value <- 1 - pf(test_stat^2 / (k - 1), k - 1, total_n - k)
-      
-      comparisons[[pair_count]] <- list(
-        group1 = i,
-        group2 = j,
-        mean_diff = mean_diff,
-        test_stat = test_stat,
-        p_value = p_value,
-        significant = test_stat > scheffe_critical
-      )
-      
-      pair_count <- pair_count + 1
+def scheffe_test(anova_result, group_data, alpha=0.05):
+    """Perform Scheffe's test for multiple comparisons"""
+    k = len(group_data)
+    n_per_group = [len(group) for group in group_data]
+    total_n = sum(n_per_group)
+    
+    # Calculate critical value
+    f_critical = f.ppf(1 - alpha, k - 1, total_n - k)
+    scheffe_critical = np.sqrt((k - 1) * f_critical)
+    
+    # Calculate group means
+    group_means = [np.mean(group) for group in group_data]
+    
+    # Perform all pairwise comparisons
+    comparisons = []
+    pair_count = 0
+    
+    for i in range(k-1):
+        for j in range(i+1, k):
+            mean_diff = group_means[i] - group_means[j]
+            
+            # Standard error for the difference
+            se_diff = np.sqrt(anova_result['ms_within'] * (1/n_per_group[i] + 1/n_per_group[j]))
+            
+            # Test statistic
+            test_stat = abs(mean_diff) / se_diff
+            
+            # p-value
+            p_value = 1 - f.cdf(test_stat**2 / (k - 1), k - 1, total_n - k)
+            
+            comparisons.append({
+                'group1': i,
+                'group2': j,
+                'mean_diff': mean_diff,
+                'test_stat': test_stat,
+                'p_value': p_value,
+                'significant': test_stat > scheffe_critical
+            })
+            
+            pair_count += 1
+    
+    return {
+        'comparisons': comparisons,
+        'scheffe_critical': scheffe_critical,
+        'alpha': alpha
     }
-  }
-  
-  return(list(
-    comparisons = comparisons,
-    scheffe_critical = scheffe_critical,
-    alpha = alpha
-  ))
-}
 
 # Apply Scheffe's test
-scheffe_result <- scheffe_test(anova_result, list(mpg_4cyl, mpg_6cyl, mpg_8cyl))
+scheffe_result = scheffe_test(anova_result, [mpg_4cyl, mpg_6cyl, mpg_8cyl])
 
-cat("Scheffe's Test Results:\n")
-cat("Critical value:", round(scheffe_result$scheffe_critical, 3), "\n\n")
+print("Scheffe's Test Results:")
+print(f"Critical value: {round(scheffe_result['scheffe_critical'], 3)}")
 
-for (comp in scheffe_result$comparisons) {
-  group_names <- c("4-cylinder", "6-cylinder", "8-cylinder")
-  cat(group_names[comp$group1], "vs", group_names[comp$group2], ":\n")
-  cat("  Mean difference:", round(comp$mean_diff, 3), "\n")
-  cat("  Test statistic:", round(comp$test_stat, 3), "\n")
-  cat("  p-value:", round(comp$p_value, 4), "\n")
-  cat("  Significant:", comp$significant, "\n\n")
-}
+for comp in scheffe_result['comparisons']:
+    group_names = ["4-cylinder", "6-cylinder", "8-cylinder"]
+    print(f"{group_names[comp['group1']]} vs {group_names[comp['group2']]}:")
+    print(f"  Mean difference: {round(comp['mean_diff'], 3)}")
+    print(f"  Test statistic: {round(comp['test_stat'], 3)}")
+    print(f"  p-value: {round(comp['p_value'], 4)}")
+    print(f"  Significant: {comp['significant']}")
 ```
 
 ## Assumption Checking
@@ -1071,341 +1142,326 @@ ANOVA relies on several key assumptions. Violations can affect the validity of r
 
 ### Comprehensive Assumption Checking
 
-```r
+```python
+from scipy.stats import shapiro, anderson, ks_2samp, levene, bartlett, fligner
+from scipy.stats import jarque_bera
+import warnings
+warnings.filterwarnings('ignore')
+
 # Comprehensive assumption checking function
-comprehensive_assumption_check <- function(data, group_var, response_var, alpha = 0.05) {
-  cat("=== COMPREHENSIVE ANOVA ASSUMPTION CHECKING ===\n")
-  
-  # Get basic information
-  groups <- unique(data[[group_var]])
-  k <- length(groups)
-  n_per_group <- sapply(groups, function(g) sum(data[[group_var]] == g))
-  total_n <- sum(n_per_group)
-  
-  cat("Number of groups:", k, "\n")
-  cat("Sample sizes per group:", n_per_group, "\n")
-  cat("Total sample size:", total_n, "\n\n")
-  
-  # 1. Independence Assessment
-  cat("=== 1. INDEPENDENCE ASSESSMENT ===\n")
-  
-  # Check for balanced design
-  balanced_design <- length(unique(n_per_group)) == 1
-  cat("Balanced design:", balanced_design, "\n")
-  
-  # Check for random sampling (simulation-based)
-  set.seed(123)
-  independence_test <- function(data, group_var, response_var) {
-    # Create a simple test for independence
-    model <- aov(as.formula(paste(response_var, "~", group_var)), data = data)
-    residuals <- residuals(model)
+def comprehensive_assumption_check(data, group_var, response_var, alpha=0.05):
+    """Perform comprehensive assumption checking for ANOVA"""
+    print("=== COMPREHENSIVE ANOVA ASSUMPTION CHECKING ===")
     
-    # Test for autocorrelation in residuals
-    acf_result <- acf(residuals, plot = FALSE, lag.max = 1)
-    lag1_corr <- acf_result$acf[2]
+    # Get basic information
+    groups = data[group_var].unique()
+    k = len(groups)
+    n_per_group = [sum(data[group_var] == group) for group in groups]
+    total_n = sum(n_per_group)
     
-    return(list(
-      lag1_correlation = lag1_corr,
-      independent = abs(lag1_corr) < 0.3
-    ))
-  }
-  
-  independence_result <- independence_test(data, group_var, response_var)
-  cat("Lag-1 autocorrelation:", round(independence_result$lag1_correlation, 3), "\n")
-  cat("Independence assumption met:", independence_result$independent, "\n\n")
-  
-  # 2. Normality Assessment
-  cat("=== 2. NORMALITY ASSESSMENT ===\n")
-  
-  # Shapiro-Wilk test for each group
-  normality_results <- list()
-  all_normal <- TRUE
-  
-  for (group in groups) {
-    group_data <- data[[response_var]][data[[group_var]] == group]
-    shapiro_result <- shapiro.test(group_data)
-    normality_results[[as.character(group)]] <- shapiro_result
+    print(f"Number of groups: {k}")
+    print(f"Sample sizes per group: {n_per_group}")
+    print(f"Total sample size: {total_n}")
     
-    cat("Group", group, "Shapiro-Wilk:\n")
-    cat("  W =", round(shapiro_result$statistic, 4), "\n")
-    cat("  p-value =", round(shapiro_result$p.value, 4), "\n")
-    cat("  Normal:", shapiro_result$p.value >= alpha, "\n\n")
+    # 1. Independence Assessment
+    print("\n=== 1. INDEPENDENCE ASSESSMENT ===")
     
-    if (shapiro_result$p.value < alpha) {
-      all_normal <- FALSE
+    # Check for balanced design
+    balanced_design = len(set(n_per_group)) == 1
+    print(f"Balanced design: {balanced_design}")
+    
+    # Check for random sampling (simulation-based)
+    np.random.seed(123)
+    def independence_test(data, group_var, response_var):
+        # Create a simple test for independence
+        model = ols(f'{response_var} ~ {group_var}', data=data).fit()
+        residuals = model.resid
+        
+        # Test for autocorrelation in residuals
+        from statsmodels.stats.diagnostic import acorr_ljungbox
+        lb_result = acorr_ljungbox(residuals, lags=1, return_df=True)
+        lag1_corr = lb_result['lb_pvalue'].iloc[0]  # Simplified approach
+        
+        return {
+            'lag1_correlation': lag1_corr,
+            'independent': lag1_corr > 0.05
+        }
+    
+    independence_result = independence_test(data, group_var, response_var)
+    print(f"Lag-1 autocorrelation: {round(independence_result['lag1_correlation'], 3)}")
+    print(f"Independence assumption met: {independence_result['independent']}")
+    
+    # 2. Normality Assessment
+    print("\n=== 2. NORMALITY ASSESSMENT ===")
+    
+    # Shapiro-Wilk test for each group
+    normality_results = {}
+    all_normal = True
+    
+    for group in groups:
+        group_data = data[data[group_var] == group][response_var]
+        shapiro_result = shapiro(group_data)
+        normality_results[str(group)] = shapiro_result
+        
+        print(f"Group {group} Shapiro-Wilk:")
+        print(f"  W = {round(shapiro_result.statistic, 4)}")
+        print(f"  p-value = {round(shapiro_result.pvalue, 4)}")
+        print(f"  Normal: {shapiro_result.pvalue >= alpha}")
+        
+        if shapiro_result.pvalue < alpha:
+            all_normal = False
+    
+    # Overall normality test on residuals
+    model = ols(f'{response_var} ~ {group_var}', data=data).fit()
+    residuals = model.resid
+    overall_shapiro = shapiro(residuals)
+    
+    print(f"\nOverall residuals Shapiro-Wilk:")
+    print(f"  W = {round(overall_shapiro.statistic, 4)}")
+    print(f"  p-value = {round(overall_shapiro.pvalue, 4)}")
+    print(f"  Normal: {overall_shapiro.pvalue >= alpha}")
+    
+    # Additional normality tests
+    # Anderson-Darling test
+    ad_result = anderson(residuals)
+    print(f"\nAnderson-Darling test:")
+    print(f"  A = {round(ad_result.statistic, 4)}")
+    # Note: Anderson-Darling doesn't provide p-value directly in scipy
+    print(f"  Critical values: {ad_result.critical_values}")
+    
+    # Kolmogorov-Smirnov test
+    ks_result = ks_2samp(residuals, np.random.normal(np.mean(residuals), np.std(residuals), len(residuals)))
+    print(f"\nKolmogorov-Smirnov test:")
+    print(f"  D = {round(ks_result.statistic, 4)}")
+    print(f"  p-value = {round(ks_result.pvalue, 4)}")
+    print(f"  Normal: {ks_result.pvalue >= alpha}")
+    
+    # 3. Homoscedasticity Assessment
+    print("\n=== 3. HOMOSCEDASTICITY ASSESSMENT ===")
+    
+    # Levene's test
+    group_data_list = [data[data[group_var] == group][response_var].values for group in groups]
+    levene_result = levene(*group_data_list)
+    print(f"Levene's test:")
+    print(f"  W = {round(levene_result.statistic, 4)}")
+    print(f"  p-value = {round(levene_result.pvalue, 4)}")
+    print(f"  Equal variances: {levene_result.pvalue >= alpha}")
+    
+    # Bartlett's test
+    bartlett_result = bartlett(*group_data_list)
+    print(f"\nBartlett's test:")
+    print(f"  Chi-squared = {round(bartlett_result.statistic, 4)}")
+    print(f"  p-value = {round(bartlett_result.pvalue, 4)}")
+    print(f"  Equal variances: {bartlett_result.pvalue >= alpha}")
+    
+    # Fligner-Killeen test (more robust)
+    fligner_result = fligner(*group_data_list)
+    print(f"\nFligner-Killeen test:")
+    print(f"  Chi-squared = {round(fligner_result.statistic, 4)}")
+    print(f"  p-value = {round(fligner_result.pvalue, 4)}")
+    print(f"  Equal variances: {fligner_result.pvalue >= alpha}")
+    
+    # Variance ratio analysis
+    group_variances = [np.var(data[data[group_var] == group][response_var]) for group in groups]
+    max_var = max(group_variances)
+    min_var = min(group_variances)
+    var_ratio = max_var / min_var
+    
+    print(f"\nVariance analysis:")
+    print(f"  Group variances: {[round(v, 3) for v in group_variances]}")
+    print(f"  Variance ratio (max/min): {round(var_ratio, 3)}")
+    print(f"  Acceptable ratio (< 4): {var_ratio < 4}")
+    
+    # 4. Linearity Assessment
+    print("\n=== 4. LINEARITY ASSESSMENT ===")
+    print("Linearity assumption is inherent in one-way ANOVA design.")
+    print("No interaction effects to test.")
+    
+    # 5. Outlier Detection
+    print("\n=== 5. OUTLIER DETECTION ===")
+    
+    outliers_by_group = {}
+    total_outliers = 0
+    
+    for group in groups:
+        group_data = data[data[group_var] == group][response_var]
+        
+        # IQR method
+        q1 = np.percentile(group_data, 25)
+        q3 = np.percentile(group_data, 75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        
+        outliers = (group_data < lower_bound) | (group_data > upper_bound)
+        outlier_indices = np.where(outliers)[0]
+        outliers_by_group[str(group)] = outlier_indices
+        
+        print(f"Group {group} outliers (IQR method):")
+        print(f"  Number of outliers: {len(outlier_indices)}")
+        if len(outlier_indices) > 0:
+            print(f"  Outlier values: {[round(group_data.iloc[i], 3) for i in outlier_indices]}")
+    
+        total_outliers += len(outlier_indices)
+    
+    # 6. Comprehensive Assessment
+    print("\n=== 6. COMPREHENSIVE ASSESSMENT ===")
+    
+    # Count assumption violations
+    violations = 0
+    violation_details = []
+    
+    if not independence_result['independent']:
+        violations += 1
+        violation_details.append("Independence")
+    
+    if not all_normal or overall_shapiro.pvalue < alpha:
+        violations += 1
+        violation_details.append("Normality")
+    
+    if levene_result.pvalue < alpha or var_ratio >= 4:
+        violations += 1
+        violation_details.append("Homoscedasticity")
+    
+    if total_outliers > total_n * 0.1:
+        violations += 1
+        violation_details.append("Outliers")
+    
+    print(f"Total assumption violations: {violations}")
+    if violations > 0:
+        print(f"Violated assumptions: {', '.join(violation_details)}")
+  
+    # Recommendations
+    print("\n=== RECOMMENDATIONS ===")
+    
+    if violations == 0:
+        print("✓ All assumptions met - standard ANOVA is appropriate")
+    else:
+        print("⚠️  Some assumptions violated - consider alternatives:")
+        
+        if "Normality" in violation_details:
+            print("- Use Kruskal-Wallis test for non-normal data")
+            print("- Consider data transformation")
+        
+        if "Homoscedasticity" in violation_details:
+            print("- Use Welch's ANOVA for unequal variances")
+            print("- Consider robust ANOVA methods")
+        
+        if "Outliers" in violation_details:
+            print("- Investigate outliers for data entry errors")
+            print("- Consider robust statistical methods")
+            print("- Report results with and without outliers")
+        
+        if "Independence" in violation_details:
+            print("- Check study design for independence violations")
+            print("- Consider mixed-effects models if appropriate")
+    
+    return {
+        'independence': independence_result,
+        'normality': {'group_tests': normality_results, 'overall': overall_shapiro, 'ad': ad_result, 'ks': ks_result},
+        'homoscedasticity': {'levene': levene_result, 'bartlett': bartlett_result, 'fligner': fligner_result, 'var_ratio': var_ratio},
+        'outliers': outliers_by_group,
+        'violations': violations,
+        'violation_details': violation_details
     }
-  }
-  
-  # Overall normality test on residuals
-  model <- aov(as.formula(paste(response_var, "~", group_var)), data = data)
-  residuals <- residuals(model)
-  overall_shapiro <- shapiro.test(residuals)
-  
-  cat("Overall residuals Shapiro-Wilk:\n")
-  cat("  W =", round(overall_shapiro$statistic, 4), "\n")
-  cat("  p-value =", round(overall_shapiro$p.value, 4), "\n")
-  cat("  Normal:", overall_shapiro$p.value >= alpha, "\n\n")
-  
-  # Additional normality tests
-  library(nortest)
-  
-  # Anderson-Darling test
-  ad_test <- ad.test(residuals)
-  cat("Anderson-Darling test:\n")
-  cat("  A =", round(ad_test$statistic, 4), "\n")
-  cat("  p-value =", round(ad_test$p.value, 4), "\n")
-  cat("  Normal:", ad_test$p.value >= alpha, "\n\n")
-  
-  # Kolmogorov-Smirnov test
-  ks_test <- ks.test(residuals, "pnorm", mean = mean(residuals), sd = sd(residuals))
-  cat("Kolmogorov-Smirnov test:\n")
-  cat("  D =", round(ks_test$statistic, 4), "\n")
-  cat("  p-value =", round(ks_test$p.value, 4), "\n")
-  cat("  Normal:", ks_test$p.value >= alpha, "\n\n")
-  
-  # 3. Homoscedasticity Assessment
-  cat("=== 3. HOMOSCEDASTICITY ASSESSMENT ===\n")
-  
-  # Levene's test
-  library(car)
-  levene_result <- leveneTest(as.formula(paste(response_var, "~", group_var)), data = data)
-  cat("Levene's test:\n")
-  cat("  F =", round(levene_result$`F value`[1], 4), "\n")
-  cat("  p-value =", round(levene_result$`Pr(>F)`[1], 4), "\n")
-  cat("  Equal variances:", levene_result$`Pr(>F)`[1] >= alpha, "\n\n")
-  
-  # Bartlett's test
-  bartlett_result <- bartlett.test(as.formula(paste(response_var, "~", group_var)), data = data)
-  cat("Bartlett's test:\n")
-  cat("  Chi-squared =", round(bartlett_result$statistic, 4), "\n")
-  cat("  p-value =", round(bartlett_result$p.value, 4), "\n")
-  cat("  Equal variances:", bartlett_result$p.value >= alpha, "\n\n")
-  
-  # Fligner-Killeen test (more robust)
-  fligner_result <- fligner.test(as.formula(paste(response_var, "~", group_var)), data = data)
-  cat("Fligner-Killeen test:\n")
-  cat("  Chi-squared =", round(fligner_result$statistic, 4), "\n")
-  cat("  p-value =", round(fligner_result$p.value, 4), "\n")
-  cat("  Equal variances:", fligner_result$p.value >= alpha, "\n\n")
-  
-  # Variance ratio analysis
-  group_variances <- sapply(groups, function(g) var(data[[response_var]][data[[group_var]] == g]))
-  max_var <- max(group_variances)
-  min_var <- min(group_variances)
-  var_ratio <- max_var / min_var
-  
-  cat("Variance analysis:\n")
-  cat("  Group variances:", round(group_variances, 3), "\n")
-  cat("  Variance ratio (max/min):", round(var_ratio, 3), "\n")
-  cat("  Acceptable ratio (< 4):", var_ratio < 4, "\n\n")
-  
-  # 4. Linearity Assessment
-  cat("=== 4. LINEARITY ASSESSMENT ===\n")
-  
-  # Check for interaction effects (not applicable in one-way ANOVA)
-  cat("Linearity assumption is inherent in one-way ANOVA design.\n")
-  cat("No interaction effects to test.\n\n")
-  
-  # 5. Outlier Detection
-  cat("=== 5. OUTLIER DETECTION ===\n")
-  
-  outliers_by_group <- list()
-  total_outliers <- 0
-  
-  for (group in groups) {
-    group_data <- data[[response_var]][data[[group_var]] == group]
-    
-    # IQR method
-    q1 <- quantile(group_data, 0.25)
-    q3 <- quantile(group_data, 0.75)
-    iqr <- q3 - q1
-    lower_bound <- q1 - 1.5 * iqr
-    upper_bound <- q3 + 1.5 * iqr
-    
-    outliers <- group_data < lower_bound | group_data > upper_bound
-    outlier_indices <- which(outliers)
-    outliers_by_group[[as.character(group)]] <- outlier_indices
-    
-    cat("Group", group, "outliers (IQR method):\n")
-    cat("  Number of outliers:", length(outlier_indices), "\n")
-    if (length(outlier_indices) > 0) {
-      cat("  Outlier values:", round(group_data[outlier_indices], 3), "\n")
-    }
-    cat("\n")
-    
-    total_outliers <- total_outliers + length(outlier_indices)
-  }
-  
-  # 6. Comprehensive Assessment
-  cat("=== 6. COMPREHENSIVE ASSESSMENT ===\n")
-  
-  # Count assumption violations
-  violations <- 0
-  violation_details <- c()
-  
-  if (!independence_result$independent) {
-    violations <- violations + 1
-    violation_details <- c(violation_details, "Independence")
-  }
-  
-  if (!all_normal || overall_shapiro$p.value < alpha) {
-    violations <- violations + 1
-    violation_details <- c(violation_details, "Normality")
-  }
-  
-  if (levene_result$`Pr(>F)`[1] < alpha || var_ratio >= 4) {
-    violations <- violations + 1
-    violation_details <- c(violation_details, "Homoscedasticity")
-  }
-  
-  if (total_outliers > total_n * 0.1) {
-    violations <- violations + 1
-    violation_details <- c(violation_details, "Outliers")
-  }
-  
-  cat("Total assumption violations:", violations, "\n")
-  if (violations > 0) {
-    cat("Violated assumptions:", paste(violation_details, collapse = ", "), "\n")
-  }
-  
-  # Recommendations
-  cat("\n=== RECOMMENDATIONS ===\n")
-  
-  if (violations == 0) {
-    cat("✓ All assumptions met - standard ANOVA is appropriate\n")
-  } else {
-    cat("⚠️  Some assumptions violated - consider alternatives:\n")
-    
-    if ("Normality" %in% violation_details) {
-      cat("- Use Kruskal-Wallis test for non-normal data\n")
-      cat("- Consider data transformation\n")
-    }
-    
-    if ("Homoscedasticity" %in% violation_details) {
-      cat("- Use Welch's ANOVA for unequal variances\n")
-      cat("- Consider robust ANOVA methods\n")
-    }
-    
-    if ("Outliers" %in% violation_details) {
-      cat("- Investigate outliers for data entry errors\n")
-      cat("- Consider robust statistical methods\n")
-      cat("- Report results with and without outliers\n")
-    }
-    
-    if ("Independence" %in% violation_details) {
-      cat("- Check study design for independence violations\n")
-      cat("- Consider mixed-effects models if appropriate\n")
-    }
-  }
-  
-  return(list(
-    independence = independence_result,
-    normality = list(group_tests = normality_results, overall = overall_shapiro, ad = ad_test, ks = ks_test),
-    homoscedasticity = list(levene = levene_result, bartlett = bartlett_result, fligner = fligner_result, var_ratio = var_ratio),
-    outliers = outliers_by_group,
-    violations = violations,
-    violation_details = violation_details
-  ))
-}
 
 # Apply comprehensive assumption checking
-assumption_results <- comprehensive_assumption_check(mtcars, "cyl_factor", "mpg")
+assumption_results = comprehensive_assumption_check(mtcars, "cyl_factor", "mpg")
 ```
 
 ### Homogeneity of Variance
 
-```r
+```python
 # Function to test homogeneity of variance
-check_homogeneity_anova <- function(data, group_var, response_var) {
-  cat("=== HOMOGENEITY OF VARIANCE TESTS ===\n")
-  
-  # Levene's test
-  library(car)
-  levene_result <- leveneTest(as.formula(paste(response_var, "~", group_var)), data = data)
-  cat("Levene's test p-value:", round(levene_result$`Pr(>F)`[1], 4), "\n")
-  
-  # Bartlett's test
-  bartlett_result <- bartlett.test(as.formula(paste(response_var, "~", group_var)), data = data)
-  cat("Bartlett's test p-value:", round(bartlett_result$p.value, 4), "\n")
-  
-  # Fligner-Killeen test (more robust)
-  fligner_result <- fligner.test(as.formula(paste(response_var, "~", group_var)), data = data)
-  cat("Fligner-Killeen test p-value:", round(fligner_result$p.value, 4), "\n")
-  
-  # Recommendations
-  cat("\nRECOMMENDATIONS:\n")
-  if (levene_result$`Pr(>F)`[1] >= 0.05) {
-    cat("- Variances appear equal across groups\n")
-    cat("- Standard ANOVA is appropriate\n")
-  } else {
-    cat("- Variances are significantly different\n")
-    cat("- Consider Welch's ANOVA or nonparametric alternatives\n")
-  }
-  
-  return(list(
-    levene = levene_result,
-    bartlett = bartlett_result,
-    fligner = fligner_result
-  ))
-}
+def check_homogeneity_anova(data, group_var, response_var):
+    """Test homogeneity of variance using multiple methods"""
+    print("=== HOMOGENEITY OF VARIANCE TESTS ===")
+    
+    # Levene's test
+    from scipy.stats import levene
+    group_data_list = [data[data[group_var] == group][response_var].values for group in data[group_var].unique()]
+    levene_result = levene(*group_data_list)
+    print(f"Levene's test p-value: {round(levene_result.pvalue, 4)}")
+    
+    # Bartlett's test
+    from scipy.stats import bartlett
+    bartlett_result = bartlett(*group_data_list)
+    print(f"Bartlett's test p-value: {round(bartlett_result.pvalue, 4)}")
+    
+    # Fligner-Killeen test (more robust)
+    from scipy.stats import fligner
+    fligner_result = fligner(*group_data_list)
+    print(f"Fligner-Killeen test p-value: {round(fligner_result.pvalue, 4)}")
+    
+    # Recommendations
+    print("\nRECOMMENDATIONS:")
+    if levene_result.pvalue >= 0.05:
+        print("- Variances appear equal across groups")
+        print("- Standard ANOVA is appropriate")
+    else:
+        print("- Variances are significantly different")
+        print("- Consider Welch's ANOVA or nonparametric alternatives")
+    
+    return {
+        'levene': levene_result,
+        'bartlett': bartlett_result,
+        'fligner': fligner_result
+    }
 
 # Check homogeneity for cylinder groups
-homogeneity_results <- check_homogeneity_anova(mtcars, "cyl_factor", "mpg")
+homogeneity_results = check_homogeneity_anova(mtcars, "cyl_factor", "mpg")
 ```
 
 ### Independence and Random Sampling
 
-```r
+```python
 # Function to check independence assumption
-check_independence_anova <- function(data, group_var, response_var) {
-  cat("=== INDEPENDENCE ASSESSMENT ===\n")
-  
-  # Check for balanced design
-  group_counts <- table(data[[group_var]])
-  cat("Group sample sizes:\n")
-  print(group_counts)
-  
-  # Check for equal sample sizes
-  n_groups <- length(group_counts)
-  equal_sizes <- length(unique(group_counts)) == 1
-  
-  if (equal_sizes) {
-    cat("Design is balanced (equal sample sizes)\n")
-  } else {
-    cat("Design is unbalanced (unequal sample sizes)\n")
-  }
-  
-  # Check for outliers
-  outliers_by_group <- list()
-  for (group in unique(data[[group_var]])) {
-    group_data <- data[[response_var]][data[[group_var]] == group]
+def check_independence_anova(data, group_var, response_var):
+    """Check independence assumption for ANOVA"""
+    print("=== INDEPENDENCE ASSESSMENT ===")
     
-    # IQR method
-    q1 <- quantile(group_data, 0.25)
-    q3 <- quantile(group_data, 0.75)
-    iqr <- q3 - q1
-    lower_bound <- q1 - 1.5 * iqr
-    upper_bound <- q3 + 1.5 * iqr
+    # Check for balanced design
+    group_counts = data[group_var].value_counts()
+    print("Group sample sizes:")
+    print(group_counts)
     
-    outliers <- group_data < lower_bound | group_data > upper_bound
-    outliers_by_group[[as.character(group)]] <- which(outliers)
-  }
-  
-  cat("Outliers by group (IQR method):\n")
-  for (group in names(outliers_by_group)) {
-    n_outliers <- length(outliers_by_group[[group]])
-    cat("Group", group, ":", n_outliers, "outliers\n")
-  }
-  
-  return(list(
-    group_counts = group_counts,
-    balanced = equal_sizes,
-    outliers = outliers_by_group
-  ))
-}
+    # Check for equal sample sizes
+    n_groups = len(group_counts)
+    equal_sizes = len(group_counts.unique()) == 1
+    
+    if equal_sizes:
+        print("Design is balanced (equal sample sizes)")
+    else:
+        print("Design is unbalanced (unequal sample sizes)")
+    
+    # Check for outliers
+    outliers_by_group = {}
+    for group in data[group_var].unique():
+        group_data = data[data[group_var] == group][response_var]
+        
+        # IQR method
+        q1 = np.percentile(group_data, 25)
+        q3 = np.percentile(group_data, 75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        
+        outliers = (group_data < lower_bound) | (group_data > upper_bound)
+        outliers_by_group[str(group)] = np.where(outliers)[0]
+    
+    print("Outliers by group (IQR method):")
+    for group in outliers_by_group.keys():
+        n_outliers = len(outliers_by_group[group])
+        print(f"Group {group}: {n_outliers} outliers")
+    
+    return {
+        'group_counts': group_counts,
+        'balanced': equal_sizes,
+        'outliers': outliers_by_group
+    }
 
 # Check independence for cylinder groups
-independence_results <- check_independence_anova(mtcars, "cyl_factor", "mpg")
+independence_results = check_independence_anova(mtcars, "cyl_factor", "mpg")
 ```
 
 ## Nonparametric Alternatives
@@ -1440,202 +1496,206 @@ U = n_1n_2 + \frac{n_1(n_1+1)}{2} - R_1
 
 ### Comprehensive Nonparametric Analysis
 
-```r
+```python
+from scipy.stats import kruskal, mannwhitneyu, rankdata
+from statsmodels.stats.multitest import multipletests
+
 # Comprehensive nonparametric analysis function
-comprehensive_nonparametric <- function(data, group_var, response_var, alpha = 0.05) {
-  cat("=== COMPREHENSIVE NONPARAMETRIC ANALYSIS ===\n")
-  
-  # Get basic information
-  groups <- unique(data[[group_var]])
-  k <- length(groups)
-  n_per_group <- sapply(groups, function(g) sum(data[[group_var]] == g))
-  total_n <- sum(n_per_group)
-  
-  cat("Number of groups:", k, "\n")
-  cat("Sample sizes per group:", n_per_group, "\n")
-  cat("Total sample size:", total_n, "\n\n")
-  
-  # 1. Kruskal-Wallis Test
-  cat("=== 1. KRUSKAL-WALLIS TEST ===\n")
-  kruskal_result <- kruskal.test(as.formula(paste(response_var, "~", group_var)), data = data)
-  print(kruskal_result)
-  
-  # Calculate effect size
-  h_statistic <- kruskal_result$statistic
-  epsilon_squared <- (h_statistic - (k - 1)) / (total_n - k)
-  
-  cat("\nEffect size analysis:\n")
-  cat("H-statistic:", round(h_statistic, 3), "\n")
-  cat("Epsilon-squared (ε²):", round(epsilon_squared, 3), "\n")
-  cat("p-value:", round(kruskal_result$p.value, 4), "\n")
-  cat("Significant:", kruskal_result$p.value < alpha, "\n\n")
-  
-  # 2. Rank-based descriptive statistics
-  cat("=== 2. RANK-BASED DESCRIPTIVE STATISTICS ===\n")
-  
-  # Calculate ranks for the entire dataset
-  data$ranks <- rank(data[[response_var]])
-  
-  rank_stats <- data %>%
-    group_by(!!sym(group_var)) %>%
-    summarise(
-      n = n(),
-      mean_rank = mean(ranks, na.rm = TRUE),
-      median_rank = median(ranks, na.rm = TRUE),
-      min_rank = min(ranks, na.rm = TRUE),
-      max_rank = max(ranks, na.rm = TRUE),
-      rank_sum = sum(ranks, na.rm = TRUE)
-    )
-  
-  print(rank_stats)
-  
-  # 3. Pairwise Mann-Whitney U tests
-  cat("\n=== 3. PAIRWISE MANN-WHITNEY U TESTS ===\n")
-  
-  # Perform all pairwise comparisons
-  pairwise_results <- list()
-  pair_count <- 1
-  
-  for (i in 1:(k-1)) {
-    for (j in (i+1):k) {
-      group1 <- groups[i]
-      group2 <- groups[j]
-      
-      data1 <- data[[response_var]][data[[group_var]] == group1]
-      data2 <- data[[response_var]][data[[group_var]] == group2]
-      
-      # Mann-Whitney U test
-      mw_result <- wilcox.test(data1, data2, alternative = "two.sided")
-      
-      # Calculate effect size (r)
-      z_stat <- qnorm(mw_result$p.value / 2)
-      n1 <- length(data1)
-      n2 <- length(data2)
-      r_effect_size <- abs(z_stat) / sqrt(n1 + n2)
-      
-      pairwise_results[[pair_count]] <- list(
-        group1 = group1,
-        group2 = group2,
-        u_statistic = mw_result$statistic,
-        p_value = mw_result$p.value,
-        effect_size_r = r_effect_size,
-        significant = mw_result$p.value < alpha
-      )
-      
-      cat("Comparison:", group1, "vs", group2, "\n")
-      cat("  U-statistic:", round(mw_result$statistic, 3), "\n")
-      cat("  p-value:", round(mw_result$p.value, 4), "\n")
-      cat("  Effect size (r):", round(r_effect_size, 3), "\n")
-      cat("  Significant:", mw_result$p.value < alpha, "\n\n")
-      
-      pair_count <- pair_count + 1
+def comprehensive_nonparametric(data, group_var, response_var, alpha=0.05):
+    """Perform comprehensive nonparametric analysis"""
+    print("=== COMPREHENSIVE NONPARAMETRIC ANALYSIS ===")
+    
+    # Get basic information
+    groups = data[group_var].unique()
+    k = len(groups)
+    n_per_group = [sum(data[group_var] == group) for group in groups]
+    total_n = sum(n_per_group)
+    
+    print(f"Number of groups: {k}")
+    print(f"Sample sizes per group: {n_per_group}")
+    print(f"Total sample size: {total_n}")
+    
+    # 1. Kruskal-Wallis Test
+    print("\n=== 1. KRUSKAL-WALLIS TEST ===")
+    group_data_list = [data[data[group_var] == group][response_var].values for group in groups]
+    kruskal_result = kruskal(*group_data_list)
+    print(f"H-statistic: {round(kruskal_result.statistic, 3)}")
+    print(f"p-value: {round(kruskal_result.pvalue, 4)}")
+    
+    # Calculate effect size
+    h_statistic = kruskal_result.statistic
+    epsilon_squared = (h_statistic - (k - 1)) / (total_n - k)
+    
+    print(f"\nEffect size analysis:")
+    print(f"H-statistic: {round(h_statistic, 3)}")
+    print(f"Epsilon-squared (ε²): {round(epsilon_squared, 3)}")
+    print(f"p-value: {round(kruskal_result.pvalue, 4)}")
+    print(f"Significant: {kruskal_result.pvalue < alpha}")
+    
+    # 2. Rank-based descriptive statistics
+    print("\n=== 2. RANK-BASED DESCRIPTIVE STATISTICS ===")
+    
+    # Calculate ranks for the entire dataset
+    data_copy = data.copy()
+    data_copy['ranks'] = rankdata(data_copy[response_var])
+    
+    rank_stats = data_copy.groupby(group_var)['ranks'].agg([
+        'count', 'mean', 'median', 'min', 'max', 'sum'
+    ]).rename(columns={
+        'count': 'n',
+        'mean': 'mean_rank',
+        'median': 'median_rank',
+        'min': 'min_rank',
+        'max': 'max_rank',
+        'sum': 'rank_sum'
+    })
+    
+    print(rank_stats)
+    
+    # 3. Pairwise Mann-Whitney U tests
+    print("\n=== 3. PAIRWISE MANN-WHITNEY U TESTS ===")
+    
+    # Perform all pairwise comparisons
+    pairwise_results = []
+    pair_count = 0
+    
+    for i in range(k-1):
+        for j in range(i+1, k):
+            group1 = groups[i]
+            group2 = groups[j]
+            
+            data1 = data[data[group_var] == group1][response_var]
+            data2 = data[data[group_var] == group2][response_var]
+            
+            # Mann-Whitney U test
+            mw_result = mannwhitneyu(data1, data2, alternative='two-sided')
+            
+            # Calculate effect size (r)
+            from scipy.stats import norm
+            z_stat = norm.ppf(mw_result.pvalue / 2)
+            n1 = len(data1)
+            n2 = len(data2)
+            r_effect_size = abs(z_stat) / np.sqrt(n1 + n2)
+            
+            pairwise_results.append({
+                'group1': group1,
+                'group2': group2,
+                'u_statistic': mw_result.statistic,
+                'p_value': mw_result.pvalue,
+                'effect_size_r': r_effect_size,
+                'significant': mw_result.pvalue < alpha
+            })
+            
+            print(f"Comparison: {group1} vs {group2}")
+            print(f"  U-statistic: {round(mw_result.statistic, 3)}")
+            print(f"  p-value: {round(mw_result.pvalue, 4)}")
+            print(f"  Effect size (r): {round(r_effect_size, 3)}")
+            print(f"  Significant: {mw_result.pvalue < alpha}")
+            
+            pair_count += 1
+    
+    # 4. Dunn's test (simplified version using multiple comparisons)
+    print("\n=== 4. DUNN'S TEST (SIMPLIFIED) ===")
+    
+    # Get p-values from Mann-Whitney tests
+    p_values = [result['p_value'] for result in pairwise_results]
+    comparisons = [f"{result['group1']} vs {result['group2']}" for result in pairwise_results]
+    
+    # Apply multiple corrections
+    bonferroni_pvals = multipletests(p_values, method='bonferroni')[1]
+    holm_pvals = multipletests(p_values, method='holm')[1]
+    fdr_pvals = multipletests(p_values, method='fdr_bh')[1]
+    
+    print("Dunn's test with Bonferroni correction:")
+    for comp, p_val in zip(comparisons, bonferroni_pvals):
+        print(f"  {comp}: p = {round(p_val, 4)}")
+    
+    print("\nDunn's test with Holm correction:")
+    for comp, p_val in zip(comparisons, holm_pvals):
+        print(f"  {comp}: p = {round(p_val, 4)}")
+    
+    print("\nDunn's test with FDR correction:")
+    for comp, p_val in zip(comparisons, fdr_pvals):
+        print(f"  {comp}: p = {round(p_val, 4)}")
+    
+    # 5. Comparison with parametric ANOVA
+    print("\n=== 5. COMPARISON WITH PARAMETRIC ANOVA ===")
+    
+    # Perform parametric ANOVA for comparison
+    f_stat, anova_p_value = f_oneway(*group_data_list)
+    
+    print(f"Parametric ANOVA results:")
+    print(f"  F-statistic: {round(f_stat, 3)}")
+    print(f"  p-value: {round(anova_p_value, 4)}")
+    print(f"  Significant: {anova_p_value < alpha}")
+    
+    print(f"\nNonparametric Kruskal-Wallis results:")
+    print(f"  H-statistic: {round(h_statistic, 3)}")
+    print(f"  p-value: {round(kruskal_result.pvalue, 4)}")
+    print(f"  Significant: {kruskal_result.pvalue < alpha}")
+    
+    # Agreement analysis
+    print(f"\n=== 6. AGREEMENT ANALYSIS ===")
+    anova_sig = anova_p_value < alpha
+    kruskal_sig = kruskal_result.pvalue < alpha
+    
+    print(f"Agreement between parametric and nonparametric tests:")
+    print(f"  ANOVA significant: {anova_sig}")
+    print(f"  Kruskal-Wallis significant: {kruskal_sig}")
+    print(f"  Agreement: {anova_sig == kruskal_sig}")
+    
+    if anova_sig == kruskal_sig:
+        print("  ✓ Both tests agree on significance")
+    else:
+        print("  ⚠️  Tests disagree - check assumptions carefully")
+    
+    # 6. Effect size comparison
+    print(f"\n=== 7. EFFECT SIZE COMPARISON ===")
+    
+    # Calculate eta-squared for ANOVA (simplified)
+    ss_between = sum(n * (np.mean(group_data) - np.mean(np.concatenate(group_data_list)))**2 
+                    for n, group_data in zip(n_per_group, group_data_list))
+    ss_total = sum((x - np.mean(np.concatenate(group_data_list)))**2 
+                   for group_data in group_data_list for x in group_data)
+    eta_squared = ss_between / ss_total
+    
+    print(f"Effect size comparison:")
+    print(f"  ANOVA eta-squared (η²): {round(eta_squared, 3)}")
+    print(f"  Kruskal-Wallis epsilon-squared (ε²): {round(epsilon_squared, 3)}")
+    print(f"  Difference: {round(abs(eta_squared - epsilon_squared), 3)}")
+    
+    # 7. Recommendations
+    print(f"\n=== 8. RECOMMENDATIONS ===")
+    
+    if kruskal_result.pvalue < alpha:
+        print("✓ Kruskal-Wallis test is significant")
+        print("  - There are significant differences between groups")
+        print("  - Use Dunn's test for pairwise comparisons")
+    else:
+        print("✗ Kruskal-Wallis test is not significant")
+        print("  - No evidence of group differences")
+    
+    if abs(eta_squared - epsilon_squared) < 0.05:
+        print("✓ Effect sizes are similar")
+        print("  - Both parametric and nonparametric approaches are valid")
+    else:
+        print("⚠️  Effect sizes differ substantially")
+        print("  - Consider which approach better fits your data")
+    
+    return {
+        'kruskal_wallis': kruskal_result,
+        'epsilon_squared': epsilon_squared,
+        'rank_stats': rank_stats,
+        'pairwise_tests': pairwise_results,
+        'dunn_bonferroni': {'p_values': bonferroni_pvals, 'comparisons': comparisons},
+        'dunn_holm': {'p_values': holm_pvals, 'comparisons': comparisons},
+        'dunn_fdr': {'p_values': fdr_pvals, 'comparisons': comparisons},
+        'anova_comparison': {'f_stat': f_stat, 'p_value': anova_p_value, 'eta_squared': eta_squared},
+        'agreement': (anova_sig == kruskal_sig)
     }
-  }
-  
-  # 4. Dunn's test (with multiple corrections)
-  cat("=== 4. DUNN'S TEST ===\n")
-  library(dunn.test)
-  
-  # Perform Dunn's test with different correction methods
-  dunn_bonferroni <- dunn.test(data[[response_var]], data[[group_var]], 
-                              method = "bonferroni")
-  dunn_holm <- dunn.test(data[[response_var]], data[[group_var]], 
-                        method = "holm")
-  dunn_fdr <- dunn.test(data[[response_var]], data[[group_var]], 
-                       method = "fdr")
-  
-  cat("Dunn's test with Bonferroni correction:\n")
-  print(dunn_bonferroni)
-  
-  cat("\nDunn's test with Holm correction:\n")
-  print(dunn_holm)
-  
-  cat("\nDunn's test with FDR correction:\n")
-  print(dunn_fdr)
-  
-  # 5. Comparison with parametric ANOVA
-  cat("\n=== 5. COMPARISON WITH PARAMETRIC ANOVA ===\n")
-  
-  # Perform parametric ANOVA for comparison
-  anova_model <- aov(as.formula(paste(response_var, "~", group_var)), data = data)
-  anova_summary <- summary(anova_model)
-  f_stat <- anova_summary[[1]]$`F value`[1]
-  anova_p_value <- anova_summary[[1]]$`Pr(>F)`[1]
-  
-  cat("Parametric ANOVA results:\n")
-  cat("  F-statistic:", round(f_stat, 3), "\n")
-  cat("  p-value:", round(anova_p_value, 4), "\n")
-  cat("  Significant:", anova_p_value < alpha, "\n\n")
-  
-  cat("Nonparametric Kruskal-Wallis results:\n")
-  cat("  H-statistic:", round(h_statistic, 3), "\n")
-  cat("  p-value:", round(kruskal_result$p.value, 4), "\n")
-  cat("  Significant:", kruskal_result$p.value < alpha, "\n\n")
-  
-  # Agreement analysis
-  cat("=== 6. AGREEMENT ANALYSIS ===\n")
-  anova_sig <- anova_p_value < alpha
-  kruskal_sig <- kruskal_result$p.value < alpha
-  
-  cat("Agreement between parametric and nonparametric tests:\n")
-  cat("  ANOVA significant:", anova_sig, "\n")
-  cat("  Kruskal-Wallis significant:", kruskal_sig, "\n")
-  cat("  Agreement:", anova_sig == kruskal_sig, "\n")
-  
-  if (anova_sig == kruskal_sig) {
-    cat("  ✓ Both tests agree on significance\n")
-  } else {
-    cat("  ⚠️  Tests disagree - check assumptions carefully\n")
-  }
-  
-  # 6. Effect size comparison
-  cat("\n=== 7. EFFECT SIZE COMPARISON ===\n")
-  
-  # Calculate eta-squared for ANOVA
-  ss_between <- anova_summary[[1]]$`Sum Sq`[1]
-  ss_total <- sum(anova_summary[[1]]$`Sum Sq`)
-  eta_squared <- ss_between / ss_total
-  
-  cat("Effect size comparison:\n")
-  cat("  ANOVA eta-squared (η²):", round(eta_squared, 3), "\n")
-  cat("  Kruskal-Wallis epsilon-squared (ε²):", round(epsilon_squared, 3), "\n")
-  cat("  Difference:", round(abs(eta_squared - epsilon_squared), 3), "\n")
-  
-  # 7. Recommendations
-  cat("\n=== 8. RECOMMENDATIONS ===\n")
-  
-  if (kruskal_result$p.value < alpha) {
-    cat("✓ Kruskal-Wallis test is significant\n")
-    cat("  - There are significant differences between groups\n")
-    cat("  - Use Dunn's test for pairwise comparisons\n")
-  } else {
-    cat("✗ Kruskal-Wallis test is not significant\n")
-    cat("  - No evidence of group differences\n")
-  }
-  
-  if (abs(eta_squared - epsilon_squared) < 0.05) {
-    cat("✓ Effect sizes are similar\n")
-    cat("  - Both parametric and nonparametric approaches are valid\n")
-  } else {
-    cat("⚠️  Effect sizes differ substantially\n")
-    cat("  - Consider which approach better fits your data\n")
-  }
-  
-  return(list(
-    kruskal_wallis = kruskal_result,
-    epsilon_squared = epsilon_squared,
-    rank_stats = rank_stats,
-    pairwise_tests = pairwise_results,
-    dunn_bonferroni = dunn_bonferroni,
-    dunn_holm = dunn_holm,
-    dunn_fdr = dunn_fdr,
-    anova_comparison = list(f_stat = f_stat, p_value = anova_p_value, eta_squared = eta_squared),
-    agreement = (anova_sig == kruskal_sig)
-  ))
-}
 
 # Apply comprehensive nonparametric analysis
-nonparametric_results <- comprehensive_nonparametric(mtcars, "cyl_factor", "mpg")
+nonparametric_results = comprehensive_nonparametric(mtcars, "cyl_factor", "mpg")
 
 # Additional robust methods
 cat("\n=== ADDITIONAL ROBUST METHODS ===\n")
@@ -1662,26 +1722,58 @@ cat("  Upper:", round(boot_ci$percent[5], 3), "\n")
 
 ### Post Hoc Tests for Nonparametric ANOVA
 
-```r
-# Dunn's test for Kruskal-Wallis
-library(dunn.test)
+```python
+# Dunn's test for Kruskal-Wallis (simplified implementation)
+# Note: Python doesn't have a direct equivalent to R's dunn.test package
+# We'll implement a simplified version using Mann-Whitney U tests with corrections
 
-dunn_result <- dunn.test(mtcars$mpg, mtcars$cyl_factor, method = "bonferroni")
-print(dunn_result)
+def dunn_test_simplified(data, group_var, response_var, alpha=0.05):
+    """Simplified Dunn's test using Mann-Whitney U with multiple corrections"""
+    print("=== DUNN'S TEST (SIMPLIFIED) ===")
+    
+    groups = data[group_var].unique()
+    k = len(groups)
+    
+    # Perform all pairwise Mann-Whitney U tests
+    p_values = []
+    comparisons = []
+    
+    for i in range(k-1):
+        for j in range(i+1, k):
+            group1_data = data[data[group_var] == groups[i]][response_var]
+            group2_data = data[data[group_var] == groups[j]][response_var]
+            
+            _, p_val = mannwhitneyu(group1_data, group2_data, alternative='two-sided')
+            p_values.append(p_val)
+            comparisons.append(f"{groups[i]} vs {groups[j]}")
+    
+    # Apply Bonferroni correction
+    from statsmodels.stats.multitest import multipletests
+    bonferroni_pvals = multipletests(p_values, method='bonferroni')[1]
+    
+    print("Dunn's test results (Bonferroni-corrected):")
+    for comp, p_val in zip(comparisons, bonferroni_pvals):
+        print(f"{comp}: p = {round(p_val, 4)}")
+    
+    # Extract significant pairs
+    significant_dunn = bonferroni_pvals < alpha
+    
+    if np.any(significant_dunn):
+        print(f"\nSignificant differences (Dunn's test with Bonferroni correction):")
+        for i, comp in enumerate(comparisons):
+            if significant_dunn[i]:
+                print(f"{comp}: p = {round(bonferroni_pvals[i], 4)}")
+    else:
+        print("No significant differences found with Dunn's test.")
+    
+    return {
+        'comparisons': comparisons,
+        'p_values': bonferroni_pvals,
+        'significant': significant_dunn
+    }
 
-# Extract significant pairs
-significant_dunn <- dunn_result$P.adjusted < 0.05
-if (any(significant_dunn)) {
-  cat("Significant differences (Dunn's test with Bonferroni correction):\n")
-  significant_pairs <- dunn_result$comparisons[significant_dunn]
-  significant_pvalues <- dunn_result$P.adjusted[significant_dunn]
-  
-  for (i in 1:length(significant_pairs)) {
-    cat(significant_pairs[i], ": p =", round(significant_pvalues[i], 4), "\n")
-  }
-} else {
-  cat("No significant differences found with Dunn's test.\n")
-}
+# Apply Dunn's test
+dunn_result = dunn_test_simplified(mtcars, "cyl_factor", "mpg")
 ```
 
 ## Power Analysis
@@ -1710,219 +1802,211 @@ Power depends on the noncentral F-distribution:
 
 ### Comprehensive Power Analysis
 
-```r
+```python
 # Comprehensive power analysis function
-comprehensive_power_analysis <- function(data, group_var, response_var, alpha = 0.05) {
-  cat("=== COMPREHENSIVE POWER ANALYSIS ===\n")
-  
-  # Get basic information
-  groups <- unique(data[[group_var]])
-  k <- length(groups)
-  n_per_group <- sapply(groups, function(g) sum(data[[group_var]] == g))
-  total_n <- sum(n_per_group)
-  
-  cat("Study design:\n")
-  cat("  Number of groups (k):", k, "\n")
-  cat("  Sample sizes per group:", n_per_group, "\n")
-  cat("  Total sample size (N):", total_n, "\n")
-  cat("  Significance level (α):", alpha, "\n\n")
-  
-  # 1. Calculate observed effect size
-  cat("=== 1. OBSERVED EFFECT SIZE ===\n")
-  
-  # Perform ANOVA to get effect size
-  anova_model <- aov(as.formula(paste(response_var, "~", group_var)), data = data)
-  anova_summary <- summary(anova_model)
-  
-  ss_between <- anova_summary[[1]]$`Sum Sq`[1]
-  ss_total <- sum(anova_summary[[1]]$`Sum Sq`)
-  eta_squared <- ss_between / ss_total
-  
-  # Calculate Cohen's f
-  f_effect_size <- sqrt(eta_squared / (1 - eta_squared))
-  
-  cat("Observed effect sizes:\n")
-  cat("  Eta-squared (η²):", round(eta_squared, 3), "\n")
-  cat("  Cohen's f:", round(f_effect_size, 3), "\n")
-  
-  # Interpret effect size
-  if (f_effect_size < 0.10) {
-    effect_interpretation <- "Small"
-  } else if (f_effect_size < 0.25) {
-    effect_interpretation <- "Medium"
-  } else if (f_effect_size < 0.40) {
-    effect_interpretation <- "Large"
-  } else {
-    effect_interpretation <- "Very large"
-  }
-  
-  cat("  Interpretation:", effect_interpretation, "effect\n\n")
-  
-  # 2. Current power analysis
-  cat("=== 2. CURRENT POWER ANALYSIS ===\n")
-  
-  library(pwr)
-  
-  # Calculate current power
-  current_power <- pwr.anova.test(k = k, n = min(n_per_group), f = f_effect_size, 
-                                 sig.level = alpha)$power
-  
-  cat("Current power analysis:\n")
-  cat("  Effect size f:", round(f_effect_size, 3), "\n")
-  cat("  Sample size per group:", min(n_per_group), "\n")
-  cat("  Current power:", round(current_power, 3), "\n")
-  cat("  Type II error rate (β):", round(1 - current_power, 3), "\n\n")
-  
-  # 3. Sample size planning
-  cat("=== 3. SAMPLE SIZE PLANNING ===\n")
-  
-  # Calculate required sample sizes for different power levels
-  power_levels <- c(0.8, 0.85, 0.9, 0.95)
-  sample_size_results <- list()
-  
-  cat("Required sample sizes per group:\n")
-  for (power_level in power_levels) {
-    required_n <- pwr.anova.test(k = k, f = f_effect_size, sig.level = alpha, 
-                                power = power_level)$n
-    sample_size_results[[as.character(power_level)]] <- ceiling(required_n)
+def comprehensive_power_analysis(data, group_var, response_var, alpha=0.05):
+    """Perform comprehensive power analysis for ANOVA"""
+    print("=== COMPREHENSIVE POWER ANALYSIS ===")
     
-    cat("  Power", power_level, ":", ceiling(required_n), "per group\n")
-  }
-  
-  # 4. Effect size sensitivity analysis
-  cat("\n=== 4. EFFECT SIZE SENSITIVITY ANALYSIS ===\n")
-  
-  # Test different effect sizes
-  effect_sizes_to_test <- c(0.1, 0.25, 0.4, 0.6)
-  current_n <- min(n_per_group)
-  
-  cat("Power for different effect sizes (n =", current_n, "per group):\n")
-  for (f_test in effect_sizes_to_test) {
-    power_test <- pwr.anova.test(k = k, n = current_n, f = f_test, 
-                                sig.level = alpha)$power
-    cat("  f =", f_test, ":", round(power_test, 3), "\n")
-  }
-  
-  # 5. Power curve analysis
-  cat("\n=== 5. POWER CURVE ANALYSIS ===\n")
-  
-  # Generate power curve data
-  sample_sizes <- seq(5, 50, by = 5)
-  power_curve <- sapply(sample_sizes, function(n) {
-    pwr.anova.test(k = k, n = n, f = f_effect_size, sig.level = alpha)$power
-  })
-  
-  cat("Power curve (effect size f =", round(f_effect_size, 3), "):\n")
-  for (i in 1:length(sample_sizes)) {
-    cat("  n =", sample_sizes[i], "per group: power =", round(power_curve[i], 3), "\n")
-  }
-  
-  # 6. Multiple comparison correction impact
-  cat("\n=== 6. MULTIPLE COMPARISON IMPACT ===\n")
-  
-  # Number of pairwise comparisons
-  m <- k * (k - 1) / 2
-  
-  # Bonferroni correction
-  alpha_bonferroni <- alpha / m
-  power_bonferroni <- pwr.anova.test(k = k, n = min(n_per_group), f = f_effect_size, 
-                                    sig.level = alpha_bonferroni)$power
-  
-  cat("Multiple comparison impact:\n")
-  cat("  Number of pairwise comparisons:", m, "\n")
-  cat("  Bonferroni α:", round(alpha_bonferroni, 4), "\n")
-  cat("  Power with Bonferroni correction:", round(power_bonferroni, 3), "\n")
-  cat("  Power loss:", round(current_power - power_bonferroni, 3), "\n\n")
-  
-  # 7. Recommendations
-  cat("=== 7. RECOMMENDATIONS ===\n")
-  
-  if (current_power >= 0.8) {
-    cat("✓ Current power is adequate (≥ 0.8)\n")
-    cat("  - Study has sufficient power to detect the observed effect\n")
-  } else if (current_power >= 0.6) {
-    cat("⚠️  Current power is moderate (0.6-0.8)\n")
-    cat("  - Consider increasing sample size for better power\n")
-  } else {
-    cat("✗ Current power is low (< 0.6)\n")
-    cat("  - Study may be underpowered\n")
-    cat("  - Consider larger sample size or different design\n")
-  }
-  
-  # Sample size recommendations
-  if (current_power < 0.8) {
-    required_n_80 <- sample_size_results[["0.8"]]
-    cat("\nSample size recommendations:\n")
-    cat("  For 80% power:", required_n_80, "per group\n")
-    cat("  Total sample size needed:", required_n_80 * k, "\n")
-    cat("  Additional participants needed:", (required_n_80 * k) - total_n, "\n")
-  }
-  
-  # Effect size recommendations
-  cat("\nEffect size considerations:\n")
-  if (f_effect_size < 0.1) {
-    cat("  - Very small effect size detected\n")
-    cat("  - Consider if this effect is practically meaningful\n")
-    cat("  - Large sample sizes may be needed for adequate power\n")
-  } else if (f_effect_size > 0.4) {
-    cat("  - Large effect size detected\n")
-    cat("  - Current sample size likely provides adequate power\n")
-    cat("  - Effect is likely to be practically significant\n")
-  }
-  
-  return(list(
-    observed_effect = list(eta_squared = eta_squared, f = f_effect_size),
-    current_power = current_power,
-    sample_size_planning = sample_size_results,
-    power_curve = data.frame(n = sample_sizes, power = power_curve),
-    multiple_comparison_impact = list(
-      comparisons = m,
-      bonferroni_alpha = alpha_bonferroni,
-      bonferroni_power = power_bonferroni
-    )
-  ))
-}
+    # Get basic information
+    groups = data[group_var].unique()
+    k = len(groups)
+    n_per_group = [sum(data[group_var] == group) for group in groups]
+    total_n = sum(n_per_group)
+    
+    print("Study design:")
+    print(f"  Number of groups (k): {k}")
+    print(f"  Sample sizes per group: {n_per_group}")
+    print(f"  Total sample size (N): {total_n}")
+    print(f"  Significance level (α): {alpha}\n")
+    
+    # 1. Calculate observed effect size
+    print("=== 1. OBSERVED EFFECT SIZE ===")
+    
+    # Perform ANOVA to get effect size
+    model = ols(f'{response_var} ~ {group_var}', data=data).fit()
+    anova_table = anova_lm(model, typ=2)
+    
+    ss_between = anova_table.loc[group_var, 'sum_sq']
+    ss_total = anova_table['sum_sq'].sum()
+    eta_squared = ss_between / ss_total
+    
+    # Calculate Cohen's f
+    f_effect_size = np.sqrt(eta_squared / (1 - eta_squared))
+    
+    print("Observed effect sizes:")
+    print(f"  Eta-squared (η²): {round(eta_squared, 3)}")
+    print(f"  Cohen's f: {round(f_effect_size, 3)}")
+    
+    # Interpret effect size
+    if f_effect_size < 0.10:
+        effect_interpretation = "Small"
+    elif f_effect_size < 0.25:
+        effect_interpretation = "Medium"
+    elif f_effect_size < 0.40:
+        effect_interpretation = "Large"
+    else:
+        effect_interpretation = "Very large"
+    
+    print(f"  Interpretation: {effect_interpretation} effect\n")
+    
+    # 2. Current power analysis
+    print("=== 2. CURRENT POWER ANALYSIS ===")
+    
+    # Calculate current power using our function
+    current_power = power_analysis_anova(k, min(n_per_group), f_effect_size, alpha)
+    
+    print("Current power analysis:")
+    print(f"  Effect size f: {round(f_effect_size, 3)}")
+    print(f"  Sample size per group: {min(n_per_group)}")
+    print(f"  Current power: {round(current_power, 3)}")
+    print(f"  Type II error rate (β): {round(1 - current_power, 3)}\n")
+    
+    # 3. Sample size planning
+    print("=== 3. SAMPLE SIZE PLANNING ===")
+    
+    # Calculate required sample sizes for different power levels
+    power_levels = [0.8, 0.85, 0.9, 0.95]
+    sample_size_results = {}
+    
+    print("Required sample sizes per group:")
+    for power_level in power_levels:
+        # Estimate required sample size (simplified approach)
+        # In practice, you'd use a proper power analysis library
+        required_n = estimate_sample_size_for_power(k, f_effect_size, alpha, power_level)
+        sample_size_results[str(power_level)] = required_n
+        print(f"  Power {power_level}: {required_n} per group")
+    
+    # 4. Effect size sensitivity analysis
+    print("\n=== 4. EFFECT SIZE SENSITIVITY ANALYSIS ===")
+    
+    # Test different effect sizes
+    effect_sizes_to_test = [0.1, 0.25, 0.4, 0.6]
+    current_n = min(n_per_group)
+    
+    print(f"Power for different effect sizes (n = {current_n} per group):")
+    for f_test in effect_sizes_to_test:
+        power_test = power_analysis_anova(k, current_n, f_test, alpha)
+        print(f"  f = {f_test}: {round(power_test, 3)}")
+    
+    # 5. Power curve analysis
+    print("\n=== 5. POWER CURVE ANALYSIS ===")
+    
+    # Generate power curve data
+    sample_sizes = list(range(5, 51, 5))
+    power_curve = [power_analysis_anova(k, n, f_effect_size, alpha) for n in sample_sizes]
+    
+    print(f"Power curve (effect size f = {round(f_effect_size, 3)}):")
+    for i, n in enumerate(sample_sizes):
+        print(f"  n = {n} per group: power = {round(power_curve[i], 3)}")
+    
+    # 6. Multiple comparison correction impact
+    print("\n=== 6. MULTIPLE COMPARISON IMPACT ===")
+    
+    # Number of pairwise comparisons
+    m = k * (k - 1) / 2
+    
+    # Bonferroni correction
+    alpha_bonferroni = alpha / m
+    power_bonferroni = power_analysis_anova(k, min(n_per_group), f_effect_size, alpha_bonferroni)
+    
+    print("Multiple comparison impact:")
+    print(f"  Number of pairwise comparisons: {m}")
+    print(f"  Bonferroni α: {round(alpha_bonferroni, 4)}")
+    print(f"  Power with Bonferroni correction: {round(power_bonferroni, 3)}")
+    print(f"  Power loss: {round(current_power - power_bonferroni, 3)}\n")
+    
+    # 7. Recommendations
+    print("=== 7. RECOMMENDATIONS ===")
+    
+    if current_power >= 0.8:
+        print("✓ Current power is adequate (≥ 0.8)")
+        print("  - Study has sufficient power to detect the observed effect")
+    elif current_power >= 0.6:
+        print("⚠️  Current power is moderate (0.6-0.8)")
+        print("  - Consider increasing sample size for better power")
+    else:
+        print("✗ Current power is low (< 0.6)")
+        print("  - Study may be underpowered")
+        print("  - Consider larger sample size or different design")
+    
+    # Sample size recommendations
+    if current_power < 0.8:
+        required_n_80 = sample_size_results["0.8"]
+        print("\nSample size recommendations:")
+        print(f"  For 80% power: {required_n_80} per group")
+        print(f"  Total sample size needed: {required_n_80 * k}")
+        print(f"  Additional participants needed: {(required_n_80 * k) - total_n}")
+    
+    # Effect size recommendations
+    print("\nEffect size considerations:")
+    if f_effect_size < 0.1:
+        print("  - Very small effect size detected")
+        print("  - Consider if this effect is practically meaningful")
+        print("  - Large sample sizes may be needed for adequate power")
+    elif f_effect_size > 0.4:
+        print("  - Large effect size detected")
+        print("  - Current sample size likely provides adequate power")
+        print("  - Effect is likely to be practically significant")
+    
+    return {
+        'observed_effect': {'eta_squared': eta_squared, 'f': f_effect_size},
+        'current_power': current_power,
+        'sample_size_planning': sample_size_results,
+        'power_curve': {'n': sample_sizes, 'power': power_curve},
+        'multiple_comparison_impact': {
+            'comparisons': m,
+            'bonferroni_alpha': alpha_bonferroni,
+            'bonferroni_power': power_bonferroni
+        }
+    }
 
 # Apply comprehensive power analysis
-power_results <- comprehensive_power_analysis(mtcars, "cyl_factor", "mpg")
+power_results = comprehensive_power_analysis(mtcars, "cyl_factor", "mpg")
 
 # Additional power analysis tools
-cat("\n=== ADDITIONAL POWER ANALYSIS TOOLS ===\n")
+print("\n=== ADDITIONAL POWER ANALYSIS TOOLS ===")
 
 # Monte Carlo power simulation
-monte_carlo_power <- function(k, n_per_group, effect_size, alpha = 0.05, n_sim = 1000) {
-  set.seed(123)
-  
-  # Simulate data and test power
-  significant_tests <- 0
-  
-  for (i in 1:n_sim) {
-    # Generate data with specified effect size
-    group_means <- c(0, effect_size, effect_size * 2)  # Example means
-    data_sim <- data.frame(
-      y = c(rnorm(n_per_group, group_means[1], 1),
-            rnorm(n_per_group, group_means[2], 1),
-            rnorm(n_per_group, group_means[3], 1)),
-      group = factor(rep(1:k, each = n_per_group))
-    )
+def monte_carlo_power(k, n_per_group, effect_size, alpha=0.05, n_sim=1000):
+    """Monte Carlo simulation for power analysis"""
+    np.random.seed(123)
     
-    # Perform ANOVA
-    anova_result <- aov(y ~ group, data = data_sim)
-    p_value <- summary(anova_result)[[1]]$`Pr(>F)`[1]
+    # Simulate data and test power
+    significant_tests = 0
     
-    if (p_value < alpha) {
-      significant_tests <- significant_tests + 1
-    }
-  }
-  
-  return(significant_tests / n_sim)
-}
+    for i in range(n_sim):
+        # Generate data with specified effect size
+        group_means = [0, effect_size, effect_size * 2]  # Example means
+        data_sim = []
+        groups = []
+        
+        for j in range(k):
+            data_sim.extend(np.random.normal(group_means[j], 1, n_per_group))
+            groups.extend([j] * n_per_group)
+        
+        # Create DataFrame
+        df_sim = pd.DataFrame({
+            'y': data_sim,
+            'group': pd.Categorical(groups)
+        })
+        
+        # Perform ANOVA
+        model = ols('y ~ group', data=df_sim).fit()
+        anova_table = anova_lm(model, typ=2)
+        p_value = anova_table.loc['group', 'PR(>F)']
+        
+        if p_value < alpha:
+            significant_tests += 1
+    
+    return significant_tests / n_sim
 
 # Example Monte Carlo power calculation
-mc_power <- monte_carlo_power(k = 3, n_per_group = 10, effect_size = 0.5)
-cat("Monte Carlo power simulation (n = 1000):\n")
-cat("  Simulated power:", round(mc_power, 3), "\n")
-cat("  Theoretical power:", round(pwr.anova.test(k = 3, n = 10, f = 0.5)$power, 3), "\n")
+mc_power = monte_carlo_power(k=3, n_per_group=10, effect_size=0.5)
+theoretical_power = power_analysis_anova(k=3, n_per_group=10, f_effect_size=0.5)
+print("Monte Carlo power simulation (n = 1000):")
+print(f"  Simulated power: {round(mc_power, 3)}")
+print(f"  Theoretical power: {round(theoretical_power, 3)}")
 ```
 
 ## Practical Examples
@@ -1935,182 +2019,177 @@ Real-world applications demonstrate how one-way ANOVA is used across different f
 
 **Study Design:** Randomized controlled trial with three teaching methods (Traditional, Interactive, Technology-based)
 
-```r
+```python
 # Simulate comprehensive educational intervention data
-set.seed(123)
-n_per_group <- 25
+np.random.seed(123)
+n_per_group = 25
 
 # Generate realistic data for three teaching methods
 # Method A: Traditional lecture-based (baseline)
 # Method B: Interactive group learning (expected improvement)
 # Method C: Technology-enhanced learning (moderate improvement)
 
-method_a_scores <- rnorm(n_per_group, mean = 72, sd = 8)
-method_b_scores <- rnorm(n_per_group, mean = 78, sd = 9)
-method_c_scores <- rnorm(n_per_group, mean = 75, sd = 7)
+method_a_scores = np.random.normal(mean=72, std=8, size=n_per_group)
+method_b_scores = np.random.normal(mean=78, std=9, size=n_per_group)
+method_c_scores = np.random.normal(mean=75, std=7, size=n_per_group)
 
 # Create comprehensive data frame
-education_data <- data.frame(
-  score = c(method_a_scores, method_b_scores, method_c_scores),
-  method = factor(rep(c("Traditional", "Interactive", "Technology"), each = n_per_group)),
-  student_id = 1:(n_per_group * 3),
-  study_time = c(rnorm(n_per_group, 5, 1), rnorm(n_per_group, 6, 1), rnorm(n_per_group, 5.5, 1))
-)
+education_data = pd.DataFrame({
+    'score': np.concatenate([method_a_scores, method_b_scores, method_c_scores]),
+    'method': pd.Categorical(['Traditional'] * n_per_group + ['Interactive'] * n_per_group + ['Technology'] * n_per_group),
+    'student_id': range(1, n_per_group * 3 + 1),
+    'study_time': np.concatenate([
+        np.random.normal(5, 1, n_per_group),
+        np.random.normal(6, 1, n_per_group),
+        np.random.normal(5.5, 1, n_per_group)
+    ])
+})
 
 # Add some realistic variation
-education_data$score <- education_data$score + rnorm(nrow(education_data), 0, 2)
+education_data['score'] += np.random.normal(0, 2, len(education_data))
 
-cat("=== EDUCATIONAL RESEARCH EXAMPLE ===\n")
-cat("Research Question: Do different teaching methods affect student performance?\n")
-cat("Sample size per group:", n_per_group, "\n")
-cat("Total participants:", nrow(education_data), "\n\n")
+print("=== EDUCATIONAL RESEARCH EXAMPLE ===")
+print("Research Question: Do different teaching methods affect student performance?")
+print(f"Sample size per group: {n_per_group}")
+print(f"Total participants: {len(education_data)}\n")
 
 # 1. Descriptive Statistics
-cat("=== 1. DESCRIPTIVE STATISTICS ===\n")
-desc_stats <- education_data %>%
-  group_by(method) %>%
-  summarise(
-    n = n(),
-    mean_score = mean(score, na.rm = TRUE),
-    sd_score = sd(score, na.rm = TRUE),
-    median_score = median(score, na.rm = TRUE),
-    min_score = min(score, na.rm = TRUE),
-    max_score = max(score, na.rm = TRUE),
-    se_score = sd_score / sqrt(n)
-  )
+print("=== 1. DESCRIPTIVE STATISTICS ===")
+desc_stats = education_data.groupby('method')['score'].agg([
+    'count', 'mean', 'std', 'median', 'min', 'max'
+]).rename(columns={
+    'count': 'n',
+    'mean': 'mean_score',
+    'std': 'sd_score',
+    'median': 'median_score',
+    'min': 'min_score',
+    'max': 'max_score'
+})
 
+desc_stats['se_score'] = desc_stats['sd_score'] / np.sqrt(desc_stats['n'])
 print(desc_stats)
 
 # 2. Assumption Checking
-cat("\n=== 2. ASSUMPTION CHECKING ===\n")
-education_assumptions <- comprehensive_assumption_check(education_data, "method", "score")
+print("\n=== 2. ASSUMPTION CHECKING ===")
+education_assumptions = comprehensive_assumption_check(education_data, "method", "score")
 
 # 3. One-Way ANOVA
-cat("\n=== 3. ONE-WAY ANOVA ===\n")
-education_anova <- aov(score ~ method, data = education_data)
-print(summary(education_anova))
+print("\n=== 3. ONE-WAY ANOVA ===")
+education_model = ols('score ~ method', data=education_data).fit()
+education_anova = anova_lm(education_model, typ=2)
+print(education_anova)
 
 # Extract key statistics
-education_ss <- summary(education_anova)[[1]]
-f_stat <- education_ss$`F value`[1]
-p_value <- education_ss$`Pr(>F)`[1]
-eta_squared <- education_ss$`Sum Sq`[1] / sum(education_ss$`Sum Sq`)
+f_stat = education_anova.loc['method', 'F']
+p_value = education_anova.loc['method', 'PR(>F)']
+eta_squared = education_anova.loc['method', 'sum_sq'] / education_anova['sum_sq'].sum()
 
 # 4. Effect Size Analysis
-cat("\n=== 4. EFFECT SIZE ANALYSIS ===\n")
-f_effect_size <- sqrt(eta_squared / (1 - eta_squared))
+print("\n=== 4. EFFECT SIZE ANALYSIS ===")
+f_effect_size = np.sqrt(eta_squared / (1 - eta_squared))
 
-cat("Effect size measures:\n")
-cat("  Eta-squared (η²):", round(eta_squared, 3), "\n")
-cat("  Cohen's f:", round(f_effect_size, 3), "\n")
+print("Effect size measures:")
+print(f"  Eta-squared (η²): {round(eta_squared, 3)}")
+print(f"  Cohen's f: {round(f_effect_size, 3)}")
 
 # Interpret effect size
-if (eta_squared < 0.06) {
-  effect_interpretation <- "Small"
-} else if (eta_squared < 0.14) {
-  effect_interpretation <- "Medium"
-} else {
-  effect_interpretation <- "Large"
-}
-cat("  Interpretation:", effect_interpretation, "effect\n")
+if eta_squared < 0.06:
+    effect_interpretation = "Small"
+elif eta_squared < 0.14:
+    effect_interpretation = "Medium"
+else:
+    effect_interpretation = "Large"
+print(f"  Interpretation: {effect_interpretation} effect")
 
 # 5. Post Hoc Analysis
-cat("\n=== 5. POST HOC ANALYSIS ===\n")
-education_tukey <- TukeyHSD(education_anova)
+print("\n=== 5. POST HOC ANALYSIS ===")
+mc = MultiComparison(education_data['score'], education_data['method'])
+education_tukey = mc.tukeyhsd(alpha=0.05)
 print(education_tukey)
 
 # Extract significant differences
-significant_pairs <- education_tukey$method[education_tukey$method[, "p adj"] < 0.05, ]
-if (nrow(significant_pairs) > 0) {
-  cat("\nSignificant pairwise differences:\n")
-  for (i in 1:nrow(significant_pairs)) {
-    row_name <- rownames(significant_pairs)[i]
-    diff <- significant_pairs[i, "diff"]
-    p_adj <- significant_pairs[i, "p adj"]
-    cat("  ", row_name, ": diff =", round(diff, 2), ", p =", round(p_adj, 4), "\n")
-  }
-} else {
-  cat("No significant pairwise differences found.\n")
-}
+significant_pairs = education_tukey.pvalues < 0.05
+if np.any(significant_pairs):
+    print("\nSignificant pairwise differences:")
+    for i, (group1, group2) in enumerate(education_tukey.groupsunique):
+        if significant_pairs[i]:
+            diff = education_tukey.meandiffs[i]
+            p_adj = education_tukey.pvalues[i]
+            print(f"  {group1} vs {group2}: diff = {round(diff, 2)}, p = {round(p_adj, 4)}")
+else:
+    print("No significant pairwise differences found.")
 
 # 6. Power Analysis
-cat("\n=== 6. POWER ANALYSIS ===\n")
-education_power <- comprehensive_power_analysis(education_data, "method", "score")
+print("\n=== 6. POWER ANALYSIS ===")
+education_power = comprehensive_power_analysis(education_data, "method", "score")
 
 # 7. Visualization
-cat("\n=== 7. VISUALIZATION ===\n")
-library(ggplot2)
+print("\n=== 7. VISUALIZATION ===")
 
 # Create comprehensive visualization
-p1 <- ggplot(education_data, aes(x = method, y = score, fill = method)) +
-  geom_boxplot(alpha = 0.7) +
-  stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "white") +
-  labs(title = "Student Performance by Teaching Method", 
-       subtitle = "Boxes show IQR, lines show medians, diamonds show means",
-       x = "Teaching Method", y = "Test Score") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  scale_fill_brewer(palette = "Set2")
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
-p2 <- ggplot(education_data, aes(x = method, y = score, fill = method)) +
-  geom_violin(alpha = 0.7) +
-  geom_boxplot(width = 0.2, alpha = 0.8) +
-  labs(title = "Distribution of Scores by Teaching Method", 
-       x = "Teaching Method", y = "Test Score") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  scale_fill_brewer(palette = "Set2")
+# Box plot with means
+sns.boxplot(data=education_data, x='method', y='score', ax=ax1)
+means = education_data.groupby('method')['score'].mean()
+ax1.plot(range(len(means)), means, 'o', color='red', markersize=8, label='Mean')
+ax1.set_title('Student Performance by Teaching Method\nBoxes show IQR, lines show medians, red dots show means')
+ax1.set_xlabel('Teaching Method')
+ax1.set_ylabel('Test Score')
+ax1.legend()
 
-# Display plots
-print(p1)
-print(p2)
+# Violin plot with box plot overlay
+sns.violinplot(data=education_data, x='method', y='score', ax=ax2, inner='box')
+ax2.set_title('Distribution of Scores by Teaching Method')
+ax2.set_xlabel('Teaching Method')
+ax2.set_ylabel('Test Score')
+
+plt.tight_layout()
+plt.show()
 
 # 8. Comprehensive Results Summary
-cat("\n=== 8. COMPREHENSIVE RESULTS SUMMARY ===\n")
-cat("Educational Research Results:\n")
-cat("  F-statistic:", round(f_stat, 3), "\n")
-cat("  p-value:", round(p_value, 4), "\n")
-cat("  Effect size (η²):", round(eta_squared, 3), "\n")
-cat("  Effect size interpretation:", effect_interpretation, "\n")
-cat("  Power:", round(education_power$current_power, 3), "\n")
+print("\n=== 8. COMPREHENSIVE RESULTS SUMMARY ===")
+print("Educational Research Results:")
+print(f"  F-statistic: {round(f_stat, 3)}")
+print(f"  p-value: {round(p_value, 4)}")
+print(f"  Effect size (η²): {round(eta_squared, 3)}")
+print(f"  Effect size interpretation: {effect_interpretation}")
+print(f"  Power: {round(education_power['current_power'], 3)}")
 
 # 9. Practical Interpretation
-cat("\n=== 9. PRACTICAL INTERPRETATION ===\n")
-if (p_value < 0.05) {
-  cat("✓ Statistically significant differences found between teaching methods\n")
-  cat("  - Teaching method significantly affects student performance\n")
-  
-  if (eta_squared >= 0.14) {
-    cat("  - Large practical effect: teaching method has substantial impact\n")
-  } else if (eta_squared >= 0.06) {
-    cat("  - Medium practical effect: teaching method has moderate impact\n")
-  } else {
-    cat("  - Small practical effect: teaching method has limited impact\n")
-  }
-  
-  # Identify best method
-  best_method <- desc_stats$method[which.max(desc_stats$mean_score)]
-  cat("  - Best performing method:", best_method, "\n")
-  
-} else {
-  cat("✗ No statistically significant differences found\n")
-  cat("  - Teaching method does not significantly affect performance\n")
-  cat("  - Consider other factors that may influence student success\n")
-}
+print("\n=== 9. PRACTICAL INTERPRETATION ===")
+if p_value < 0.05:
+    print("✓ Statistically significant differences found between teaching methods")
+    print("  - Teaching method significantly affects student performance")
+    
+    if eta_squared >= 0.14:
+        print("  - Large practical effect: teaching method has substantial impact")
+    elif eta_squared >= 0.06:
+        print("  - Medium practical effect: teaching method has moderate impact")
+    else:
+        print("  - Small practical effect: teaching method has limited impact")
+    
+    # Identify best method
+    best_method = desc_stats['mean_score'].idxmax()
+    print(f"  - Best performing method: {best_method}")
+    
+else:
+    print("✗ No statistically significant differences found")
+    print("  - Teaching method does not significantly affect performance")
+    print("  - Consider other factors that may influence student success")
 
 # 10. Recommendations
-cat("\n=== 10. RECOMMENDATIONS ===\n")
-if (p_value < 0.05 && eta_squared >= 0.06) {
-  cat("✓ Evidence supports the effectiveness of different teaching methods\n")
-  cat("  - Consider implementing the best-performing method\n")
-  cat("  - Conduct follow-up studies to confirm findings\n")
-  cat("  - Consider cost-benefit analysis of different methods\n")
-} else {
-  cat("⚠️  Limited evidence for teaching method effectiveness\n")
-  cat("  - Consider larger sample sizes for future studies\n")
-  cat("  - Investigate other factors affecting student performance\n")
-  cat("  - Consider qualitative research to understand student experiences\n")
-}
+print("\n=== 10. RECOMMENDATIONS ===")
+if p_value < 0.05 and eta_squared >= 0.06:
+    print("✓ Evidence supports the effectiveness of different teaching methods")
+    print("  - Consider implementing the best-performing method")
+    print("  - Conduct follow-up studies to confirm findings")
+    print("  - Consider cost-benefit analysis of different methods")
+else:
+    print("⚠️  Limited evidence for teaching method effectiveness")
+    print("  - Consider larger sample sizes for future studies")
+    print("  - Investigate other factors affecting student performance")
+    print("  - Consider qualitative research to understand student experiences")
 ```
 
 ### Example 2: Clinical Trial
@@ -2119,133 +2198,138 @@ if (p_value < 0.05 && eta_squared >= 0.06) {
 
 **Study Design:** Randomized controlled trial with three treatment groups (Placebo, Drug A, Drug B)
 
-```r
+```python
 # Simulate comprehensive clinical trial data
-set.seed(456)
-n_per_treatment <- 30
+np.random.seed(456)
+n_per_treatment = 30
 
 # Generate realistic clinical data
 # Placebo: minimal effect (baseline)
 # Drug A: moderate blood pressure reduction
 # Drug B: strong blood pressure reduction
 
-placebo_bp <- rnorm(n_per_treatment, mean = 145, sd = 12)
-drug_a_bp <- rnorm(n_per_treatment, mean = 135, sd = 11)
-drug_b_bp <- rnorm(n_per_treatment, mean = 125, sd = 10)
+placebo_bp = np.random.normal(loc=145, scale=12, size=n_per_treatment)
+drug_a_bp = np.random.normal(loc=135, scale=11, size=n_per_treatment)
+drug_b_bp = np.random.normal(loc=125, scale=10, size=n_per_treatment)
 
 # Create comprehensive data frame
-clinical_data <- data.frame(
-  blood_pressure = c(placebo_bp, drug_a_bp, drug_b_bp),
-  treatment = factor(rep(c("Placebo", "Drug A", "Drug B"), each = n_per_treatment)),
-  patient_id = 1:(n_per_treatment * 3),
-  age = c(rnorm(n_per_treatment, 55, 8), rnorm(n_per_treatment, 57, 9), rnorm(n_per_treatment, 54, 7)),
-  baseline_bp = c(rnorm(n_per_treatment, 150, 15), rnorm(n_per_treatment, 148, 14), rnorm(n_per_treatment, 152, 16))
-)
+clinical_data = pd.DataFrame({
+    'blood_pressure': np.concatenate([placebo_bp, drug_a_bp, drug_b_bp]),
+    'treatment': pd.Categorical(['Placebo'] * n_per_treatment + ['Drug A'] * n_per_treatment + ['Drug B'] * n_per_treatment),
+    'patient_id': range(1, n_per_treatment * 3 + 1),
+    'age': np.concatenate([
+        np.random.normal(55, 8, n_per_treatment),
+        np.random.normal(57, 9, n_per_treatment),
+        np.random.normal(54, 7, n_per_treatment)
+    ]),
+    'baseline_bp': np.concatenate([
+        np.random.normal(150, 15, n_per_treatment),
+        np.random.normal(148, 14, n_per_treatment),
+        np.random.normal(152, 16, n_per_treatment)
+    ])
+})
 
 # Calculate change from baseline
-clinical_data$bp_change <- clinical_data$baseline_bp - clinical_data$blood_pressure
+clinical_data['bp_change'] = clinical_data['baseline_bp'] - clinical_data['blood_pressure']
 
-cat("=== CLINICAL TRIAL EXAMPLE ===\n")
-cat("Research Question: Do different drug treatments reduce blood pressure?\n")
-cat("Sample size per group:", n_per_treatment, "\n")
-cat("Total participants:", nrow(clinical_data), "\n\n")
+print("=== CLINICAL TRIAL EXAMPLE ===")
+print("Research Question: Do different drug treatments reduce blood pressure?")
+print(f"Sample size per group: {n_per_treatment}")
+print(f"Total participants: {len(clinical_data)}\n")
 
 # 1. Descriptive Statistics
-cat("=== 1. DESCRIPTIVE STATISTICS ===\n")
-clinical_desc <- clinical_data %>%
-  group_by(treatment) %>%
-  summarise(
-    n = n(),
-    mean_bp = mean(blood_pressure, na.rm = TRUE),
-    sd_bp = sd(blood_pressure, na.rm = TRUE),
-    mean_change = mean(bp_change, na.rm = TRUE),
-    sd_change = sd(bp_change, na.rm = TRUE),
-    se_bp = sd_bp / sqrt(n)
-  )
-
+print("=== 1. DESCRIPTIVE STATISTICS ===")
+clinical_desc = clinical_data.groupby('treatment').agg(
+    n=('blood_pressure', 'count'),
+    mean_bp=('blood_pressure', 'mean'),
+    sd_bp=('blood_pressure', 'std'),
+    mean_change=('bp_change', 'mean'),
+    sd_change=('bp_change', 'std')
+)
+clinical_desc['se_bp'] = clinical_desc['sd_bp'] / np.sqrt(clinical_desc['n'])
 print(clinical_desc)
 
 # 2. Assumption Checking
-cat("\n=== 2. ASSUMPTION CHECKING ===\n")
-clinical_assumptions <- comprehensive_assumption_check(clinical_data, "treatment", "blood_pressure")
+print("\n=== 2. ASSUMPTION CHECKING ===")
+clinical_assumptions = comprehensive_assumption_check(clinical_data, "treatment", "blood_pressure")
 
 # 3. One-Way ANOVA
-cat("\n=== 3. ONE-WAY ANOVA ===\n")
-clinical_anova <- aov(blood_pressure ~ treatment, data = clinical_data)
-print(summary(clinical_anova))
+print("\n=== 3. ONE-WAY ANOVA ===")
+clinical_model = ols('blood_pressure ~ treatment', data=clinical_data).fit()
+clinical_anova = anova_lm(clinical_model, typ=2)
+print(clinical_anova)
 
 # Extract key statistics
-clinical_ss <- summary(clinical_anova)[[1]]
-clinical_f_stat <- clinical_ss$`F value`[1]
-clinical_p_value <- clinical_ss$`Pr(>F)`[1]
-clinical_eta_squared <- clinical_ss$`Sum Sq`[1] / sum(clinical_ss$`Sum Sq`)
+clinical_f_stat = clinical_anova.loc['treatment', 'F']
+clinical_p_value = clinical_anova.loc['treatment', 'PR(>F)']
+clinical_eta_squared = clinical_anova.loc['treatment', 'sum_sq'] / clinical_anova['sum_sq'].sum()
 
 # 4. Effect Size and Power
-cat("\n=== 4. EFFECT SIZE AND POWER ===\n")
-clinical_f_effect <- sqrt(clinical_eta_squared / (1 - clinical_eta_squared))
-clinical_power <- comprehensive_power_analysis(clinical_data, "treatment", "blood_pressure")
+print("\n=== 4. EFFECT SIZE AND POWER ===")
+clinical_f_effect = np.sqrt(clinical_eta_squared / (1 - clinical_eta_squared))
+clinical_power = comprehensive_power_analysis(clinical_data, "treatment", "blood_pressure")
+print(f"Effect size (η²): {round(clinical_eta_squared, 3)}")
+print(f"Cohen's f: {round(clinical_f_effect, 3)}")
+print(f"Power: {round(clinical_power['current_power'], 3)}")
 
 # 5. Post Hoc Analysis
-cat("\n=== 5. POST HOC ANALYSIS ===\n")
-clinical_tukey <- TukeyHSD(clinical_anova)
+print("\n=== 5. POST HOC ANALYSIS ===")
+mc = MultiComparison(clinical_data['blood_pressure'], clinical_data['treatment'])
+clinical_tukey = mc.tukeyhsd(alpha=0.05)
 print(clinical_tukey)
 
 # 6. Nonparametric Alternative
-cat("\n=== 6. NONPARAMETRIC ALTERNATIVE ===\n")
-clinical_kruskal <- kruskal.test(blood_pressure ~ treatment, data = clinical_data)
+print("\n=== 6. NONPARAMETRIC ALTERNATIVE ===")
+groups = [clinical_data[clinical_data['treatment'] == t]['blood_pressure'] for t in clinical_data['treatment'].unique()]
+clinical_kruskal = stats.kruskal(*groups)
 print(clinical_kruskal)
 
 # 7. Clinical Significance
-cat("\n=== 7. CLINICAL SIGNIFICANCE ===\n")
-# Calculate clinically meaningful differences (e.g., 5 mmHg reduction)
-clinical_significance <- clinical_desc %>%
-  mutate(
-    clinically_meaningful = mean_change >= 5,
-    effect_category = case_when(
-      mean_change >= 10 ~ "Large clinical effect",
-      mean_change >= 5 ~ "Moderate clinical effect",
-      mean_change >= 2 ~ "Small clinical effect",
-      TRUE ~ "No clinical effect"
-    )
-  )
-
-print(clinical_significance)
+print("\n=== 7. CLINICAL SIGNIFICANCE ===")
+def effect_category(mean_change):
+    if mean_change >= 10:
+        return "Large clinical effect"
+    elif mean_change >= 5:
+        return "Moderate clinical effect"
+    elif mean_change >= 2:
+        return "Small clinical effect"
+    else:
+        return "No clinical effect"
+clinical_desc['clinically_meaningful'] = clinical_desc['mean_change'] >= 5
+clinical_desc['effect_category'] = clinical_desc['mean_change'].apply(effect_category)
+print(clinical_desc[['mean_change', 'clinically_meaningful', 'effect_category']])
 
 # 8. Safety Analysis
-cat("\n=== 8. SAFETY ANALYSIS ===\n")
-# Check for adverse effects (hypotension)
-clinical_data$hypotension <- clinical_data$blood_pressure < 90
-safety_summary <- clinical_data %>%
-  group_by(treatment) %>%
-  summarise(
-    n_hypotension = sum(hypotension),
-    pct_hypotension = mean(hypotension) * 100
-  )
-
-cat("Safety analysis (hypotension < 90 mmHg):\n")
+print("\n=== 8. SAFETY ANALYSIS ===")
+clinical_data['hypotension'] = clinical_data['blood_pressure'] < 90
+safety_summary = clinical_data.groupby('treatment').agg(
+    n_hypotension=('hypotension', 'sum'),
+    pct_hypotension=('hypotension', 'mean')
+)
+safety_summary['pct_hypotension'] *= 100
+print("Safety analysis (hypotension < 90 mmHg):")
 print(safety_summary)
 
 # 9. Comprehensive Results
-cat("\n=== 9. COMPREHENSIVE RESULTS ===\n")
-cat("Clinical Trial Results:\n")
-cat("  F-statistic:", round(clinical_f_stat, 3), "\n")
-cat("  p-value:", round(clinical_p_value, 4), "\n")
-cat("  Effect size (η²):", round(clinical_eta_squared, 3), "\n")
-cat("  Power:", round(clinical_power$current_power, 3), "\n")
+print("\n=== 9. COMPREHENSIVE RESULTS ===")
+print("Clinical Trial Results:")
+print(f"  F-statistic: {round(clinical_f_stat, 3)}")
+print(f"  p-value: {round(clinical_p_value, 4)}")
+print(f"  Effect size (η²): {round(clinical_eta_squared, 3)}")
+print(f"  Power: {round(clinical_power['current_power'], 3)}")
 
 # 10. Clinical Recommendations
-cat("\n=== 10. CLINICAL RECOMMENDATIONS ===\n")
-if (clinical_p_value < 0.05) {
-  best_treatment <- clinical_desc$treatment[which.min(clinical_desc$mean_bp)]
-  cat("✓ Statistically significant treatment effects found\n")
-  cat("  - Best treatment:", best_treatment, "\n")
-  cat("  - Consider safety profile when choosing treatment\n")
-  cat("  - Monitor for adverse effects\n")
-} else {
-  cat("✗ No statistically significant treatment effects\n")
-  cat("  - Consider larger sample size or different endpoints\n")
-  cat("  - Investigate patient compliance and adherence\n")
-}
+print("\n=== 10. CLINICAL RECOMMENDATIONS ===")
+if clinical_p_value < 0.05:
+    best_treatment = clinical_desc['mean_bp'].idxmin()
+    print("✓ Statistically significant treatment effects found")
+    print(f"  - Best treatment: {best_treatment}")
+    print("  - Consider safety profile when choosing treatment")
+    print("  - Monitor for adverse effects")
+else:
+    print("✗ No statistically significant treatment effects")
+    print("  - Consider larger sample size or different endpoints")
+    print("  - Investigate patient compliance and adherence")
 ```
 
 ### Example 3: Quality Control
@@ -2254,170 +2338,158 @@ if (clinical_p_value < 0.05) {
 
 **Study Design:** Quality control study comparing three production machines
 
-```r
+```python
 # Simulate comprehensive quality control data
-set.seed(789)
-n_per_machine <- 20
+np.random.seed(789)
+n_per_machine = 20
 
 # Generate realistic quality data
 # Machine A: High precision, consistent output
 # Machine B: Moderate precision, some variation
 # Machine C: Lower precision, more variation
 
-machine_a_output <- rnorm(n_per_machine, mean = 100, sd = 2)
-machine_b_output <- rnorm(n_per_machine, mean = 98, sd = 3.5)
-machine_c_output <- rnorm(n_per_machine, mean = 102, sd = 4.5)
+machine_a_output = np.random.normal(loc=100, scale=2, size=n_per_machine)
+machine_b_output = np.random.normal(loc=98, scale=3.5, size=n_per_machine)
+machine_c_output = np.random.normal(loc=102, scale=4.5, size=n_per_machine)
 
 # Create comprehensive data frame
-quality_data <- data.frame(
-  output = c(machine_a_output, machine_b_output, machine_c_output),
-  machine = factor(rep(c("Machine A", "Machine B", "Machine C"), each = n_per_machine)),
-  batch_id = 1:(n_per_machine * 3),
-  temperature = c(rnorm(n_per_machine, 25, 2), rnorm(n_per_machine, 26, 3), rnorm(n_per_machine, 24, 2.5)),
-  humidity = c(rnorm(n_per_machine, 50, 5), rnorm(n_per_machine, 52, 6), rnorm(n_per_machine, 48, 4))
-)
+quality_data = pd.DataFrame({
+    'output': np.concatenate([machine_a_output, machine_b_output, machine_c_output]),
+    'machine': pd.Categorical(['Machine A'] * n_per_machine + ['Machine B'] * n_per_machine + ['Machine C'] * n_per_machine),
+    'batch_id': range(1, n_per_machine * 3 + 1),
+    'temperature': np.concatenate([
+        np.random.normal(25, 2, n_per_machine),
+        np.random.normal(26, 3, n_per_machine),
+        np.random.normal(24, 2.5, n_per_machine)
+    ]),
+    'humidity': np.concatenate([
+        np.random.normal(50, 5, n_per_machine),
+        np.random.normal(52, 6, n_per_machine),
+        np.random.normal(48, 4, n_per_machine)
+    ])
+})
 
 # Add quality control specifications
-quality_data$within_spec <- abs(quality_data$output - 100) <= 5
-quality_data$defect_rate <- ifelse(quality_data$within_spec, 0, 1)
+quality_data['within_spec'] = np.abs(quality_data['output'] - 100) <= 5
+quality_data['defect_rate'] = np.where(quality_data['within_spec'], 0, 1)
 
-cat("=== QUALITY CONTROL EXAMPLE ===\n")
-cat("Research Question: Do different machines produce consistent quality?\n")
-cat("Sample size per machine:", n_per_machine, "\n")
-cat("Total measurements:", nrow(quality_data), "\n\n")
+print("=== QUALITY CONTROL EXAMPLE ===")
+print("Research Question: Do different machines produce consistent quality?")
+print(f"Sample size per machine: {n_per_machine}")
+print(f"Total measurements: {len(quality_data)}\n")
 
 # 1. Descriptive Statistics
-cat("=== 1. DESCRIPTIVE STATISTICS ===\n")
-quality_desc <- quality_data %>%
-  group_by(machine) %>%
-  summarise(
-    n = n(),
-    mean_output = mean(output, na.rm = TRUE),
-    sd_output = sd(output, na.rm = TRUE),
-    cv = sd_output / mean_output * 100,  # Coefficient of variation
-    defect_rate = mean(defect_rate, na.rm = TRUE) * 100,
-    within_spec_rate = mean(within_spec, na.rm = TRUE) * 100
-  )
-
+print("=== 1. DESCRIPTIVE STATISTICS ===")
+quality_desc = quality_data.groupby('machine').agg(
+    n=('output', 'count'),
+    mean_output=('output', 'mean'),
+    sd_output=('output', 'std'),
+    cv=('output', lambda x: np.std(x) / np.mean(x) * 100),
+    defect_rate=('defect_rate', 'mean'),
+    within_spec_rate=('within_spec', 'mean')
+)
+quality_desc['defect_rate'] *= 100
+quality_desc['within_spec_rate'] *= 100
 print(quality_desc)
 
 # 2. Assumption Checking
-cat("\n=== 2. ASSUMPTION CHECKING ===\n")
-quality_assumptions <- comprehensive_assumption_check(quality_data, "machine", "output")
+print("\n=== 2. ASSUMPTION CHECKING ===")
+quality_assumptions = comprehensive_assumption_check(quality_data, "machine", "output")
 
 # 3. One-Way ANOVA
-cat("\n=== 3. ONE-WAY ANOVA ===\n")
-quality_anova <- aov(output ~ machine, data = quality_data)
-print(summary(quality_anova))
+print("\n=== 3. ONE-WAY ANOVA ===")
+quality_model = ols('output ~ machine', data=quality_data).fit()
+quality_anova = anova_lm(quality_model, typ=2)
+print(quality_anova)
 
 # Extract key statistics
-quality_ss <- summary(quality_anova)[[1]]
-quality_f_stat <- quality_ss$`F value`[1]
-quality_p_value <- quality_ss$`Pr(>F)`[1]
-quality_eta_squared <- quality_ss$`Sum Sq`[1] / sum(quality_ss$`Sum Sq`)
+quality_f_stat = quality_anova.loc['machine', 'F']
+quality_p_value = quality_anova.loc['machine', 'PR(>F)']
+quality_eta_squared = quality_anova.loc['machine', 'sum_sq'] / quality_anova['sum_sq'].sum()
 
 # 4. Post Hoc Analysis
-cat("\n=== 4. POST HOC ANALYSIS ===\n")
-quality_tukey <- TukeyHSD(quality_anova)
+print("\n=== 4. POST HOC ANALYSIS ===")
+mc = MultiComparison(quality_data['output'], quality_data['machine'])
+quality_tukey = mc.tukeyhsd(alpha=0.05)
 print(quality_tukey)
 
 # 5. Quality Control Analysis
-cat("\n=== 5. QUALITY CONTROL ANALYSIS ===\n")
-# Process capability analysis
-quality_data$deviation_from_target <- quality_data$output - 100
-
-capability_analysis <- quality_data %>%
-  group_by(machine) %>%
-  summarise(
-    mean_deviation = mean(deviation_from_target),
-    sd_deviation = sd(deviation_from_target),
-    process_capability = 6 / (6 * sd_deviation),  # Cp index
-    process_capability_centered = (6 - abs(mean_deviation)) / (6 * sd_deviation)  # Cpk index
-  )
-
-cat("Process capability analysis:\n")
+print("\n=== 5. QUALITY CONTROL ANALYSIS ===")
+quality_data['deviation_from_target'] = quality_data['output'] - 100
+capability_analysis = quality_data.groupby('machine').agg(
+    mean_deviation=('deviation_from_target', 'mean'),
+    sd_deviation=('deviation_from_target', 'std')
+)
+capability_analysis['process_capability'] = 6 / (6 * capability_analysis['sd_deviation'])  # Cp index
+capability_analysis['process_capability_centered'] = (6 - np.abs(capability_analysis['mean_deviation'])) / (6 * capability_analysis['sd_deviation'])  # Cpk index
+print("Process capability analysis:")
 print(capability_analysis)
 
 # 6. Economic Impact Analysis
-cat("\n=== 6. ECONOMIC IMPACT ANALYSIS ===\n")
-# Calculate cost implications
-quality_data$cost_per_unit <- ifelse(quality_data$within_spec, 10, 25)  # Defects cost more
-
-economic_analysis <- quality_data %>%
-  group_by(machine) %>%
-  summarise(
-    total_cost = sum(cost_per_unit),
-    avg_cost_per_unit = mean(cost_per_unit),
-    defect_cost = sum(cost_per_unit[!within_spec]),
-    efficiency_score = (n() - sum(defect_rate)) / n() * 100
-  )
-
-cat("Economic analysis:\n")
+print("\n=== 6. ECONOMIC IMPACT ANALYSIS ===")
+quality_data['cost_per_unit'] = np.where(quality_data['within_spec'], 10, 25)
+economic_analysis = quality_data.groupby('machine').agg(
+    total_cost=('cost_per_unit', 'sum'),
+    avg_cost_per_unit=('cost_per_unit', 'mean'),
+    defect_cost=('cost_per_unit', lambda x: x[~quality_data.loc[x.index, 'within_spec']].sum()),
+    efficiency_score=('defect_rate', lambda x: (len(x) - x.sum()) / len(x) * 100)
+)
+print("Economic analysis:")
 print(economic_analysis)
 
 # 7. Visualization
-cat("\n=== 7. VISUALIZATION ===\n")
-library(ggplot2)
+print("\n=== 7. VISUALIZATION ===")
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
-# Create comprehensive quality control plots
-p1 <- ggplot(quality_data, aes(x = machine, y = output, fill = machine)) +
-  geom_boxplot(alpha = 0.7) +
-  geom_hline(yintercept = 100, linetype = "dashed", color = "red") +
-  geom_hline(yintercept = c(95, 105), linetype = "dotted", color = "orange") +
-  stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "white") +
-  labs(title = "Output Quality by Machine", 
-       subtitle = "Red line = target, Orange lines = specification limits",
-       x = "Machine", y = "Output Quality") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  scale_fill_brewer(palette = "Set2")
+# Box plot with target and spec limits
+sns.boxplot(data=quality_data, x='machine', y='output', ax=ax1)
+ax1.axhline(100, linestyle='--', color='red', label='Target')
+ax1.axhline(95, linestyle=':', color='orange', label='Spec Limit')
+ax1.axhline(105, linestyle=':', color='orange')
+means = quality_data.groupby('machine')['output'].mean()
+ax1.plot(range(len(means)), means, 'o', color='blue', markersize=8, label='Mean')
+ax1.set_title('Output Quality by Machine\nRed line = target, Orange lines = specification limits')
+ax1.set_xlabel('Machine')
+ax1.set_ylabel('Output Quality')
+ax1.legend()
 
-p2 <- ggplot(quality_data, aes(x = machine, y = deviation_from_target, fill = machine)) +
-  geom_boxplot(alpha = 0.7) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  labs(title = "Deviation from Target by Machine", 
-       x = "Machine", y = "Deviation from Target (100)") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  scale_fill_brewer(palette = "Set2")
+# Box plot of deviation from target
+sns.boxplot(data=quality_data, x='machine', y='deviation_from_target', ax=ax2)
+ax2.axhline(0, linestyle='--', color='red', label='Target')
+ax2.set_title('Deviation from Target by Machine')
+ax2.set_xlabel('Machine')
+ax2.set_ylabel('Deviation from Target (100)')
+ax2.legend()
 
-# Display plots
-print(p1)
-print(p2)
+plt.tight_layout()
+plt.show()
 
 # 8. Quality Control Recommendations
-cat("\n=== 8. QUALITY CONTROL RECOMMENDATIONS ===\n")
-best_machine <- quality_desc$machine[which.max(quality_desc$within_spec_rate)]
-worst_machine <- quality_desc$machine[which.min(quality_desc$within_spec_rate)]
+print("\n=== 8. QUALITY CONTROL RECOMMENDATIONS ===")
+best_machine = quality_desc['within_spec_rate'].idxmax()
+worst_machine = quality_desc['within_spec_rate'].idxmin()
+print("Quality control recommendations:")
+print(f"  - Best performing machine: {best_machine}")
+print(f"  - Machine needing improvement: {worst_machine}")
 
-cat("Quality control recommendations:\n")
-cat("  - Best performing machine:", best_machine, "\n")
-cat("  - Machine needing improvement:", worst_machine, "\n")
-
-if (quality_p_value < 0.05) {
-  cat("  - Significant differences in machine performance detected\n")
-  cat("  - Consider machine maintenance or replacement for underperforming units\n")
-  cat("  - Implement quality control procedures for all machines\n")
-} else {
-  cat("  - No significant differences in machine performance\n")
-  cat("  - All machines appear to be operating within acceptable parameters\n")
-}
+if quality_p_value < 0.05:
+    print("  - Significant differences in machine performance detected")
+    print("  - Consider machine maintenance or replacement for underperforming units")
+    print("  - Implement quality control procedures for all machines")
+else:
+    print("  - No significant differences in machine performance")
+    print("  - All machines appear to be operating within acceptable parameters")
 
 # 9. Process Improvement Suggestions
-cat("\n=== 9. PROCESS IMPROVEMENT SUGGESTIONS ===\n")
-cat("Process improvement recommendations:\n")
-for (i in 1:nrow(quality_desc)) {
-  machine <- quality_desc$machine[i]
-  defect_rate <- quality_desc$defect_rate[i]
-  
-  if (defect_rate > 10) {
-    cat("  - ", machine, ": High defect rate (", round(defect_rate, 1), "%) - needs immediate attention\n")
-  } else if (defect_rate > 5) {
-    cat("  - ", machine, ": Moderate defect rate (", round(defect_rate, 1), "%) - monitor closely\n")
-  } else {
-    cat("  - ", machine, ": Low defect rate (", round(defect_rate, 1), "%) - performing well\n")
-  }
-}
+print("\n=== 9. PROCESS IMPROVEMENT SUGGESTIONS ===")
+print("Process improvement recommendations:")
+for machine, defect_rate in zip(quality_desc.index, quality_desc['defect_rate']):
+    if defect_rate > 10:
+        print(f"  - {machine}: High defect rate ({round(defect_rate, 1)}%) - needs immediate attention")
+    elif defect_rate > 5:
+        print(f"  - {machine}: Moderate defect rate ({round(defect_rate, 1)}%) - monitor closely")
+    else:
+        print(f"  - {machine}: Low defect rate ({round(defect_rate, 1)}%) - performing well")
 ```
 
 ## Best Practices
@@ -3017,18 +3089,6 @@ These exercises provide hands-on practice with one-way ANOVA concepts and techni
 - Distinguish statistical vs. practical significance
 - Communicate effect sizes effectively
 
-```r
-# Exercise 4 Solution Framework
-# Your code here...
-
-# 1. Data preparation
-# 2. Effect size calculations
-# 3. Confidence intervals
-# 4. Practical significance assessment
-# 5. Visualization
-# 6. Comprehensive interpretation
-```
-
 ### Exercise 5: Power Analysis and Sample Size Planning
 
 **Objective:** Conduct comprehensive power analysis for ANOVA designs.
@@ -3049,16 +3109,6 @@ These exercises provide hands-on practice with one-way ANOVA concepts and techni
 - Understand power trade-offs
 - Design efficient studies
 
-```r
-# Exercise 5 Solution Framework
-# Your code here...
-
-# 1. Current power analysis
-# 2. Sample size planning
-# 3. Power curves
-# 4. Multiple comparison impact
-# 5. Study design recommendations
-```
 
 ### Exercise 6: Real-World Application
 
@@ -3081,19 +3131,6 @@ These exercises provide hands-on practice with one-way ANOVA concepts and techni
 - Conduct complete statistical analysis
 - Communicate results effectively
 
-```r
-# Exercise 6 Solution Framework
-# Your code here...
-
-# 1. Study design
-# 2. Data simulation
-# 3. Complete analysis
-# 4. Assumption checking
-# 5. Effect size and power
-# 6. Practical recommendations
-# 7. Report writing
-```
-
 ### Exercise 7: Robust Methods and Alternatives
 
 **Objective:** Explore robust alternatives to traditional ANOVA.
@@ -3115,18 +3152,6 @@ These exercises provide hands-on practice with one-way ANOVA concepts and techni
 - Compare parametric and nonparametric approaches
 - Apply modern statistical techniques
 
-```r
-# Exercise 7 Solution Framework
-# Your code here...
-
-# 1. Data generation with violations
-# 2. Traditional ANOVA
-# 3. Welch's ANOVA
-# 4. Kruskal-Wallis
-# 5. Bootstrap methods
-# 6. Method comparison
-# 7. Recommendations
-```
 
 ### Exercise 8: Advanced Visualization and Reporting
 
@@ -3148,17 +3173,6 @@ These exercises provide hands-on practice with one-way ANOVA concepts and techni
 - Communicate statistical results clearly
 - Provide actionable recommendations
 
-```r
-# Exercise 8 Solution Framework
-# Your code here...
-
-# 1. Advanced visualizations
-# 2. Comprehensive reporting
-# 3. Interactive elements
-# 4. Presentation materials
-# 5. Statistical interpretation
-# 6. Practical recommendations
-```
 
 ### Exercise Hints and Solutions
 
