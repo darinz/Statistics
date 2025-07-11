@@ -1,257 +1,106 @@
-# R for Statistics
+# Statistics with R
 
-This section contains comprehensive materials for learning R programming specifically for statistical analysis and data science.
+[![R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white)](https://www.r-project.org/)
+[![RStudio](https://img.shields.io/badge/RStudio-75AADB?style=for-the-badge&logo=rstudio&logoColor=white)](https://posit.co/)
+[![Markdown](https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white)](https://markdown.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Status](https://img.shields.io/badge/Status-Complete-brightgreen)](https://github.com/yourusername/statistics-with-r)
 
-## Overview
+A comprehensive guide to learning statistics using R programming language, based on the Applied Statistics with R curriculum.
 
-The materials in this section provide essential knowledge for working with data in R for statistical analysis. Understanding R fundamentals, data types, structures, and programming basics is fundamental to effective data analysis, while advanced topics like data summarization enable you to perform comprehensive statistical analysis.
+## Table of Contents
 
-## Available Materials
+### Fundamentals
+- [Introduction to R](01_introduction_to_r.md)
+- [Data Types and Structures](02_data_types_structures.md)
+- [Data Import and Manipulation](03_data_import_manipulation.md)
+- [Exploratory Data Analysis](04_exploratory_data_analysis.md)
 
-### 1. Introduction to R (`01_intro.md`)
-A comprehensive guide to getting started with R programming for statistical analysis.
+### Descriptive Statistics
+- [Measures of Central Tendency](05_measures_central_tendency.md)
+- [Measures of Variability](06_measures_variability.md)
+- [Data Visualization](07_data_visualization.md)
+- [Probability Distributions](08_probability_distributions.md)
 
-**Topics Covered:**
-- What is R and its key features
-- Installing R and RStudio
-- Basic R operations and syntax
-- Data types and structures
-- Working with data and graphics
-- Best practices and resources
+### Statistical Inference
+- [Sampling and Sampling Distributions](09_sampling_distributions.md)
+- [Confidence Intervals](10_confidence_intervals.md)
+- [Hypothesis Testing](11_hypothesis_testing.md)
+- [One-Sample Tests](12_one_sample_tests.md)
+- [Two-Sample Tests](13_two_sample_tests.md)
 
-**Key Features:**
-- Step-by-step installation instructions
-- Interactive code examples
-- Built-in dataset demonstrations
-- Statistical computing focus
-- R Markdown integration
+### Analysis of Variance
+- [One-Way ANOVA](14_one_way_anova.md)
+- [Two-Way ANOVA](15_two_way_anova.md)
+- [Repeated Measures ANOVA](16_repeated_measures_anova.md)
 
-### 2. R Data Types (`02_data_types.md`)
-A comprehensive guide to R data types for statistical analysis.
+### Correlation and Regression
+- [Correlation Analysis](17_correlation_analysis.md)
+- [Simple Linear Regression](18_simple_linear_regression.md)
+- [Multiple Linear Regression](19_multiple_linear_regression.md)
+- [Model Diagnostics](20_model_diagnostics.md)
 
-**Topics Covered:**
-- Numeric types (numeric, integer)
-- Character types
-- Logical types
-- Factor types for categorical data
-- Complex and raw types
-- Type checking and conversion
-
-**Key Features:**
-- Detailed explanations of each data type
-- Practical code examples
-- Type conversion methods
-- R-specific best practices
-
-### 3. R Data Structures (`03_data_structures.md`)
-Overview of R data structures for statistical analysis.
-
-**Topics Covered:**
-- Vectors and vector operations
-- Matrices and matrix operations
-- Lists and list manipulation
-- Data frames and data frame operations
-
-**Key Features:**
-- R-specific data structures
-- Statistical computing focus
-- Built-in dataset examples
-
-### 4. R Programming Basics (`04_programming_basics.md`)
-Basic programming concepts in R for statistical analysis.
-
-**Topics Covered:**
-- Control flow (if/else statements)
-- Loops (for, while)
-- Functions and function creation
-- R-specific programming patterns
-
-**Key Features:**
-- R-specific syntax and patterns
-- Statistical programming focus
-- Vectorized operations emphasis
-
-### 5. Summarizing Data with R (`05_summarizing_data.md`)
-Comprehensive guide to data summarization and statistical analysis in R.
-
-**Topics Covered:**
-- Descriptive statistics (mean, median, mode, variance, standard deviation)
-- Graphical summaries (histograms, box plots, stem-and-leaf plots)
-- Categorical data analysis
-- Outlier detection and handling
-- Real-world examples with mtcars dataset
-- Advanced statistical analysis
-
-**Key Features:**
-- Complete R implementations
-- Statistical testing with base R functions
-- Data manipulation with dplyr
-- Enhanced visualizations with ggplot2
-- Comprehensive exercises and practice problems
-
-## Learning Path
-
-### For Beginners:
-1. **Start with**: `01_intro.md` - Basic R concepts and setup
-2. **Continue with**: `02_data_types.md` - Understand R data types
-3. **Learn**: `03_data_structures.md` - Master R data structures
-4. **Practice**: `04_programming_basics.md` - Master R programming
-5. **Apply**: `05_summarizing_data.md` - Learn statistical analysis
-
-### For Intermediate Users:
-- Skip to `05_summarizing_data.md` for advanced statistical analysis
-- Focus on the real-world examples and exercises
-- Practice with the comprehensive datasets provided
-
-### For Advanced Users:
-- Use the materials as reference for specific techniques
-- Focus on the advanced topics and statistical testing
-- Implement the exercises with your own datasets
-
-## Prerequisites
-
-Before starting these materials, you should have:
-- Basic computer literacy
-- Understanding of high school mathematics
-- Familiarity with statistical concepts (helpful but not required)
-- No prior programming experience needed (for beginners)
+### Advanced Topics
+- [Nonparametric Tests](21_nonparametric_tests.md)
+- [Chi-Square Tests](22_chi_square_tests.md)
+- [Time Series Analysis](23_time_series_analysis.md)
+- [Multivariate Analysis](24_multivariate_analysis.md)
+- [Variable Selection and Model Building](25_variable_selection_model_building.md)
+- [Logistic Regression](26_logistic_regression.md)
 
 ## Getting Started
 
-### Setting up R Environment
+1. **Prerequisites**: Basic understanding of mathematics and statistics concepts
+2. **Software**: Install R and RStudio
+3. **Learning Path**: Follow the chapters in order for best results
 
-1. **Install R**: Download from [r-project.org](https://www.r-project.org/)
-2. **Install RStudio**: Download from [posit.co](https://posit.co/)
-3. **Install required packages**:
-   ```r
-   install.packages(c("dplyr", "ggplot2", "tidyr", "readr", "corrplot", "moments"))
-   ```
+## Required R Packages
 
-### Alternative: Using RStudio Cloud
-- Use RStudio Cloud for browser-based R development
-- No local installation required
-- Access to all R packages
+```r
+# Core packages for this course
+install.packages(c(
+  "tidyverse",    # Data manipulation and visualization
+  "ggplot2",      # Advanced plotting
+  "dplyr",        # Data manipulation
+  "readr",        # Data import
+  "haven",        # Import SPSS, SAS, Stata files
+  "car",          # Companion to Applied Regression
+  "rstatix",      # Pipe-friendly statistical tests
+  "ggpubr",       # Publication ready plots
+  "corrplot",     # Correlation plots
+  "plotly",       # Interactive plots
+  "knitr",        # Dynamic report generation
+  "rmarkdown"     # R Markdown
+))
+```
 
-### Interactive Learning
+## Learning Objectives
 
-All documents include code examples that you can run interactively:
-- Use RStudio's console or R Markdown documents
-- Follow along with the examples in each document
-- Practice with the exercises provided
+By the end of this course, you will be able to:
 
-## Key R Packages Covered
+- Import and clean data in R
+- Perform exploratory data analysis
+- Conduct various statistical tests
+- Create publication-ready visualizations
+- Interpret statistical results
+- Apply statistical concepts to real-world problems
 
-### Core Data Science Packages
-- **dplyr**: Data manipulation and transformation
-- **tidyr**: Data tidying and reshaping
-- **readr**: Fast data import
-- **base R**: Core statistical functions
+## How to Use This Repository
 
-### Visualization Packages
-- **ggplot2**: Grammar of graphics for beautiful plots
-- **base R graphics**: Traditional plotting functions
-- **corrplot**: Correlation matrix visualization
-
-### Statistical Packages
-- **base R stats**: Statistical functions and tests
-- **moments**: Higher-order moments and skewness
-- **vcd**: Visualization of categorical data
-
-## Best Practices
-
-### General Guidelines:
-1. **Choose appropriate data types** for your use case
-2. **Use meaningful variable names**
-3. **Write clean, readable code**
-4. **Handle errors appropriately**
-5. **Document your code**
-
-### R-Specific:
-1. **Use factors for categorical variables**
-2. **Leverage vectorized operations**
-3. **Check data types before analysis**
-4. **Use appropriate data structures**
-5. **Follow R coding conventions**
-
-### Statistical Analysis:
-1. **Always start with exploratory data analysis (EDA)**
-2. **Visualize before analyzing**
-3. **Check for outliers and missing values**
-4. **Use appropriate statistical tests**
-5. **Interpret results in context**
-
-## Exercises and Practice
-
-Each document includes:
-- **Code examples** that you can run
-- **Practice exercises** to reinforce learning
-- **Real-world datasets** for analysis
-- **Statistical interpretation** tasks
-
-### Recommended Practice Projects:
-1. **Data Cleaning**: Work with messy datasets
-2. **Exploratory Analysis**: Analyze real datasets
-3. **Statistical Testing**: Perform hypothesis tests
-4. **Visualization**: Create publication-quality plots
-5. **Reporting**: Write comprehensive analysis reports
-
-## Advanced Topics
-
-After completing these materials, you'll be ready to explore:
-- **Statistical Modeling**: Linear and generalized linear models
-- **Machine Learning**: Classification, regression, clustering
-- **Time Series Analysis**: Temporal data analysis
-- **Reproducible Research**: R Markdown and Shiny
-- **Big Data**: Working with large datasets
-- **Biostatistics**: Medical and biological data analysis
-
-## Additional Resources
-
-### R Documentation:
-- [R Documentation](https://www.r-project.org/docs.html)
-- [RStudio Documentation](https://docs.posit.co/)
-- [CRAN Package Documentation](https://cran.r-project.org/web/packages/)
-
-### Online Courses:
-- [DataCamp R Track](https://www.datacamp.com/tracks/r-programming)
-- [Coursera R Programming](https://www.coursera.org/specializations/r-programming)
-- [edX R Programming](https://www.edx.org/learn/r-programming)
-
-### Books:
-- "R for Data Science" by Hadley Wickham and Garrett Grolemund
-- "The R Book" by Michael Crawley
-- "Advanced R" by Hadley Wickham
-- "R Cookbook" by Paul Teetor
-
-### Statistical Resources:
-- [R Base Statistical Functions](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/00Index.html)
-- [R Graphics Manual](https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/00Index.html)
-- [R Markdown: The Definitive Guide](https://bookdown.org/yihui/rmarkdown/)
-
-### Package Documentation:
-- [dplyr Documentation](https://dplyr.tidyverse.org/)
-- [ggplot2 Documentation](https://ggplot2.tidyverse.org/)
-- [tidyr Documentation](https://tidyr.tidyverse.org/)
+Each markdown file contains:
+- **Theory**: Statistical concepts and background
+- **R Code**: Practical examples with code
+- **Exercises**: Practice problems to reinforce learning
+- **Real-world Applications**: Case studies and examples
 
 ## Contributing
 
-Feel free to contribute improvements to these materials:
-- Report errors or unclear explanations
-- Suggest additional examples
-- Add more advanced topics
-- Improve code formatting
-- Add more exercises
-
-## Next Steps
-
-After completing these materials, you'll be ready to:
-- Move on to more advanced statistical concepts
-- Learn specific statistical techniques
-- Work on real-world data analysis projects
-- Explore machine learning and advanced modeling
-- Build interactive applications with Shiny
-- Create reproducible research workflows with R Markdown
+Feel free to contribute by:
+- Adding more examples
+- Improving explanations
+- Fixing errors
+- Adding new topics
 
 ---
 
-*These materials are designed to provide a solid foundation for statistical programming in R, with practical examples and real-world applications.* 
+*Happy learning!* 
