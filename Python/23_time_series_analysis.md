@@ -70,65 +70,119 @@ where $`\hat{Y}_t^{(k-1)}`$ is the linear prediction of $`Y_t`$ based on $`Y_{t-
 
 ### Creating Time Series Objects
 
-```r
-# Load required packages
-library(tseries)
-library(forecast)
-library(ggplot2)
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from statsmodels.tsa.seasonal import seasonal_decompose, STL
+from statsmodels.tsa.stattools import adfuller, kpss
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from scipy import stats
+import warnings
+warnings.filterwarnings('ignore')
 
 # Create a simple time series
-set.seed(123)
-n_periods <- 100
-time_index <- 1:n_periods
+np.random.seed(123)
+n_periods = 100
+time_index = np.arange(1, n_periods + 1)
 
 # Generate time series with trend and noise
-trend <- 0.1 * time_index  # Linear trend: β₀ + β₁t
-seasonal <- 5 * sin(2 * pi * time_index / 12)  # Annual seasonality
-noise <- rnorm(n_periods, 0, 2)  # White noise: εₜ ~ N(0, σ²)
-time_series_data <- 50 + trend + seasonal + noise
+trend = 0.1 * time_index  # Linear trend: β₀ + β₁t
+seasonal = 5 * np.sin(2 * np.pi * time_index / 12)  # Annual seasonality
+noise = np.random.normal(0, 2, n_periods)  # White noise: εₜ ~ N(0, σ²)
+time_series_data = 50 + trend + seasonal + noise
 
-# Create time series object
-ts_data <- ts(time_series_data, frequency = 12, start = c(2010, 1))
-print(ts_data)
+# Create time series object with pandas
+dates = pd.date_range(start='2010-01-01', periods=n_periods, freq='M')
+ts_data = pd.Series(time_series_data, index=dates)
+print(ts_data.head())
 
 # Basic time series properties
-cat("Time Series Properties:\n")
-cat("Length:", length(ts_data), "\n")
-cat("Frequency:", frequency(ts_data), "\n")
-cat("Start:", start(ts_data), "\n")
-cat("End:", end(ts_data), "\n")
-cat("Mean:", round(mean(ts_data), 2), "\n")
-cat("Standard deviation:", round(sd(ts_data), 2), "\n")
+print("Time Series Properties:")
+print(f"Length: {len(ts_data)}")
+print(f"Frequency: {ts_data.index.freq}")
+print(f"Start: {ts_data.index[0]}")
+print(f"End: {ts_data.index[-1]}")
+print(f"Mean: {ts_data.mean():.2f}")
+print(f"Standard deviation: {ts_data.std():.2f}")
 
 # Mathematical summary
-cat("\nMathematical Summary:\n")
-cat("Trend coefficient (β₁):", round(0.1, 3), "\n")
-cat("Seasonal amplitude:", round(5, 2), "\n")
-cat("Noise standard deviation (σ):", round(2, 2), "\n")
+print("\nMathematical Summary:")
+print(f"Trend coefficient (β₁): {0.1:.3f}")
+print(f"Seasonal amplitude: {5:.2f}")
+print(f"Noise standard deviation (σ): {2:.2f}")
 ```
 
 ### Time Series Visualization
 
-```r
+```python
 # Basic time series plot
-plot(ts_data, main = "Time Series Plot", ylab = "Value", xlab = "Time")
+plt.figure(figsize=(12, 8))
 
-# Enhanced plot with ggplot2
-ts_df <- data.frame(
-  time = time(ts_data),
-  value = as.numeric(ts_data)
-)
+plt.subplot(2, 2, 1)
+plt.plot(ts_data.index, ts_data.values, 'b-', linewidth=0.8)
+plt.title('Time Series Plot')
+plt.ylabel('Value')
+plt.xlabel('Time')
+plt.grid(True, alpha=0.3)
 
-ggplot(ts_df, aes(x = time, y = value)) +
-  geom_line(color = "steelblue", size = 0.8) +
-  geom_smooth(method = "loess", color = "red", se = FALSE) +
-  labs(title = "Time Series with Trend Line",
-       x = "Time", y = "Value") +
-  theme_minimal()
+# Enhanced plot with trend line
+plt.subplot(2, 2, 2)
+plt.plot(ts_data.index, ts_data.values, 'steelblue', linewidth=0.8, alpha=0.7)
+# Add trend line using rolling mean
+trend_line = ts_data.rolling(window=12, center=True).mean()
+plt.plot(ts_data.index, trend_line, 'red', linewidth=2, label='Trend')
+plt.title('Time Series with Trend Line')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.legend()
+plt.grid(True, alpha=0.3)
 
 # Seasonal decomposition plot
-decomposed_ts <- decompose(ts_data)
-plot(decomposed_ts)
+plt.subplot(2, 2, 3)
+decomposed_ts = seasonal_decompose(ts_data, model='additive', period=12)
+plt.plot(decomposed_ts.trend, 'red', linewidth=2)
+plt.title('Trend Component (T_t)')
+plt.grid(True, alpha=0.3)
+
+plt.subplot(2, 2, 4)
+plt.plot(decomposed_ts.seasonal, 'green', linewidth=2)
+plt.title('Seasonal Component (S_t)')
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# STL decomposition (more robust)
+stl_decomp = STL(ts_data, period=12).fit()
+
+plt.figure(figsize=(15, 10))
+plt.subplot(4, 1, 1)
+plt.plot(ts_data.index, ts_data.values, 'b-')
+plt.title('Original Time Series (Y_t)')
+plt.grid(True, alpha=0.3)
+
+plt.subplot(4, 1, 2)
+plt.plot(ts_data.index, stl_decomp.trend, 'red')
+plt.title('Trend Component (T_t)')
+plt.grid(True, alpha=0.3)
+
+plt.subplot(4, 1, 3)
+plt.plot(ts_data.index, stl_decomp.seasonal, 'green')
+plt.title('Seasonal Component (S_t)')
+plt.grid(True, alpha=0.3)
+
+plt.subplot(4, 1, 4)
+plt.plot(ts_data.index, stl_decomp.resid, 'purple')
+plt.title('Residual Component (R_t)')
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## Trend Analysis
@@ -155,69 +209,85 @@ The parameters are estimated using ordinary least squares (OLS):
 \hat{\beta}_0 = \bar{Y} - \hat{\beta}_1 \bar{t}
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Linear trend analysis
-trend_analysis <- function(time_series) {
-  # Extract time index
-  time_index <- 1:length(time_series)
-  
-  # Fit linear trend: Y_t = β₀ + β₁t + ε_t
-  trend_model <- lm(as.numeric(time_series) ~ time_index)
-  
-  # Extract coefficients
-  intercept <- coef(trend_model)[1]  # β₀
-  slope <- coef(trend_model)[2]      # β₁
-  
-  # Calculate trend line
-  trend_line <- intercept + slope * time_index
-  
-  # R-squared: proportion of variance explained
-  r_squared <- summary(trend_model)$r.squared
-  
-  # Statistical significance
-  p_value <- summary(trend_model)$coefficients[2, 4]
-  
-  # Standard error of slope
-  se_slope <- summary(trend_model)$coefficients[2, 2]
-  
-  # 95% confidence interval for slope
-  ci_slope <- confint(trend_model)[2, ]
-  
-  return(list(
-    intercept = intercept,
-    slope = slope,
-    trend_line = trend_line,
-    r_squared = r_squared,
-    p_value = p_value,
-    se_slope = se_slope,
-    ci_slope = ci_slope,
-    model = trend_model
-  ))
-}
+def trend_analysis(time_series):
+    # Extract time index
+    time_index = np.arange(1, len(time_series) + 1)
+    
+    # Fit linear trend: Y_t = β₀ + β₁t + ε_t
+    from sklearn.linear_model import LinearRegression
+    X = time_index.reshape(-1, 1)
+    y = time_series.values
+    
+    trend_model = LinearRegression()
+    trend_model.fit(X, y)
+    
+    # Extract coefficients
+    intercept = trend_model.intercept_  # β₀
+    slope = trend_model.coef_[0]        # β₁
+    
+    # Calculate trend line
+    trend_line = trend_model.predict(X)
+    
+    # R-squared: proportion of variance explained
+    r_squared = trend_model.score(X, y)
+    
+    # Statistical significance using statsmodels
+    import statsmodels.api as sm
+    X_with_const = sm.add_constant(X)
+    model = sm.OLS(y, X_with_const).fit()
+    
+    p_value = model.pvalues[1]  # p-value for slope
+    se_slope = model.bse[1]     # standard error of slope
+    ci_slope = model.conf_int()[1]  # 95% confidence interval for slope
+    
+    return {
+        'intercept': intercept,
+        'slope': slope,
+        'trend_line': trend_line,
+        'r_squared': r_squared,
+        'p_value': p_value,
+        'se_slope': se_slope,
+        'ci_slope': ci_slope,
+        'model': model
+    }
 
 # Apply trend analysis
-trend_result <- trend_analysis(ts_data)
+trend_result = trend_analysis(ts_data)
 
-cat("Linear Trend Analysis Results:\n")
-cat("Model: Y_t = β₀ + β₁t + ε_t\n")
-cat("Intercept (β₀):", round(trend_result$intercept, 3), "\n")
-cat("Slope (β₁):", round(trend_result$slope, 3), "\n")
-cat("Standard Error of Slope:", round(trend_result$se_slope, 4), "\n")
-cat("95% CI for Slope:", round(trend_result$ci_slope[1], 4), "to", 
-    round(trend_result$ci_slope[2], 4), "\n")
-cat("R-squared:", round(trend_result$r_squared, 3), "\n")
-cat("p-value:", round(trend_result$p_value, 4), "\n")
+print("Linear Trend Analysis Results:")
+print("Model: Y_t = β₀ + β₁t + ε_t")
+print(f"Intercept (β₀): {trend_result['intercept']:.3f}")
+print(f"Slope (β₁): {trend_result['slope']:.3f}")
+print(f"Standard Error of Slope: {trend_result['se_slope']:.4f}")
+print(f"95% CI for Slope: {trend_result['ci_slope'][0]:.4f} to {trend_result['ci_slope'][1]:.4f}")
+print(f"R-squared: {trend_result['r_squared']:.3f}")
+print(f"p-value: {trend_result['p_value']:.4f}")
 
 # Visualize trend
-ggplot(ts_df, aes(x = time, y = value)) +
-  geom_line(color = "steelblue", alpha = 0.7) +
-  geom_line(aes(y = trend_result$trend_line), color = "red", size = 1) +
-  labs(title = "Time Series with Linear Trend",
-       subtitle = paste("Y_t =", round(trend_result$intercept, 2), "+", 
-                       round(trend_result$slope, 3), "t"),
-       x = "Time", y = "Value") +
-  theme_minimal()
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(ts_data.index, ts_data.values, 'steelblue', alpha=0.7, linewidth=0.8)
+plt.plot(ts_data.index, trend_result['trend_line'], 'red', linewidth=2)
+plt.title('Time Series with Linear Trend')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.grid(True, alpha=0.3)
+
+plt.subplot(1, 2, 2)
+# Residuals plot
+residuals = ts_data.values - trend_result['trend_line']
+plt.scatter(ts_data.index, residuals, alpha=0.6)
+plt.axhline(y=0, color='red', linestyle='--')
+plt.title('Residuals from Linear Trend')
+plt.xlabel('Time')
+plt.ylabel('Residuals')
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ### Non-linear Trend Analysis
@@ -227,48 +297,91 @@ ggplot(ts_df, aes(x = time, y = value)) +
 Y_t = \beta_0 + \beta_1 t + \beta_2 t^2 + \ldots + \beta_p t^p + \varepsilon_t
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Polynomial trend analysis
-polynomial_trend <- function(time_series, degree = 2) {
-  time_index <- 1:length(time_series)
-  
-  # Fit polynomial trend: Y_t = β₀ + β₁t + β₂t² + ... + βₚtᵖ + ε_t
-  poly_model <- lm(as.numeric(time_series) ~ poly(time_index, degree))
-  
-  # Calculate fitted values
-  fitted_values <- fitted(poly_model)
-  
-  # R-squared
-  r_squared <- summary(poly_model)$r.squared
-  
-  # AIC and BIC for model comparison
-  aic_value <- AIC(poly_model)
-  bic_value <- BIC(poly_model)
-  
-  return(list(
-    model = poly_model,
-    fitted_values = fitted_values,
-    r_squared = r_squared,
-    aic = aic_value,
-    bic = bic_value
-  ))
-}
+def polynomial_trend(time_series, degree=2):
+    time_index = np.arange(1, len(time_series) + 1)
+    
+    # Fit polynomial trend: Y_t = β₀ + β₁t + β₂t² + ... + βₚtᵖ + ε_t
+    from sklearn.preprocessing import PolynomialFeatures
+    from sklearn.linear_model import LinearRegression
+    from sklearn.pipeline import Pipeline
+    
+    poly_model = Pipeline([
+        ('poly', PolynomialFeatures(degree=degree)),
+        ('linear', LinearRegression())
+    ])
+    
+    X = time_index.reshape(-1, 1)
+    y = time_series.values
+    
+    poly_model.fit(X, y)
+    
+    # Calculate fitted values
+    fitted_values = poly_model.predict(X)
+    
+    # R-squared
+    r_squared = poly_model.score(X, y)
+    
+    # AIC and BIC for model comparison
+    n = len(y)
+    k = degree + 1  # number of parameters
+    mse = np.mean((y - fitted_values) ** 2)
+    aic_value = n * np.log(mse) + 2 * k
+    bic_value = n * np.log(mse) + k * np.log(n)
+    
+    return {
+        'model': poly_model,
+        'fitted_values': fitted_values,
+        'r_squared': r_squared,
+        'aic': aic_value,
+        'bic': bic_value
+    }
 
 # Apply polynomial trend analysis
-poly_result <- polynomial_trend(ts_data, degree = 2)
+poly_result = polynomial_trend(ts_data, degree=2)
 
-cat("Polynomial Trend Analysis Results:\n")
-cat("Model: Y_t = β₀ + β₁t + β₂t² + ε_t\n")
-cat("R-squared:", round(poly_result$r_squared, 3), "\n")
-cat("AIC:", round(poly_result$aic, 2), "\n")
-cat("BIC:", round(poly_result$bic, 2), "\n")
+print("Polynomial Trend Analysis Results:")
+print("Model: Y_t = β₀ + β₁t + β₂t² + ε_t")
+print(f"R-squared: {poly_result['r_squared']:.3f}")
+print(f"AIC: {poly_result['aic']:.2f}")
+print(f"BIC: {poly_result['bic']:.2f}")
 
 # Compare linear vs polynomial
-cat("\nModel Comparison:\n")
-cat("Linear R-squared:", round(trend_result$r_squared, 3), "\n")
-cat("Polynomial R-squared:", round(poly_result$r_squared, 3), "\n")
-cat("Improvement:", round(poly_result$r_squared - trend_result$r_squared, 3), "\n")
+print("\nModel Comparison:")
+print(f"Linear R-squared: {trend_result['r_squared']:.3f}")
+print(f"Polynomial R-squared: {poly_result['r_squared']:.3f}")
+print(f"Improvement: {poly_result['r_squared'] - trend_result['r_squared']:.3f}")
+
+# Visualize polynomial trend
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(ts_data.index, ts_data.values, 'steelblue', alpha=0.7, linewidth=0.8)
+plt.plot(ts_data.index, trend_result['trend_line'], 'red', linewidth=2, label='Linear')
+plt.plot(ts_data.index, poly_result['fitted_values'], 'green', linewidth=2, label='Polynomial')
+plt.title('Linear vs Polynomial Trend')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+plt.subplot(1, 2, 2)
+# Residuals comparison
+linear_residuals = ts_data.values - trend_result['trend_line']
+poly_residuals = ts_data.values - poly_result['fitted_values']
+
+plt.scatter(ts_data.index, linear_residuals, alpha=0.6, label='Linear', s=20)
+plt.scatter(ts_data.index, poly_residuals, alpha=0.6, label='Polynomial', s=20)
+plt.axhline(y=0, color='red', linestyle='--')
+plt.title('Residuals Comparison')
+plt.xlabel('Time')
+plt.ylabel('Residuals')
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## Seasonality Analysis
@@ -290,50 +403,60 @@ More robust decomposition using LOESS smoothing:
 Y_t = T_t + S_t + R_t
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Seasonal decomposition
-seasonal_decomposition <- function(time_series) {
-  # Classical decomposition
-  classical_decomp <- decompose(time_series)
-  
-  # STL decomposition (more robust)
-  stl_decomp <- stl(time_series, s.window = "periodic")
-  
-  return(list(
-    classical = classical_decomp,
-    stl = stl_decomp
-  ))
-}
+def seasonal_decomposition(time_series):
+    # Classical decomposition
+    classical_decomp = seasonal_decompose(time_series, model='additive', period=12)
+    
+    # STL decomposition (more robust)
+    stl_decomp = STL(time_series, period=12).fit()
+    
+    return {
+        'classical': classical_decomp,
+        'stl': stl_decomp
+    }
 
 # Apply seasonal decomposition
-decomp_result <- seasonal_decomposition(ts_data)
+decomp_result = seasonal_decomposition(ts_data)
 
 # Plot decomposition components
-par(mfrow = c(2, 2))
-plot(decomp_result$classical$trend, main = "Trend Component (T_t)")
-plot(decomp_result$classical$seasonal, main = "Seasonal Component (S_t)")
-plot(decomp_result$classical$random, main = "Random Component (R_t)")
-plot(ts_data, main = "Original Time Series (Y_t)")
-par(mfrow = c(1, 1))
+fig, axes = plt.subplots(4, 1, figsize=(12, 10))
+axes[0].plot(decomp_result['classical'].trend, 'red')
+axes[0].set_title('Trend Component (T_t)')
+axes[0].grid(True, alpha=0.3)
+
+axes[1].plot(decomp_result['classical'].seasonal, 'green')
+axes[1].set_title('Seasonal Component (S_t)')
+axes[1].grid(True, alpha=0.3)
+
+axes[2].plot(decomp_result['classical'].resid, 'purple')
+axes[2].set_title('Random Component (R_t)')
+axes[2].grid(True, alpha=0.3)
+
+axes[3].plot(ts_data.index, ts_data.values, 'blue')
+axes[3].set_title('Original Time Series (Y_t)')
+axes[3].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 
 # Extract seasonal strength
-seasonal_strength <- function(time_series) {
-  decomp <- decompose(time_series)
-  
-  # Calculate seasonal strength: Var(S_t) / [Var(S_t) + Var(R_t)]
-  seasonal_var <- var(decomp$seasonal, na.rm = TRUE)
-  random_var <- var(decomp$random, na.rm = TRUE)
-  
-  strength <- seasonal_var / (seasonal_var + random_var)
-  
-  return(strength)
-}
+def seasonal_strength(time_series):
+    decomp = seasonal_decompose(time_series, model='additive', period=12)
+    
+    # Calculate seasonal strength: Var(S_t) / [Var(S_t) + Var(R_t)]
+    seasonal_var = np.var(decomp.seasonal.dropna())
+    random_var = np.var(decomp.resid.dropna())
+    
+    strength = seasonal_var / (seasonal_var + random_var)
+    
+    return strength
 
-seasonal_strength_value <- seasonal_strength(ts_data)
-cat("Seasonal Strength:", round(seasonal_strength_value, 3), "\n")
-cat("Interpretation:", ifelse(seasonal_strength_value > 0.1, 
-                              "Strong seasonality", "Weak seasonality"), "\n")
+seasonal_strength_value = seasonal_strength(ts_data)
+print(f"Seasonal Strength: {seasonal_strength_value:.3f}")
+print(f"Interpretation: {'Strong seasonality' if seasonal_strength_value > 0.1 else 'Weak seasonality'}")
 ```
 
 ### Seasonal Adjustment
@@ -343,42 +466,41 @@ cat("Interpretation:", ifelse(seasonal_strength_value > 0.1,
 Y_t^{SA} = Y_t - S_t = T_t + R_t
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Seasonal adjustment
-seasonal_adjustment <- function(time_series) {
-  # Classical seasonal adjustment
-  decomp <- decompose(time_series)
-  seasonally_adjusted <- time_series - decomp$seasonal
-  
-  # STL seasonal adjustment
-  stl_decomp <- stl(time_series, s.window = "periodic")
-  stl_adjusted <- seasadj(stl_decomp)
-  
-  return(list(
-    classical_adjusted = seasonally_adjusted,
-    stl_adjusted = stl_adjusted
-  ))
-}
+def seasonal_adjustment(time_series):
+    # Classical seasonal adjustment
+    decomp = seasonal_decompose(time_series, model='additive', period=12)
+    seasonally_adjusted = time_series - decomp.seasonal
+    
+    # STL seasonal adjustment
+    stl_decomp = STL(time_series, period=12).fit()
+    stl_adjusted = time_series - stl_decomp.seasonal
+    
+    return {
+        'classical_adjusted': seasonally_adjusted,
+        'stl_adjusted': stl_adjusted
+    }
 
 # Apply seasonal adjustment
-adjusted_result <- seasonal_adjustment(ts_data)
+adjusted_result = seasonal_adjustment(ts_data)
 
 # Visualize seasonal adjustment
-adjusted_df <- data.frame(
-  time = time(ts_data),
-  original = as.numeric(ts_data),
-  classical_adjusted = as.numeric(adjusted_result$classical_adjusted),
-  stl_adjusted = as.numeric(adjusted_result$stl_adjusted)
-)
-
-ggplot(adjusted_df, aes(x = time)) +
-  geom_line(aes(y = original, color = "Original (Y_t)"), alpha = 0.7) +
-  geom_line(aes(y = classical_adjusted, color = "Classically Adjusted (Y_t - S_t)"), alpha = 0.7) +
-  geom_line(aes(y = stl_adjusted, color = "STL Adjusted"), alpha = 0.7) +
-  labs(title = "Seasonal Adjustment Comparison",
-       x = "Time", y = "Value", color = "Series") +
-  theme_minimal()
+plt.figure(figsize=(12, 8))
+plt.plot(ts_data.index, ts_data.values, 'blue', alpha=0.7, label='Original (Y_t)')
+plt.plot(adjusted_result['classical_adjusted'].index, 
+         adjusted_result['classical_adjusted'].values, 
+         'red', alpha=0.7, label='Classically Adjusted (Y_t - S_t)')
+plt.plot(adjusted_result['stl_adjusted'].index, 
+         adjusted_result['stl_adjusted'].values, 
+         'green', alpha=0.7, label='STL Adjusted')
+plt.title('Seasonal Adjustment Comparison')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
 ```
 
 ## Stationarity Analysis
@@ -396,38 +518,38 @@ Tests the null hypothesis that a unit root is present in the time series.
 **Null Hypothesis:** $`H_0: \gamma = 0`$ (unit root exists, series is non-stationary)
 **Alternative Hypothesis:** $`H_1: \gamma < 0`$ (no unit root, series is stationary)
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Augmented Dickey-Fuller test
-adf_test <- adf.test(ts_data)
-print(adf_test)
+adf_test = adfuller(ts_data)
+print("Augmented Dickey-Fuller Test:")
+print(f"ADF Statistic: {adf_test[0]:.4f}")
+print(f"p-value: {adf_test[1]:.4f}")
+print(f"Critical values:")
+for key, value in adf_test[4].items():
+    print(f"\t{key}: {value:.3f}")
 
 # Kwiatkowski-Phillips-Schmidt-Shin test
-kpss_test <- kpss.test(ts_data)
-print(kpss_test)
+kpss_test = kpss(ts_data)
+print("\nKwiatkowski-Phillips-Schmidt-Shin Test:")
+print(f"KPSS Statistic: {kpss_test[0]:.4f}")
+print(f"p-value: {kpss_test[1]:.4f}")
 
-# Phillips-Perron test
-pp_test <- pp.test(ts_data)
-print(pp_test)
-
-cat("Stationarity Test Results:\n")
-cat("ADF p-value:", round(adf_test$p.value, 4), "\n")
-cat("KPSS p-value:", round(kpss_test$p.value, 4), "\n")
-cat("PP p-value:", round(pp_test$p.value, 4), "\n")
+print("\nStationarity Test Results:")
+print(f"ADF p-value: {adf_test[1]:.4f}")
+print(f"KPSS p-value: {kpss_test[1]:.4f}")
 
 # Interpretation
-cat("\nInterpretation:\n")
-if (adf_test$p.value < 0.05) {
-  cat("- ADF test: Reject H₀, series is stationary\n")
-} else {
-  cat("- ADF test: Fail to reject H₀, series is non-stationary\n")
-}
+print("\nInterpretation:")
+if adf_test[1] < 0.05:
+    print("- ADF test: Reject H₀, series is stationary")
+else:
+    print("- ADF test: Fail to reject H₀, series is non-stationary")
 
-if (kpss_test$p.value > 0.05) {
-  cat("- KPSS test: Fail to reject H₀, series is stationary\n")
-} else {
-  cat("- KPSS test: Reject H₀, series is non-stationary\n")
-}
+if kpss_test[1] > 0.05:
+    print("- KPSS test: Fail to reject H₀, series is stationary")
+else:
+    print("- KPSS test: Reject H₀, series is non-stationary")
 ```
 
 ### Differencing for Stationarity
@@ -447,35 +569,54 @@ if (kpss_test$p.value > 0.05) {
 \Delta_s Y_t = Y_t - Y_{t-s}
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # First differencing
-first_diff <- diff(ts_data)
-adf_diff_test <- adf.test(first_diff)
-print(adf_diff_test)
+first_diff = ts_data.diff().dropna()
+adf_diff_test = adfuller(first_diff)
+print("First Difference ADF Test:")
+print(f"ADF Statistic: {adf_diff_test[0]:.4f}")
+print(f"p-value: {adf_diff_test[1]:.4f}")
 
 # Second differencing
-second_diff <- diff(first_diff)
-adf_diff2_test <- adf.test(second_diff)
-print(adf_diff2_test)
+second_diff = first_diff.diff().dropna()
+adf_diff2_test = adfuller(second_diff)
+print("\nSecond Difference ADF Test:")
+print(f"ADF Statistic: {adf_diff2_test[0]:.4f}")
+print(f"p-value: {adf_diff2_test[1]:.4f}")
 
 # Seasonal differencing
-seasonal_diff <- diff(ts_data, lag = 12)
-adf_seasonal_test <- adf.test(seasonal_diff)
-print(adf_seasonal_test)
+seasonal_diff = ts_data.diff(periods=12).dropna()
+adf_seasonal_test = adfuller(seasonal_diff)
+print("\nSeasonal Difference ADF Test:")
+print(f"ADF Statistic: {adf_seasonal_test[0]:.4f}")
+print(f"p-value: {adf_seasonal_test[1]:.4f}")
 
-cat("Differencing Results:\n")
-cat("First difference ADF p-value:", round(adf_diff_test$p.value, 4), "\n")
-cat("Second difference ADF p-value:", round(adf_diff2_test$p.value, 4), "\n")
-cat("Seasonal difference ADF p-value:", round(adf_seasonal_test$p.value, 4), "\n")
+print("\nDifferencing Results:")
+print(f"First difference ADF p-value: {adf_diff_test[1]:.4f}")
+print(f"Second difference ADF p-value: {adf_diff2_test[1]:.4f}")
+print(f"Seasonal difference ADF p-value: {adf_seasonal_test[1]:.4f}")
 
 # Visualize differenced series
-par(mfrow = c(2, 2))
-plot(ts_data, main = "Original Series")
-plot(first_diff, main = "First Difference")
-plot(second_diff, main = "Second Difference")
-plot(seasonal_diff, main = "Seasonal Difference")
-par(mfrow = c(1, 1))
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+axes[0, 0].plot(ts_data.index, ts_data.values)
+axes[0, 0].set_title('Original Series')
+axes[0, 0].grid(True, alpha=0.3)
+
+axes[0, 1].plot(first_diff.index, first_diff.values)
+axes[0, 1].set_title('First Difference')
+axes[0, 1].grid(True, alpha=0.3)
+
+axes[1, 0].plot(second_diff.index, second_diff.values)
+axes[1, 0].set_title('Second Difference')
+axes[1, 0].grid(True, alpha=0.3)
+
+axes[1, 1].plot(seasonal_diff.index, seasonal_diff.values)
+axes[1, 1].set_title('Seasonal Difference')
+axes[1, 1].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## Autocorrelation Analysis
@@ -487,31 +628,42 @@ par(mfrow = c(1, 1))
 \hat{\rho}_k = \frac{\sum_{t=k+1}^n (Y_t - \bar{Y})(Y_{t-k} - \bar{Y})}{\sum_{t=1}^n (Y_t - \bar{Y})^2}
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Autocorrelation function (ACF)
-acf_result <- acf(ts_data, lag.max = 24, plot = FALSE)
-print(acf_result)
+fig, axes = plt.subplots(2, 1, figsize=(12, 8))
+plot_acf(ts_data, lags=24, ax=axes[0])
+axes[0].set_title('Autocorrelation Function (ACF)')
 
 # Partial autocorrelation function (PACF)
-pacf_result <- pacf(ts_data, lag.max = 24, plot = FALSE)
-print(pacf_result)
+plot_pacf(ts_data, lags=24, ax=axes[1])
+axes[1].set_title('Partial Autocorrelation Function (PACF)')
 
-# Plot ACF and PACF
-par(mfrow = c(2, 1))
-acf(ts_data, lag.max = 24, main = "Autocorrelation Function (ACF)")
-pacf(ts_data, lag.max = 24, main = "Partial Autocorrelation Function (PACF)")
-par(mfrow = c(1, 1))
+plt.tight_layout()
+plt.show()
+
+# Get ACF and PACF values
+from statsmodels.tsa.stattools import acf, pacf
+acf_result = acf(ts_data, nlags=24)
+pacf_result = pacf(ts_data, nlags=24)
+
+print("ACF values (first 10 lags):")
+for i, val in enumerate(acf_result[1:11]):
+    print(f"Lag {i+1}: {val:.3f}")
+
+print("\nPACF values (first 10 lags):")
+for i, val in enumerate(pacf_result[1:11]):
+    print(f"Lag {i+1}: {val:.3f}")
 
 # Identify significant lags (beyond ±2/√n confidence bands)
-n <- length(ts_data)
-confidence_band <- 2 / sqrt(n)
-significant_acf <- which(abs(acf_result$acf) > confidence_band)
-significant_pacf <- which(abs(pacf_result$acf) > confidence_band)
+n = len(ts_data)
+confidence_band = 2 / np.sqrt(n)
+significant_acf = np.where(np.abs(acf_result) > confidence_band)[0]
+significant_pacf = np.where(np.abs(pacf_result) > confidence_band)[0]
 
-cat("Significant ACF lags:", significant_acf, "\n")
-cat("Significant PACF lags:", significant_pacf, "\n")
-cat("Confidence band (±2/√n):", round(confidence_band, 3), "\n")
+print(f"\nSignificant ACF lags: {significant_acf}")
+print(f"Significant PACF lags: {significant_pacf}")
+print(f"Confidence band (±2/√n): {confidence_band:.3f}")
 ```
 
 ## ARIMA Modeling
@@ -537,63 +689,100 @@ where:
 \phi_p(B)\Phi_P(B^s)(1 - B)^d(1 - B^s)^D Y_t = \theta_q(B)\Theta_Q(B^s)\varepsilon_t
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Automatic ARIMA model selection
-auto_arima <- auto.arima(ts_data, seasonal = TRUE)
-print(auto_arima)
+from pmdarima import auto_arima
+
+auto_arima_model = auto_arima(ts_data, seasonal=True, m=12, 
+                             suppress_warnings=True, error_action='ignore')
+print(auto_arima_model.summary())
 
 # Extract model parameters
-arima_order <- auto_arima$arma
-cat("ARIMA Model Parameters:\n")
-cat("p (AR order):", arima_order[1], "\n")
-cat("d (differencing):", arima_order[6], "\n")
-cat("q (MA order):", arima_order[2], "\n")
-cat("P (seasonal AR):", arima_order[3], "\n")
-cat("D (seasonal differencing):", arima_order[7], "\n")
-cat("Q (seasonal MA):", arima_order[4], "\n")
+arima_order = auto_arima_model.order
+seasonal_order = auto_arima_model.seasonal_order
+print("ARIMA Model Parameters:")
+print(f"p (AR order): {arima_order[0]}")
+print(f"d (differencing): {arima_order[1]}")
+print(f"q (MA order): {arima_order[2]}")
+print(f"P (seasonal AR): {seasonal_order[0]}")
+print(f"D (seasonal differencing): {seasonal_order[1]}")
+print(f"Q (seasonal MA): {seasonal_order[2]}")
 
 # Model diagnostics
-checkresiduals(auto_arima)
+residuals_auto = auto_arima_model.resid()
+
+# Plot residuals
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+axes[0, 0].plot(residuals_auto)
+axes[0, 0].set_title('Residuals')
+axes[0, 0].grid(True, alpha=0.3)
+
+axes[0, 1].hist(residuals_auto, bins=20, alpha=0.7, edgecolor='black')
+axes[0, 1].set_title('Residuals Histogram')
+axes[0, 1].grid(True, alpha=0.3)
+
+# Q-Q plot
+from scipy import stats
+stats.probplot(residuals_auto, dist="norm", plot=axes[1, 0])
+axes[1, 0].set_title('Q-Q Plot of Residuals')
+
+# ACF of residuals
+plot_acf(residuals_auto, lags=20, ax=axes[1, 1])
+axes[1, 1].set_title('ACF of Residuals')
+
+plt.tight_layout()
+plt.show()
 
 # AIC and BIC
-cat("Model Selection Criteria:\n")
-cat("AIC:", round(AIC(auto_arima), 2), "\n")
-cat("BIC:", round(BIC(auto_arima), 2), "\n")
+print("Model Selection Criteria:")
+print(f"AIC: {auto_arima_model.aic():.2f}")
+print(f"BIC: {auto_arima_model.bic():.2f}")
 
 # Residual analysis
-residuals_auto <- residuals(auto_arima)
-cat("Residual Analysis:\n")
-cat("Mean:", round(mean(residuals_auto), 4), "\n")
-cat("Standard deviation:", round(sd(residuals_auto), 4), "\n")
-cat("Skewness:", round(skewness(residuals_auto), 3), "\n")
-cat("Kurtosis:", round(kurtosis(residuals_auto), 3), "\n")
+print("Residual Analysis:")
+print(f"Mean: {np.mean(residuals_auto):.4f}")
+print(f"Standard deviation: {np.std(residuals_auto):.4f}")
+print(f"Skewness: {stats.skew(residuals_auto):.3f}")
+print(f"Kurtosis: {stats.kurtosis(residuals_auto):.3f}")
 
 # Ljung-Box test for residual autocorrelation
-ljung_auto <- Box.test(residuals_auto, type = "Ljung-Box")
-cat("Ljung-Box test p-value:", round(ljung_auto$p.value, 4), "\n")
+from statsmodels.stats.diagnostic import acorr_ljungbox
+ljung_auto = acorr_ljungbox(residuals_auto, lags=10, return_df=True)
+print(f"Ljung-Box test p-value: {ljung_auto['lb_pvalue'].iloc[-1]:.4f}")
 ```
 
 ### Manual ARIMA Model Fitting
 
-```r
+```python
 # Manual ARIMA model fitting
-manual_arima <- arima(ts_data, order = c(1, 1, 1), seasonal = list(order = c(1, 1, 1), period = 12))
-print(manual_arima)
+manual_arima = ARIMA(ts_data, order=(1, 1, 1))
+manual_arima_fitted = manual_arima.fit()
+print(manual_arima_fitted.summary())
+
+# Seasonal ARIMA
+seasonal_arima = SARIMAX(ts_data, order=(1, 1, 1), seasonal_order=(1, 1, 1, 12))
+seasonal_arima_fitted = seasonal_arima.fit(disp=False)
+print(seasonal_arima_fitted.summary())
 
 # Compare models
-cat("Model Comparison:\n")
-cat("Auto ARIMA AIC:", round(AIC(auto_arima), 2), "\n")
-cat("Manual ARIMA AIC:", round(AIC(manual_arima), 2), "\n")
+print("Model Comparison:")
+print(f"Auto ARIMA AIC: {auto_arima_model.aic():.2f}")
+print(f"Manual ARIMA AIC: {manual_arima_fitted.aic:.2f}")
+print(f"Seasonal ARIMA AIC: {seasonal_arima_fitted.aic:.2f}")
 
 # Residual analysis
-residuals_manual <- residuals(manual_arima)
+residuals_manual = manual_arima_fitted.resid
+residuals_seasonal = seasonal_arima_fitted.resid
 
 # Ljung-Box test for residuals
-ljung_manual <- Box.test(residuals_manual, type = "Ljung-Box")
-cat("Ljung-Box Test Results:\n")
-cat("Auto ARIMA p-value:", round(ljung_auto$p.value, 4), "\n")
-cat("Manual ARIMA p-value:", round(ljung_manual$p.value, 4), "\n")
+ljung_manual = acorr_ljungbox(residuals_manual, lags=10, return_df=True)
+ljung_seasonal = acorr_ljungbox(residuals_seasonal, lags=10, return_df=True)
+
+print("Ljung-Box Test Results:")
+print(f"Auto ARIMA p-value: {ljung_auto['lb_pvalue'].iloc[-1]:.4f}")
+print(f"Manual ARIMA p-value: {ljung_manual['lb_pvalue'].iloc[-1]:.4f}")
+print(f"Seasonal ARIMA p-value: {ljung_seasonal['lb_pvalue'].iloc[-1]:.4f}")
 ```
 
 ## Forecasting
@@ -606,35 +795,42 @@ For an ARIMA(p,d,q) model, the forecast at time $`t+h`$ is:
 \hat{Y}_{t+h} = E[Y_{t+h} | Y_1, Y_2, \ldots, Y_t]
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Generate forecasts
-forecast_periods <- 12
-forecast_result <- forecast(auto_arima, h = forecast_periods)
-print(forecast_result)
+forecast_periods = 12
+forecast_result = auto_arima_model.predict(n_periods=forecast_periods)
 
-# Extract forecast components
-point_forecast <- forecast_result$mean
-lower_ci <- forecast_result$lower[, 2]  # 95% CI
-upper_ci <- forecast_result$upper[, 2]
+# Get confidence intervals
+forecast_ci = auto_arima_model.predict(n_periods=forecast_periods, return_conf_int=True)
+point_forecast = forecast_result
+lower_ci = forecast_ci[1][:, 0]  # 95% CI lower
+upper_ci = forecast_ci[1][:, 1]  # 95% CI upper
 
 # Create forecast data frame
-forecast_df <- data.frame(
-  time = seq(length(ts_data) + 1, length(ts_data) + forecast_periods),
-  forecast = as.numeric(point_forecast),
-  lower = as.numeric(lower_ci),
-  upper = as.numeric(upper_ci)
-)
+forecast_dates = pd.date_range(start=ts_data.index[-1] + pd.DateOffset(months=1), 
+                              periods=forecast_periods, freq='M')
+forecast_df = pd.DataFrame({
+    'forecast': point_forecast,
+    'lower': lower_ci,
+    'upper': upper_ci
+}, index=forecast_dates)
+
+print("Forecast Results:")
+print(forecast_df.head())
 
 # Visualize forecast
-ggplot() +
-  geom_line(data = ts_df, aes(x = time, y = value), color = "steelblue") +
-  geom_line(data = forecast_df, aes(x = time, y = forecast), color = "red", size = 1) +
-  geom_ribbon(data = forecast_df, aes(x = time, ymin = lower, ymax = upper), 
-              alpha = 0.3, fill = "red") +
-  labs(title = "Time Series Forecast with 95% Confidence Intervals",
-       x = "Time", y = "Value") +
-  theme_minimal()
+plt.figure(figsize=(12, 6))
+plt.plot(ts_data.index, ts_data.values, 'steelblue', label='Historical Data')
+plt.plot(forecast_df.index, forecast_df['forecast'], 'red', linewidth=2, label='Forecast')
+plt.fill_between(forecast_df.index, forecast_df['lower'], forecast_df['upper'], 
+                alpha=0.3, color='red', label='95% Confidence Interval')
+plt.title('Time Series Forecast with 95% Confidence Intervals')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
 ```
 
 ### Forecast Accuracy
@@ -656,34 +852,45 @@ RMSE = \sqrt{\frac{1}{n} \sum_{i=1}^n (Y_i - \hat{Y}_i)^2}
 MAPE = \frac{100}{n} \sum_{i=1}^n \left|\frac{Y_i - \hat{Y}_i}{Y_i}\right|
 ```
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Split data for forecast evaluation
-train_size <- floor(0.8 * length(ts_data))
-train_data <- ts_data[1:train_size]
-test_data <- ts_data[(train_size + 1):length(ts_data)]
+train_size = int(0.8 * len(ts_data))
+train_data = ts_data[:train_size]
+test_data = ts_data[train_size:]
 
 # Fit model on training data
-train_arima <- auto.arima(train_data, seasonal = TRUE)
+train_arima = auto_arima(train_data, seasonal=True, m=12, 
+                        suppress_warnings=True, error_action='ignore')
 
 # Generate forecasts
-forecast_test <- forecast(train_arima, h = length(test_data))
+forecast_test = train_arima.predict(n_periods=len(test_data))
 
 # Calculate accuracy measures
-accuracy_measures <- accuracy(forecast_test, test_data)
-print(accuracy_measures)
+def calculate_accuracy_measures(actual, predicted):
+    mae = np.mean(np.abs(actual - predicted))
+    rmse = np.sqrt(np.mean((actual - predicted) ** 2))
+    mape = np.mean(np.abs((actual - predicted) / actual)) * 100
+    return mae, rmse, mape
 
-# Mean Absolute Error (MAE)
-mae <- mean(abs(forecast_test$mean - test_data))
-cat("Mean Absolute Error (MAE):", round(mae, 2), "\n")
+mae, rmse, mape = calculate_accuracy_measures(test_data.values, forecast_test)
 
-# Root Mean Square Error (RMSE)
-rmse <- sqrt(mean((forecast_test$mean - test_data)^2))
-cat("Root Mean Square Error (RMSE):", round(rmse, 2), "\n")
+print("Forecast Accuracy Measures:")
+print(f"Mean Absolute Error (MAE): {mae:.2f}")
+print(f"Root Mean Square Error (RMSE): {rmse:.2f}")
+print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
 
-# Mean Absolute Percentage Error (MAPE)
-mape <- mean(abs((test_data - forecast_test$mean) / test_data)) * 100
-cat("Mean Absolute Percentage Error (MAPE):", round(mape, 2), "%\n")
+# Visualize forecast accuracy
+plt.figure(figsize=(12, 6))
+plt.plot(train_data.index, train_data.values, 'blue', label='Training Data')
+plt.plot(test_data.index, test_data.values, 'green', label='Actual Test Data')
+plt.plot(test_data.index, forecast_test, 'red', linewidth=2, label='Forecast')
+plt.title('Forecast Accuracy Evaluation')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
 ```
 
 ## Advanced Time Series Models
@@ -713,34 +920,47 @@ where:
 
 where $`s_t`$ is the seasonal component.
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Simple exponential smoothing
-ses_model <- ses(ts_data, h = 12)
-print(ses_model)
+ses_model = ExponentialSmoothing(ts_data, seasonal_periods=None).fit()
+ses_forecast = ses_model.forecast(12)
 
 # Holt's method (trend)
-holt_model <- holt(ts_data, h = 12)
-print(holt_model)
+holt_model = ExponentialSmoothing(ts_data, trend='add', seasonal_periods=None).fit()
+holt_forecast = holt_model.forecast(12)
 
 # Holt-Winters method (trend + seasonality)
-hw_model <- hw(ts_data, h = 12)
-print(hw_model)
+hw_model = ExponentialSmoothing(ts_data, trend='add', seasonal='add', seasonal_periods=12).fit()
+hw_forecast = hw_model.forecast(12)
 
 # Compare models
-cat("Model Comparison (AIC):\n")
-cat("SES:", round(AIC(ses_model), 2), "\n")
-cat("Holt:", round(AIC(holt_model), 2), "\n")
-cat("Holt-Winters:", round(AIC(hw_model), 2), "\n")
+print("Model Comparison (AIC):")
+print(f"SES: {ses_model.aic:.2f}")
+print(f"Holt: {holt_model.aic:.2f}")
+print(f"Holt-Winters: {hw_model.aic:.2f}")
 
 # Extract smoothing parameters
-cat("Smoothing Parameters:\n")
-cat("SES alpha:", round(ses_model$model$par["alpha"], 3), "\n")
-cat("Holt alpha:", round(holt_model$model$par["alpha"], 3), "\n")
-cat("Holt beta:", round(holt_model$model$par["beta"], 3), "\n")
-cat("HW alpha:", round(hw_model$model$par["alpha"], 3), "\n")
-cat("HW beta:", round(hw_model$model$par["beta"], 3), "\n")
-cat("HW gamma:", round(hw_model$model$par["gamma"], 3), "\n")
+print("Smoothing Parameters:")
+print(f"SES alpha: {ses_model.params['smoothing_level']:.3f}")
+print(f"Holt alpha: {holt_model.params['smoothing_level']:.3f}")
+print(f"Holt beta: {holt_model.params['smoothing_trend']:.3f}")
+print(f"HW alpha: {hw_model.params['smoothing_level']:.3f}")
+print(f"HW beta: {hw_model.params['smoothing_trend']:.3f}")
+print(f"HW gamma: {hw_model.params['smoothing_seasonal']:.3f}")
+
+# Visualize exponential smoothing forecasts
+plt.figure(figsize=(12, 6))
+plt.plot(ts_data.index, ts_data.values, 'blue', label='Historical Data')
+plt.plot(ses_forecast.index, ses_forecast.values, 'red', label='SES Forecast')
+plt.plot(holt_forecast.index, holt_forecast.values, 'green', label='Holt Forecast')
+plt.plot(hw_forecast.index, hw_forecast.values, 'orange', label='Holt-Winters Forecast')
+plt.title('Exponential Smoothing Forecasts')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
 ```
 
 ### Vector Autoregression (VAR)
@@ -752,240 +972,354 @@ Y_t = c + \Phi_1 Y_{t-1} + \Phi_2 Y_{t-2} + \ldots + \Phi_p Y_{t-p} + \varepsilo
 
 where $`Y_t`$ is a vector of variables, $`\Phi_i`$ are coefficient matrices.
 
-**R Implementation:**
-```r
+**Python Implementation:**
+```python
 # Create multivariate time series
-set.seed(123)
-n_periods <- 100
-var_data <- data.frame(
-  y1 = cumsum(rnorm(n_periods, 0, 1)),
-  y2 = cumsum(rnorm(n_periods, 0, 1)) + 0.5 * cumsum(rnorm(n_periods, 0, 1))
-)
-
-# Convert to time series
-var_ts <- ts(var_data, frequency = 12, start = c(2010, 1))
+np.random.seed(123)
+n_periods = 100
+var_data = pd.DataFrame({
+    'y1': np.cumsum(np.random.normal(0, 1, n_periods)),
+    'y2': np.cumsum(np.random.normal(0, 1, n_periods)) + 0.5 * np.cumsum(np.random.normal(0, 1, n_periods))
+}, index=pd.date_range(start='2010-01-01', periods=n_periods, freq='M'))
 
 # Fit VAR model
-library(vars)
-var_model <- VAR(var_ts, p = 2, type = "const")
-print(var_model)
+from statsmodels.tsa.vector_ar.var_model import VAR
+var_model = VAR(var_data)
+var_fitted = var_model.fit(maxlags=2)
+print(var_fitted.summary())
 
 # Granger causality test
-granger_test <- causality(var_model, cause = "y1")
-print(granger_test)
+from statsmodels.tsa.vector_ar.granger_causality import grangercausalitytests
+gc_result = grangercausalitytests(var_data, maxlag=2, verbose=False)
+print("Granger Causality Test Results:")
+for lag, result in gc_result.items():
+    print(f"Lag {lag}: p-value = {result[0]['ssr_chi2test'][1]:.4f}")
 
 # Impulse response function
-irf_result <- irf(var_model, impulse = "y1", response = "y2", n.ahead = 10)
-plot(irf_result)
+irf_result = var_fitted.irf(periods=10)
+irf_result.plot()
+plt.show()
 ```
 
 ## Practical Examples
 
 ### Example 1: Economic Data Analysis
 
-```r
+```python
 # Simulate economic time series
-set.seed(123)
-n_periods <- 120
+np.random.seed(123)
+n_periods = 120
 
 # Generate GDP data with trend and seasonality
-time_index <- 1:n_periods
-trend <- 0.02 * time_index  # 2% annual growth
-seasonal <- 2 * sin(2 * pi * time_index / 4)  # Quarterly seasonality
-noise <- rnorm(n_periods, 0, 1)
-gdp_data <- 100 + trend + seasonal + noise
+time_index = np.arange(1, n_periods + 1)
+trend = 0.02 * time_index  # 2% annual growth
+seasonal = 2 * np.sin(2 * np.pi * time_index / 4)  # Quarterly seasonality
+noise = np.random.normal(0, 1, n_periods)
+gdp_data = 100 + trend + seasonal + noise
 
 # Create time series
-gdp_ts <- ts(gdp_data, frequency = 4, start = c(2010, 1))
+gdp_dates = pd.date_range(start='2010-01-01', periods=n_periods, freq='Q')
+gdp_ts = pd.Series(gdp_data, index=gdp_dates)
 
 # Analyze GDP data
-gdp_decomp <- decompose(gdp_ts)
-plot(gdp_decomp)
+gdp_decomp = seasonal_decompose(gdp_ts, model='additive', period=4)
+fig, axes = plt.subplots(4, 1, figsize=(12, 10))
+axes[0].plot(gdp_decomp.trend)
+axes[0].set_title('GDP Trend Component')
+axes[0].grid(True, alpha=0.3)
+
+axes[1].plot(gdp_decomp.seasonal)
+axes[1].set_title('GDP Seasonal Component')
+axes[1].grid(True, alpha=0.3)
+
+axes[2].plot(gdp_decomp.resid)
+axes[2].set_title('GDP Random Component')
+axes[2].grid(True, alpha=0.3)
+
+axes[3].plot(gdp_ts.index, gdp_ts.values)
+axes[3].set_title('Original GDP Time Series')
+axes[3].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 
 # Fit ARIMA model
-gdp_arima <- auto.arima(gdp_ts)
-print(gdp_arima)
+gdp_arima = auto_arima(gdp_ts, seasonal=True, m=4, 
+                      suppress_warnings=True, error_action='ignore')
+print("GDP ARIMA Model:")
+print(gdp_arima.summary())
 
 # Generate forecasts
-gdp_forecast <- forecast(gdp_arima, h = 8)
-plot(gdp_forecast)
+gdp_forecast = gdp_arima.predict(n_periods=8)
+gdp_forecast_dates = pd.date_range(start=gdp_ts.index[-1] + pd.DateOffset(months=3), 
+                                  periods=8, freq='Q')
+gdp_forecast_series = pd.Series(gdp_forecast, index=gdp_forecast_dates)
+
+plt.figure(figsize=(12, 6))
+plt.plot(gdp_ts.index, gdp_ts.values, 'blue', label='Historical GDP')
+plt.plot(gdp_forecast_series.index, gdp_forecast_series.values, 'red', linewidth=2, label='GDP Forecast')
+plt.title('GDP Forecast')
+plt.xlabel('Time')
+plt.ylabel('GDP')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
 ```
 
 ### Example 2: Sales Data Analysis
 
-```r
+```python
 # Simulate sales data
-set.seed(123)
-n_periods <- 60
+np.random.seed(123)
+n_periods = 60
 
 # Generate sales with trend, seasonality, and cycles
-time_index <- 1:n_periods
-trend <- 0.5 * time_index
-seasonal <- 10 * sin(2 * pi * time_index / 12)  # Monthly seasonality
-cycle <- 5 * sin(2 * pi * time_index / 24)  # Biennial cycle
-noise <- rnorm(n_periods, 0, 3)
-sales_data <- 50 + trend + seasonal + cycle + noise
+time_index = np.arange(1, n_periods + 1)
+trend = 0.5 * time_index
+seasonal = 10 * np.sin(2 * np.pi * time_index / 12)  # Monthly seasonality
+cycle = 5 * np.sin(2 * np.pi * time_index / 24)  # Biennial cycle
+noise = np.random.normal(0, 3, n_periods)
+sales_data = 50 + trend + seasonal + cycle + noise
 
 # Create time series
-sales_ts <- ts(sales_data, frequency = 12, start = c(2015, 1))
+sales_dates = pd.date_range(start='2015-01-01', periods=n_periods, freq='M')
+sales_ts = pd.Series(sales_data, index=sales_dates)
 
 # Seasonal decomposition
-sales_decomp <- stl(sales_ts, s.window = "periodic")
-plot(sales_decomp)
+sales_decomp = STL(sales_ts, period=12).fit()
+fig, axes = plt.subplots(4, 1, figsize=(12, 10))
+axes[0].plot(sales_decomp.trend)
+axes[0].set_title('Sales Trend Component')
+axes[0].grid(True, alpha=0.3)
+
+axes[1].plot(sales_decomp.seasonal)
+axes[1].set_title('Sales Seasonal Component')
+axes[1].grid(True, alpha=0.3)
+
+axes[2].plot(sales_decomp.resid)
+axes[2].set_title('Sales Residual Component')
+axes[2].grid(True, alpha=0.3)
+
+axes[3].plot(sales_ts.index, sales_ts.values)
+axes[3].set_title('Original Sales Time Series')
+axes[3].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 
 # Fit multiple models
-sales_ses <- ses(sales_ts, h = 12)
-sales_holt <- holt(sales_ts, h = 12)
-sales_hw <- hw(sales_ts, h = 12)
-sales_arima <- auto.arima(sales_ts)
+sales_ses = ExponentialSmoothing(sales_ts, seasonal_periods=None).fit()
+sales_holt = ExponentialSmoothing(sales_ts, trend='add', seasonal_periods=None).fit()
+sales_hw = ExponentialSmoothing(sales_ts, trend='add', seasonal='add', seasonal_periods=12).fit()
+sales_arima = auto_arima(sales_ts, seasonal=True, m=12, 
+                        suppress_warnings=True, error_action='ignore')
 
 # Compare forecast accuracy
-accuracy_comparison <- data.frame(
-  Model = c("SES", "Holt", "Holt-Winters", "ARIMA"),
-  AIC = c(AIC(sales_ses), AIC(sales_holt), AIC(sales_hw), AIC(sales_arima))
-)
+accuracy_comparison = pd.DataFrame({
+    'Model': ['SES', 'Holt', 'Holt-Winters', 'ARIMA'],
+    'AIC': [sales_ses.aic, sales_holt.aic, sales_hw.aic, sales_arima.aic()]
+})
+print("Model Comparison:")
 print(accuracy_comparison)
+
+# Generate forecasts
+forecast_periods = 12
+ses_forecast = sales_ses.forecast(forecast_periods)
+holt_forecast = sales_holt.forecast(forecast_periods)
+hw_forecast = sales_hw.forecast(forecast_periods)
+arima_forecast = sales_arima.predict(n_periods=forecast_periods)
+
+# Visualize forecasts
+forecast_dates = pd.date_range(start=sales_ts.index[-1] + pd.DateOffset(months=1), 
+                              periods=forecast_periods, freq='M')
+
+plt.figure(figsize=(12, 6))
+plt.plot(sales_ts.index, sales_ts.values, 'blue', label='Historical Sales')
+plt.plot(forecast_dates, ses_forecast.values, 'red', label='SES Forecast')
+plt.plot(forecast_dates, holt_forecast.values, 'green', label='Holt Forecast')
+plt.plot(forecast_dates, hw_forecast.values, 'orange', label='Holt-Winters Forecast')
+plt.plot(forecast_dates, arima_forecast, 'purple', label='ARIMA Forecast')
+plt.title('Sales Forecast Comparison')
+plt.xlabel('Time')
+plt.ylabel('Sales')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
 ```
 
 ### Example 3: Weather Data Analysis
 
-```r
+```python
 # Simulate temperature data
-set.seed(123)
-n_periods <- 365
+np.random.seed(123)
+n_periods = 365
 
 # Generate daily temperature with annual seasonality
-time_index <- 1:n_periods
-annual_trend <- 0.001 * time_index  # Slight warming trend
-seasonal <- 15 * sin(2 * pi * time_index / 365)  # Annual seasonality
-noise <- rnorm(n_periods, 0, 2)
-temperature_data <- 20 + annual_trend + seasonal + noise
+time_index = np.arange(1, n_periods + 1)
+annual_trend = 0.001 * time_index  # Slight warming trend
+seasonal = 15 * np.sin(2 * np.pi * time_index / 365)  # Annual seasonality
+noise = np.random.normal(0, 2, n_periods)
+temperature_data = 20 + annual_trend + seasonal + noise
 
 # Create time series
-temp_ts <- ts(temperature_data, frequency = 365, start = c(2020, 1))
+temp_dates = pd.date_range(start='2020-01-01', periods=n_periods, freq='D')
+temp_ts = pd.Series(temperature_data, index=temp_dates)
 
 # Analyze temperature data
-temp_decomp <- decompose(temp_ts)
-plot(temp_decomp)
+temp_decomp = seasonal_decompose(temp_ts, model='additive', period=365)
+fig, axes = plt.subplots(4, 1, figsize=(12, 10))
+axes[0].plot(temp_decomp.trend)
+axes[0].set_title('Temperature Trend Component')
+axes[0].grid(True, alpha=0.3)
+
+axes[1].plot(temp_decomp.seasonal)
+axes[1].set_title('Temperature Seasonal Component')
+axes[1].grid(True, alpha=0.3)
+
+axes[2].plot(temp_decomp.resid)
+axes[2].set_title('Temperature Random Component')
+axes[2].grid(True, alpha=0.3)
+
+axes[3].plot(temp_ts.index, temp_ts.values)
+axes[3].set_title('Original Temperature Time Series')
+axes[3].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
 
 # Fit seasonal ARIMA model
-temp_arima <- auto.arima(temp_ts, seasonal = TRUE)
-print(temp_arima)
+temp_arima = auto_arima(temp_ts, seasonal=True, m=365, 
+                       suppress_warnings=True, error_action='ignore')
+print("Temperature ARIMA Model:")
+print(temp_arima.summary())
 
 # Generate seasonal forecasts
-temp_forecast <- forecast(temp_arima, h = 30)
-plot(temp_forecast)
+temp_forecast = temp_arima.predict(n_periods=30)
+temp_forecast_dates = pd.date_range(start=temp_ts.index[-1] + pd.DateOffset(days=1), 
+                                   periods=30, freq='D')
+temp_forecast_series = pd.Series(temp_forecast, index=temp_forecast_dates)
+
+plt.figure(figsize=(12, 6))
+plt.plot(temp_ts.index, temp_ts.values, 'blue', label='Historical Temperature')
+plt.plot(temp_forecast_series.index, temp_forecast_series.values, 'red', linewidth=2, label='Temperature Forecast')
+plt.title('Temperature Forecast')
+plt.xlabel('Time')
+plt.ylabel('Temperature (°C)')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
 ```
 
 ## Best Practices
 
 ### Model Selection Guidelines
 
-```r
+```python
 # Function to help choose appropriate time series model
-choose_time_series_model <- function(time_series) {
-  cat("=== TIME SERIES MODEL SELECTION ===\n")
-  
-  # Check stationarity
-  adf_result <- adf.test(time_series)
-  cat("ADF test p-value:", round(adf_result$p.value, 4), "\n")
-  
-  # Check seasonality
-  decomp <- decompose(time_series)
-  seasonal_strength <- var(decomp$seasonal, na.rm = TRUE) / 
-                      (var(decomp$seasonal, na.rm = TRUE) + var(decomp$random, na.rm = TRUE))
-  cat("Seasonal strength:", round(seasonal_strength, 3), "\n")
-  
-  # Check trend
-  trend_model <- lm(as.numeric(time_series) ~ time(time_series))
-  trend_p_value <- summary(trend_model)$coefficients[2, 4]
-  cat("Trend significance p-value:", round(trend_p_value, 4), "\n")
-  
-  cat("\nRECOMMENDATIONS:\n")
-  
-  if (adf_result$p.value < 0.05) {
-    cat("- Data is stationary\n")
-    if (seasonal_strength > 0.1) {
-      cat("- Use seasonal ARIMA or Holt-Winters\n")
-    } else {
-      cat("- Use ARIMA or exponential smoothing\n")
+def choose_time_series_model(time_series):
+    print("=== TIME SERIES MODEL SELECTION ===")
+    
+    # Check stationarity
+    adf_result = adfuller(time_series)
+    print(f"ADF test p-value: {adf_result[1]:.4f}")
+    
+    # Check seasonality
+    decomp = seasonal_decompose(time_series, model='additive', period=12)
+    seasonal_strength = np.var(decomp.seasonal.dropna()) / (np.var(decomp.seasonal.dropna()) + np.var(decomp.resid.dropna()))
+    print(f"Seasonal strength: {seasonal_strength:.3f}")
+    
+    # Check trend
+    time_index = np.arange(len(time_series))
+    trend_model = np.polyfit(time_index, time_series.values, 1)
+    trend_slope = trend_model[0]
+    print(f"Trend slope: {trend_slope:.4f}")
+    
+    print("\nRECOMMENDATIONS:")
+    
+    if adf_result[1] < 0.05:
+        print("- Data is stationary")
+        if seasonal_strength > 0.1:
+            print("- Use seasonal ARIMA or Holt-Winters")
+        else:
+            print("- Use ARIMA or exponential smoothing")
+    else:
+        print("- Data is non-stationary")
+        print("- Use differencing or trend-stationary models")
+    
+    if abs(trend_slope) > 0.01:
+        print("- Significant trend detected")
+        print("- Consider Holt's method or trend-stationary ARIMA")
+    
+    return {
+        'stationary': adf_result[1] < 0.05,
+        'seasonal_strength': seasonal_strength,
+        'trend_significant': abs(trend_slope) > 0.01
     }
-  } else {
-    cat("- Data is non-stationary\n")
-    cat("- Use differencing or trend-stationary models\n")
-  }
-  
-  if (trend_p_value < 0.05) {
-    cat("- Significant trend detected\n")
-    cat("- Consider Holt's method or trend-stationary ARIMA\n")
-  }
-  
-  return(list(
-    stationary = adf_result$p.value < 0.05,
-    seasonal_strength = seasonal_strength,
-    trend_significant = trend_p_value < 0.05
-  ))
-}
 
 # Apply model selection
-model_selection <- choose_time_series_model(ts_data)
+model_selection = choose_time_series_model(ts_data)
 ```
 
 ### Reporting Guidelines
 
-```r
+```python
 # Function to generate comprehensive time series report
-generate_time_series_report <- function(time_series, model, forecast_result) {
-  cat("=== TIME SERIES ANALYSIS REPORT ===\n\n")
-  
-  # Data summary
-  cat("DATA SUMMARY:\n")
-  cat("Length:", length(time_series), "\n")
-  cat("Frequency:", frequency(time_series), "\n")
-  cat("Start:", start(time_series), "\n")
-  cat("End:", end(time_series), "\n")
-  cat("Mean:", round(mean(time_series), 2), "\n")
-  cat("Standard deviation:", round(sd(time_series), 2), "\n\n")
-  
-  # Model summary
-  cat("MODEL SUMMARY:\n")
-  if (inherits(model, "Arima")) {
-    cat("Model type: ARIMA\n")
-    cat("Order:", paste(model$arma[1:3], collapse = ","), "\n")
-    cat("Seasonal order:", paste(model$arma[3:5], collapse = ","), "\n")
-  } else if (inherits(model, "ets")) {
-    cat("Model type: Exponential Smoothing\n")
-    cat("Method:", model$method, "\n")
-  }
-  cat("AIC:", round(AIC(model), 2), "\n")
-  cat("BIC:", round(BIC(model), 2), "\n\n")
-  
-  # Forecast summary
-  cat("FORECAST SUMMARY:\n")
-  cat("Forecast periods:", length(forecast_result$mean), "\n")
-  cat("Point forecast range:", round(range(forecast_result$mean), 2), "\n")
-  cat("95% CI range:", round(range(forecast_result$lower[, 2]), 2), "to", 
-      round(range(forecast_result$upper[, 2]), 2), "\n\n")
-  
-  # Residual analysis
-  residuals_model <- residuals(model)
-  cat("RESIDUAL ANALYSIS:\n")
-  cat("Mean residual:", round(mean(residuals_model), 4), "\n")
-  cat("Residual standard deviation:", round(sd(residuals_model), 4), "\n")
-  
-  # Ljung-Box test
-  ljung_test <- Box.test(residuals_model, type = "Ljung-Box")
-  cat("Ljung-Box test p-value:", round(ljung_test$p.value, 4), "\n")
-  
-  if (ljung_test$p.value > 0.05) {
-    cat("Residuals appear to be white noise\n")
-  } else {
-    cat("Residuals may not be white noise\n")
-  }
-}
+def generate_time_series_report(time_series, model, forecast_result):
+    print("=== TIME SERIES ANALYSIS REPORT ===\n")
+    
+    # Data summary
+    print("DATA SUMMARY:")
+    print(f"Length: {len(time_series)}")
+    print(f"Frequency: {time_series.index.freq}")
+    print(f"Start: {time_series.index[0]}")
+    print(f"End: {time_series.index[-1]}")
+    print(f"Mean: {time_series.mean():.2f}")
+    print(f"Standard deviation: {time_series.std():.2f}\n")
+    
+    # Model summary
+    print("MODEL SUMMARY:")
+    if hasattr(model, 'order'):
+        print("Model type: ARIMA")
+        print(f"Order: {model.order}")
+        if hasattr(model, 'seasonal_order'):
+            print(f"Seasonal order: {model.seasonal_order}")
+    elif hasattr(model, 'params'):
+        print("Model type: Exponential Smoothing")
+        print(f"Method: {model.params}")
+    
+    if hasattr(model, 'aic'):
+        print(f"AIC: {model.aic():.2f}")
+    if hasattr(model, 'bic'):
+        print(f"BIC: {model.bic():.2f}")
+    print()
+    
+    # Forecast summary
+    print("FORECAST SUMMARY:")
+    print(f"Forecast periods: {len(forecast_result)}")
+    print(f"Point forecast range: {forecast_result.min():.2f} to {forecast_result.max():.2f}")
+    print()
+    
+    # Residual analysis
+    if hasattr(model, 'resid'):
+        residuals_model = model.resid()
+    else:
+        residuals_model = model.resid
+    
+    print("RESIDUAL ANALYSIS:")
+    print(f"Mean residual: {np.mean(residuals_model):.4f}")
+    print(f"Residual standard deviation: {np.std(residuals_model):.4f}")
+    
+    # Ljung-Box test
+    ljung_test = acorr_ljungbox(residuals_model, lags=10, return_df=True)
+    print(f"Ljung-Box test p-value: {ljung_test['lb_pvalue'].iloc[-1]:.4f}")
+    
+    if ljung_test['lb_pvalue'].iloc[-1] > 0.05:
+        print("Residuals appear to be white noise")
+    else:
+        print("Residuals may not be white noise")
 
 # Generate report
-generate_time_series_report(ts_data, auto_arima, forecast_result)
+generate_time_series_report(ts_data, auto_arima_model, forecast_result)
 ```
 
 ## Exercises
@@ -1003,22 +1337,22 @@ generate_time_series_report(ts_data, auto_arima, forecast_result)
 ### Exercise 3: Stationarity Testing
 - **Objective:** Perform comprehensive stationarity tests and apply appropriate transformations.
 - **Data:** Create non-stationary time series and test various differencing approaches.
-- **Hint:** Use `adf.test()`, `kpss.test()`, and `diff()` functions.
+- **Hint:** Use `adfuller()`, `kpss()`, and `diff()` functions.
 
 ### Exercise 4: ARIMA Modeling
 - **Objective:** Fit ARIMA models to time series data and evaluate model diagnostics.
 - **Data:** Use real or simulated time series data.
-- **Hint:** Use `auto.arima()` and `checkresiduals()` functions.
+- **Hint:** Use `auto_arima()` and residual analysis functions.
 
 ### Exercise 5: Forecasting
 - **Objective:** Generate forecasts using different models and evaluate forecast accuracy.
 - **Data:** Split time series into training and test sets.
-- **Hint:** Use `forecast()` and `accuracy()` functions.
+- **Hint:** Use `predict()` and `calculate_accuracy_measures()` functions.
 
 ### Exercise 6: Exponential Smoothing
 - **Objective:** Compare different exponential smoothing methods for time series forecasting.
 - **Data:** Create time series with trend and/or seasonality.
-- **Hint:** Use `ses()`, `holt()`, and `hw()` functions.
+- **Hint:** Use `ExponentialSmoothing()` with different parameters.
 
 ### Exercise 7: Model Selection
 - **Objective:** Choose the best time series model based on data characteristics and performance metrics.
@@ -1046,4 +1380,4 @@ In the next chapter, we'll learn about multivariate analysis techniques.
 - Stationarity is crucial for many time series models
 - Proper reporting includes data summary, model diagnostics, and forecast evaluation
 - Multiple models should be compared using information criteria
-- Forecast uncertainty should be quantified with confidence intervals 
+- Forecast uncertainty should be quantified with confidence intervals
