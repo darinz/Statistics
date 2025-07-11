@@ -355,7 +355,6 @@ print(f"Population variance: {np.var(skewed_pop):.4f} (theoretical: 2)")
 print(f"Sampling distribution mean: {np.mean(skewed_means):.4f}")
 print(f"Sampling distribution SE: {np.std(skewed_means):.4f}")
 print(f"Theoretical SE: {np.sqrt(np.var(skewed_pop)/30):.4f}")
-```
 
 # Plot results with mathematical annotations
 ```python
@@ -437,10 +436,8 @@ for size in sample_sizes:
     print(f"  Theoretical SE (σ/√n): {theoretical_se:.4f}")
     print(f"  Empirical SE: {empirical_se:.4f}")
     print(f"  Ratio (Empirical/Theoretical): {empirical_se / theoretical_se:.4f}\n")
-```
 
 # Plot results with mathematical annotations
-```python
 plt.figure(figsize=(15, 10))
 
 for i, size in enumerate(sample_sizes):
@@ -645,10 +642,8 @@ print(f"Empirical vs Theoretical SE ratio: {sampling_var_sd / theoretical_var_se
 print(f"\nChi-Square Distribution Verification:")
 print(f"Sampling distribution mean ≈ Population variance: {abs(sampling_var_mean - population_var) < 1}")
 print(f"Sampling distribution SD ≈ σ²√[2/(n-1)]: {abs(sampling_var_sd - theoretical_var_se) < 1}")
-```
 
 # Plot sampling distribution with mathematical annotations
-```python
 plt.figure(figsize=(15, 5))
 
 plt.subplot(1, 3, 1)
@@ -963,7 +958,6 @@ if sampling_comparison['Stratified']['means'] is not None:
     print(f"  Mean of sample means: {np.mean(sampling_comparison['Stratified']['means']):.4f}")
     print(f"  Variance of sample means: {np.var(sampling_comparison['Stratified']['means']):.4f}")
     print(f"  Efficiency: {sampling_comparison['Stratified']['efficiency']:.4f}\n")
-```
 
 # Plot comparison with mathematical annotations
 plt.figure(figsize=(15, 10))
@@ -1028,7 +1022,6 @@ print(f"Systematic SE: {np.std(sampling_comparison['Systematic']['means']):.4f}"
 if sampling_comparison['Stratified']['means'] is not None:
     print(f"Stratified SE: {np.std(sampling_comparison['Stratified']['means']):.4f}")
 ```
-```
 
 ## Practical Examples
 
@@ -1079,7 +1072,6 @@ print(f"Empirical vs Theoretical SE ratio: {np.std(qc_means) / theoretical_se:.4
 # Count out-of-control samples
 out_of_control = np.sum((qc_means < lcl_mean) | (qc_means > ucl_mean))
 print(f"Out-of-control samples: {out_of_control} ({out_of_control/n_samples*100:.1f}%)")
-```
 
 # Plot control chart with mathematical annotations
 plt.figure(figsize=(15, 5))
@@ -1116,7 +1108,6 @@ plt.text(population_mean, plt.ylim()[1]*0.9, f'μ = {population_mean:.2f}',
 
 plt.tight_layout()
 plt.show()
-```
 ```
 
 ### Example 2: Survey Sampling with Statistical Precision
@@ -1188,7 +1179,6 @@ print(f"Stratified estimate: {strat_mean:.4f} (error: {strat_mean - np.mean(sati
 print(f"SRS precision (SE): {srs_se:.4f}")
 print(f"Stratified precision (SE): {strat_se:.4f}")
 print(f"Relative efficiency (SRS/Stratified): {srs_se / strat_se:.4f}")
-```
 
 # Plot comparison with mathematical annotations
 plt.figure(figsize=(15, 10))
@@ -1238,7 +1228,6 @@ plt.legend()
 
 plt.tight_layout()
 plt.show()
-```
 ```
 
 ## Best Practices
@@ -1308,7 +1297,6 @@ def finite_pop_correction(sample_size, population_size):
 population_size_example = 1000
 corrected_sample_size = finite_pop_correction(required_sample_size, population_size_example)
 ```
-```
 
 ### Sampling Bias and Errors with Mathematical Analysis
 
@@ -1368,7 +1356,6 @@ population_data = data
 sample_data = data.sample(n=15, random_state=123)
 
 bias_check = check_sampling_bias(population_data, sample_data, "sepal length (cm)")
-```
 
 # Visual analysis of bias
 plt.figure(figsize=(15, 10))
@@ -1410,7 +1397,6 @@ plt.title('Precision Comparison')
 
 plt.tight_layout()
 plt.show()
-```
 ```
 
 ## Exercises
