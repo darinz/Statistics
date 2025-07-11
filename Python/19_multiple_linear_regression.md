@@ -69,24 +69,33 @@ R^2_{adj} = 1 - \frac{(1 - R^2)(n - 1)}{n - p - 1}
 ```
 Where $`n`$ is the number of observations and $`p`$ is the number of predictors.
 
-## Fitting Multiple Linear Regression in R
+## Fitting Multiple Linear Regression in Python
 
 ### Example: Predicting MPG from Multiple Predictors
 
-```r
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
+
 # Load data
-data(mtcars)
+mtcars = sm.datasets.get_rdataset('mtcars').data
 
 # Fit multiple linear regression
-multiple_model <- lm(mpg ~ wt + hp + disp, data = mtcars)
-summary(multiple_model)
+multiple_model = smf.ols('mpg ~ wt + hp + disp', data=mtcars).fit()
+print(multiple_model.summary())
 
 # Extract coefficients
-coef(multiple_model)
+print("Coefficients:", multiple_model.params)
 
 # Fitted values and residuals
-fitted_vals <- fitted(multiple_model)
-residuals <- resid(multiple_model)
+fitted_vals = multiple_model.fittedvalues
+residuals = multiple_model.resid
 ```
 
 ### Interpreting Output
@@ -97,13 +106,28 @@ residuals <- resid(multiple_model)
 
 ## Confidence Intervals and Standardized Coefficients
 
-```r
+```python
 # Confidence intervals for coefficients
-confint(multiple_model, level = 0.95)
+print("Confidence intervals:")
+print(multiple_model.conf_int(alpha=0.05))
 
 # Standardized coefficients
-library(lm.beta)
-lm.beta(multiple_model)
+def standardize_coefficients(model, data):
+    # Standardize predictors
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(data[['wt', 'hp', 'disp']])
+    y_scaled = (data['mpg'] - data['mpg'].mean()) / data['mpg'].std()
+    
+    # Fit model with standardized data
+    X_scaled_df = pd.DataFrame(X_scaled, columns=['wt', 'hp', 'disp'])
+    X_scaled_df['const'] = 1
+    model_scaled = sm.OLS(y_scaled, X_scaled_df).fit()
+    
+    return model_scaled.params
+
+std_coeffs = standardize_coefficients(multiple_model, mtcars)
+print("Standardized coefficients:")
+print(std_coeffs)
 ```
 
 ## Model Building and Selection
@@ -114,22 +138,53 @@ lm.beta(multiple_model)
 - **Backward elimination**: Start with all predictors, remove one at a time.
 - **Stepwise**: Combination of both.
 
-```r
-library(MASS)
+```python
+from sklearn.feature_selection import SequentialFeatureSelector
+from sklearn.linear_model import LinearRegression
+
 # Forward selection
-forward_model <- stepAIC(lm(mpg ~ 1, data = mtcars), direction = "forward", scope = ~ wt + hp + disp + drat + qsec)
+X = mtcars[['wt', 'hp', 'disp', 'drat', 'qsec']]
+y = mtcars['mpg']
+
+forward_selector = SequentialFeatureSelector(
+    LinearRegression(), n_features_to_select=3, direction='forward'
+)
+forward_selector.fit(X, y)
+print("Forward selection features:", X.columns[forward_selector.get_support()].tolist())
+
 # Backward elimination
-backward_model <- stepAIC(multiple_model, direction = "backward")
-# Stepwise
-stepwise_model <- stepAIC(multiple_model, direction = "both")
+backward_selector = SequentialFeatureSelector(
+    LinearRegression(), n_features_to_select=2, direction='backward'
+)
+backward_selector.fit(X, y)
+print("Backward elimination features:", X.columns[backward_selector.get_support()].tolist())
 ```
 
 ### Best Subset Selection
 
-```r
-library(leaps)
-best_subsets <- regsubsets(mpg ~ wt + hp + disp + drat + qsec, data = mtcars, nvmax = 5)
-summary(best_subsets)
+```python
+from itertools import combinations
+from sklearn.metrics import r2_score
+
+def best_subset_selection(X, y, max_features):
+    best_score = -np.inf
+    best_features = None
+    
+    for k in range(1, max_features + 1):
+        for features in combinations(X.columns, k):
+            X_subset = X[list(features)]
+            model = LinearRegression().fit(X_subset, y)
+            score = r2_score(y, model.predict(X_subset))
+            
+            if score > best_score:
+                best_score = score
+                best_features = features
+    
+    return best_features, best_score
+
+best_features, best_score = best_subset_selection(X, y, 5)
+print(f"Best subset: {best_features}")
+print(f"Best R²: {best_score:.3f}")
 ```
 
 ## Model Diagnostics
@@ -141,10 +196,37 @@ summary(best_subsets)
 - **Homoscedasticity**: Residuals should have constant variance.
 - **Independence**: Residuals should not be autocorrelated.
 
-```r
-par(mfrow = c(2, 2))
-plot(multiple_model)
-par(mfrow = c(1, 1))
+```python
+# Diagnostic plots
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+# Residuals vs Fitted
+axes[0, 0].scatter(fitted_vals, residuals)
+axes[0, 0].axhline(0, color='red', linestyle='--')
+axes[0, 0].set_title('Residuals vs Fitted')
+axes[0, 0].set_xlabel('Fitted values')
+axes[0, 0].set_ylabel('Residuals')
+
+# Q-Q plot
+sm.qqplot(residuals, line='s', ax=axes[0, 1])
+axes[0, 1].set_title('Normal Q-Q')
+
+# Scale-Location plot
+axes[1, 0].scatter(fitted_vals, np.sqrt(np.abs(residuals)))
+axes[1, 0].set_title('Scale-Location')
+axes[1, 0].set_xlabel('Fitted values')
+axes[1, 0].set_ylabel('Sqrt(|Residuals|)')
+
+# Residuals vs Leverage
+influence = multiple_model.get_influence()
+leverage = influence.hat_matrix_diag
+axes[1, 1].scatter(leverage, residuals)
+axes[1, 1].set_title('Residuals vs Leverage')
+axes[1, 1].set_xlabel('Leverage')
+axes[1, 1].set_ylabel('Residuals')
+
+plt.tight_layout()
+plt.show()
 ```
 
 ### Multicollinearity Detection
@@ -153,10 +235,24 @@ par(mfrow = c(1, 1))
 - **Tolerance**: $`1 / \text{VIF}`$
 - **Condition number**: Large values indicate multicollinearity.
 
-```r
-library(car)
-vif(multiple_model)
-1 / vif(multiple_model)
+```python
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+def calculate_vif(X):
+    vif_data = pd.DataFrame()
+    vif_data["Variable"] = X.columns
+    vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+    return vif_data
+
+X_vif = mtcars[['wt', 'hp', 'disp']]
+vif_results = calculate_vif(X_vif)
+print("Variance Inflation Factors:")
+print(vif_results)
+
+# Tolerance
+vif_results['Tolerance'] = 1 / vif_results['VIF']
+print("\nTolerance:")
+print(vif_results[['Variable', 'Tolerance']])
 ```
 
 ### Outlier and Influence Diagnostics
@@ -165,14 +261,29 @@ vif(multiple_model)
 - **Leverage**: Points with unusual predictor values.
 - **Studentized residuals**: Detects outliers in $Y$.
 
-```r
-cooksd <- cooks.distance(multiple_model)
-plot(cooksd, type = "h", main = "Cook's Distance", ylab = "Cook's D")
-abline(h = 4/length(cooksd), col = "red", lty = 2)
+```python
+# Cook's distance
+cooksd = influence.cooks_distance[0]
+plt.figure(figsize=(8, 4))
+plt.stem(np.arange(len(cooksd)), cooksd, use_line_collection=True)
+plt.axhline(4/len(cooksd), color='red', linestyle='--')
+plt.title("Cook's Distance")
+plt.xlabel('Observation')
+plt.ylabel("Cook's D")
+plt.tight_layout()
+plt.show()
 
-leverage <- hatvalues(multiple_model)
-plot(leverage, type = "h", main = "Leverage", ylab = "Leverage")
-abline(h = 2 * (length(coef(multiple_model)) + 1) / nrow(mtcars), col = "red", lty = 2)
+# Leverage
+leverage = influence.hat_matrix_diag
+plt.figure(figsize=(8, 4))
+plt.stem(np.arange(len(leverage)), leverage, use_line_collection=True)
+leverage_threshold = 2 * (len(multiple_model.params) + 1) / len(mtcars)
+plt.axhline(leverage_threshold, color='red', linestyle='--')
+plt.title("Leverage")
+plt.xlabel('Observation')
+plt.ylabel('Leverage')
+plt.tight_layout()
+plt.show()
 ```
 
 ## Model Comparison and Validation
@@ -181,9 +292,10 @@ abline(h = 2 * (length(coef(multiple_model)) + 1) / nrow(mtcars), col = "red", l
 - **AIC**: Penalizes model complexity, lower is better.
 - **BIC**: Stronger penalty for complexity, lower is better.
 
-```r
-AIC(multiple_model)
-BIC(multiple_model)
+```python
+# AIC and BIC
+print(f"AIC: {multiple_model.aic:.2f}")
+print(f"BIC: {multiple_model.bic:.2f}")
 ```
 
 ### Cross-Validation
@@ -191,10 +303,19 @@ BIC(multiple_model)
 - **LOOCV**: Leave-one-out cross-validation.
 - **k-fold CV**: Split data into $k$ parts, train on $k-1$, test on 1.
 
-```r
-library(boot)
-cv.glm(mtcars, multiple_model)$delta[1]  # LOOCV MSE
-cv.glm(mtcars, multiple_model, K = 5)$delta[1]  # 5-fold CV MSE
+```python
+from sklearn.model_selection import cross_val_score, LeaveOneOut
+
+# LOOCV
+loo = LeaveOneOut()
+cv_scores_loo = cross_val_score(LinearRegression(), X, y, cv=loo, scoring='neg_mean_squared_error')
+mse_loo = -cv_scores_loo.mean()
+print(f"LOOCV MSE: {mse_loo:.2f}")
+
+# 5-fold CV
+cv_scores_5fold = cross_val_score(LinearRegression(), X, y, cv=5, scoring='neg_mean_squared_error')
+mse_5fold = -cv_scores_5fold.mean()
+print(f"5-fold CV MSE: {mse_5fold:.2f}")
 ```
 
 ## Interaction and Polynomial Terms
@@ -203,83 +324,137 @@ cv.glm(mtcars, multiple_model, K = 5)$delta[1]  # 5-fold CV MSE
 
 - **Interaction**: Effect of one predictor depends on another.
 
-```r
-interaction_model <- lm(mpg ~ wt * hp + disp, data = mtcars)
-summary(interaction_model)
+```python
+# Interaction model
+interaction_model = smf.ols('mpg ~ wt * hp + disp', data=mtcars).fit()
+print(interaction_model.summary())
 ```
 
 ### Polynomial Terms
 
 - **Polynomial**: Captures nonlinear relationships.
 
-```r
-poly_model <- lm(mpg ~ wt + I(wt^2) + hp + disp, data = mtcars)
-summary(poly_model)
+```python
+# Polynomial model
+mtcars['wt_squared'] = mtcars['wt'] ** 2
+poly_model = smf.ols('mpg ~ wt + wt_squared + hp + disp', data=mtcars).fit()
+print(poly_model.summary())
 ```
 
 ## Regularization Methods
 
 ### Ridge Regression
 
-```r
-library(glmnet)
-x <- as.matrix(mtcars[, c("wt", "hp", "disp")])
-y <- mtcars$mpg
-ridge_model <- glmnet(x, y, alpha = 0)
-cv_ridge <- cv.glmnet(x, y, alpha = 0)
-best_lambda <- cv_ridge$lambda.min
-predict(ridge_model, s = best_lambda, type = "coefficients")
+```python
+from sklearn.linear_model import Ridge, Lasso, ElasticNet
+from sklearn.model_selection import GridSearchCV
+
+# Ridge regression
+ridge = Ridge()
+param_grid = {'alpha': np.logspace(-3, 3, 100)}
+ridge_cv = GridSearchCV(ridge, param_grid, cv=5, scoring='neg_mean_squared_error')
+ridge_cv.fit(X, y)
+
+best_ridge = Ridge(alpha=ridge_cv.best_params_['alpha'])
+best_ridge.fit(X, y)
+print("Ridge coefficients:", best_ridge.coef_)
+print("Best alpha:", ridge_cv.best_params_['alpha'])
 ```
 
 ### Lasso Regression
 
-```r
-lasso_model <- glmnet(x, y, alpha = 1)
-cv_lasso <- cv.glmnet(x, y, alpha = 1)
-best_lambda_lasso <- cv_lasso$lambda.min
-predict(lasso_model, s = best_lambda_lasso, type = "coefficients")
+```python
+# Lasso regression
+lasso = Lasso()
+lasso_cv = GridSearchCV(lasso, param_grid, cv=5, scoring='neg_mean_squared_error')
+lasso_cv.fit(X, y)
+
+best_lasso = Lasso(alpha=lasso_cv.best_params_['alpha'])
+best_lasso.fit(X, y)
+print("Lasso coefficients:", best_lasso.coef_)
+print("Best alpha:", lasso_cv.best_params_['alpha'])
 ```
 
 ### Elastic Net
 
-```r
-elastic_net <- glmnet(x, y, alpha = 0.5)
-cv_elastic <- cv.glmnet(x, y, alpha = 0.5)
-best_lambda_elastic <- cv_elastic$lambda.min
-predict(elastic_net, s = best_lambda_elastic, type = "coefficients")
+```python
+# Elastic Net
+elastic = ElasticNet()
+param_grid_elastic = {
+    'alpha': np.logspace(-3, 3, 50),
+    'l1_ratio': np.linspace(0, 1, 20)
+}
+elastic_cv = GridSearchCV(elastic, param_grid_elastic, cv=5, scoring='neg_mean_squared_error')
+elastic_cv.fit(X, y)
+
+best_elastic = ElasticNet(
+    alpha=elastic_cv.best_params_['alpha'],
+    l1_ratio=elastic_cv.best_params_['l1_ratio']
+)
+best_elastic.fit(X, y)
+print("Elastic Net coefficients:", best_elastic.coef_)
+print("Best parameters:", elastic_cv.best_params_)
 ```
 
 ## Practical Examples
 
 ### Example 1: Real Estate Analysis
 
-```r
-set.seed(123)
-n_properties <- 100
-square_feet <- rnorm(n_properties, mean = 2000, sd = 500)
-bedrooms <- sample(1:5, n_properties, replace = TRUE)
-bathrooms <- sample(1:4, n_properties, replace = TRUE)
-age <- rnorm(n_properties, mean = 15, sd = 8)
-location_score <- rnorm(n_properties, mean = 7, sd = 1)
-price <- 200000 + 100 * square_feet + 15000 * bedrooms + 25000 * bathrooms - 2000 * age + 15000 * location_score + rnorm(n_properties, mean = 0, sd = 15000)
-real_estate_data <- data.frame(price, square_feet, bedrooms, bathrooms, age, location_score)
-real_estate_model <- lm(price ~ square_feet + bedrooms + bathrooms + age + location_score, data = real_estate_data)
-summary(real_estate_model)
+```python
+# Simulate real estate data
+np.random.seed(123)
+n_properties = 100
+square_feet = np.random.normal(2000, 500, n_properties)
+bedrooms = np.random.randint(1, 6, n_properties)
+bathrooms = np.random.randint(1, 5, n_properties)
+age = np.random.normal(15, 8, n_properties)
+location_score = np.random.normal(7, 1, n_properties)
+price = (200000 + 100 * square_feet + 15000 * bedrooms + 
+         25000 * bathrooms - 2000 * age + 15000 * location_score + 
+         np.random.normal(0, 15000, n_properties))
+
+real_estate_data = pd.DataFrame({
+    'price': price,
+    'square_feet': square_feet,
+    'bedrooms': bedrooms,
+    'bathrooms': bathrooms,
+    'age': age,
+    'location_score': location_score
+})
+
+real_estate_model = smf.ols(
+    'price ~ square_feet + bedrooms + bathrooms + age + location_score', 
+    data=real_estate_data
+).fit()
+print(real_estate_model.summary())
 ```
 
 ### Example 2: Marketing Analysis
 
-```r
-set.seed(123)
-n_campaigns <- 50
-ad_spend <- rnorm(n_campaigns, mean = 10000, sd = 3000)
-social_media_posts <- rpois(n_campaigns, lambda = 20)
-email_sends <- rpois(n_campaigns, lambda = 1000)
-season <- sample(c("Spring", "Summer", "Fall", "Winter"), n_campaigns, replace = TRUE)
-sales <- 50000 + 2.5 * ad_spend + 500 * social_media_posts + 10 * email_sends + rnorm(n_campaigns, mean = 0, sd = 5000)
-marketing_data <- data.frame(sales, ad_spend, social_media_posts, email_sends, season)
-marketing_model <- lm(sales ~ ad_spend + social_media_posts + email_sends + season, data = marketing_data)
-summary(marketing_model)
+```python
+# Simulate marketing data
+np.random.seed(123)
+n_campaigns = 50
+ad_spend = np.random.normal(10000, 3000, n_campaigns)
+social_media_posts = np.random.poisson(20, n_campaigns)
+email_sends = np.random.poisson(1000, n_campaigns)
+season = np.random.choice(['Spring', 'Summer', 'Fall', 'Winter'], n_campaigns)
+sales = (50000 + 2.5 * ad_spend + 500 * social_media_posts + 
+         10 * email_sends + np.random.normal(0, 5000, n_campaigns))
+
+marketing_data = pd.DataFrame({
+    'sales': sales,
+    'ad_spend': ad_spend,
+    'social_media_posts': social_media_posts,
+    'email_sends': email_sends,
+    'season': season
+})
+
+marketing_model = smf.ols(
+    'sales ~ ad_spend + social_media_posts + email_sends + season', 
+    data=marketing_data
+).fit()
+print(marketing_model.summary())
 ```
 
 ## Best Practices
