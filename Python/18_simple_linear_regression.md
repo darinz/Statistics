@@ -63,30 +63,42 @@ Where:
 
 $R^2$ ranges from 0 (no fit) to 1 (perfect fit).
 
-## Fitting Simple Linear Regression in R
+## Fitting Simple Linear Regression in Python
 
 ### Example: Predicting MPG from Weight
 
-```r
-# Load data
-data(mtcars)
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+# Load data (using seaborn's version of mtcars)
+mtcars = sm.datasets.get_rdataset('mtcars').data
 
 # Fit simple linear regression
-model <- lm(mpg ~ wt, data = mtcars)
-summary(model)
+model = smf.ols('mpg ~ wt', data=mtcars).fit()
+print(model.summary())
 
 # Extract coefficients
-coef(model)
+print("Coefficients:", model.params)
 
 # Fitted values and residuals
-fitted_vals <- fitted(model)
-residuals <- resid(model)
+fitted_vals = model.fittedvalues
+residuals = model.resid
 
 # Plot data and regression line
-plot(mtcars$wt, mtcars$mpg, pch = 16, col = "blue",
-     main = "Simple Linear Regression: MPG vs Weight",
-     xlab = "Weight (1000 lbs)", ylab = "Miles per Gallon")
-abline(model, col = "red", lwd = 2)
+plt.figure(figsize=(8, 6))
+plt.scatter(mtcars['wt'], mtcars['mpg'], color='blue', alpha=0.7, label='Data')
+plt.plot(mtcars['wt'], fitted_vals, color='red', linewidth=2, label='Regression Line')
+plt.title('Simple Linear Regression: MPG vs Weight')
+plt.xlabel('Weight (1000 lbs)')
+plt.ylabel('Miles per Gallon')
+plt.legend()
+plt.tight_layout()
+plt.show()
 ```
 
 ### Interpreting Output
@@ -99,17 +111,20 @@ abline(model, col = "red", lwd = 2)
 
 ### Confidence Interval for the Mean Response
 
-```r
+```python
 # Predict mean MPG for a new weight value
-new_data <- data.frame(wt = 3)
-predict(model, newdata = new_data, interval = "confidence")
+new_data = pd.DataFrame({'wt': [3]})
+pred_conf = model.get_prediction(new_data).summary_frame(alpha=0.05)
+print("Confidence interval for mean response:")
+print(pred_conf[['mean', 'mean_ci_lower', 'mean_ci_upper']])
 ```
 
 ### Prediction Interval for a New Observation
 
-```r
+```python
 # Predict individual MPG for a new car
-predict(model, newdata = new_data, interval = "prediction")
+print("Prediction interval for new observation:")
+print(pred_conf[['mean', 'obs_ci_lower', 'obs_ci_upper']])
 ```
 
 ## Assumption Checking and Diagnostics
@@ -134,27 +149,61 @@ predict(model, newdata = new_data, interval = "prediction")
 - Residuals should be approximately normally distributed.
 - **Check**: Q-Q plot, Shapiro-Wilk test.
 
-```r
+```python
 # Diagnostic plots
-par(mfrow = c(2, 2))
-plot(model)
-par(mfrow = c(1, 1))
+import scipy.stats as stats
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+# Residuals vs Fitted
+axes[0, 0].scatter(fitted_vals, residuals)
+axes[0, 0].axhline(0, color='red', linestyle='--')
+axes[0, 0].set_title('Residuals vs Fitted')
+axes[0, 0].set_xlabel('Fitted values')
+axes[0, 0].set_ylabel('Residuals')
+
+# Q-Q plot
+sm.qqplot(residuals, line='s', ax=axes[0, 1])
+axes[0, 1].set_title('Normal Q-Q')
+
+# Scale-Location plot
+axes[1, 0].scatter(fitted_vals, np.sqrt(np.abs(residuals)))
+axes[1, 0].set_title('Scale-Location')
+axes[1, 0].set_xlabel('Fitted values')
+axes[1, 0].set_ylabel('Sqrt(|Residuals|)')
+
+# Residuals vs Leverage
+influence = model.get_influence()
+leverage = influence.hat_matrix_diag
+axes[1, 1].scatter(leverage, residuals)
+axes[1, 1].set_title('Residuals vs Leverage')
+axes[1, 1].set_xlabel('Leverage')
+axes[1, 1].set_ylabel('Residuals')
+
+plt.tight_layout()
+plt.show()
 
 # Shapiro-Wilk test for normality
-shapiro.test(resid(model))
+print("Shapiro-Wilk test for residuals:", stats.shapiro(residuals))
 ```
 
 ### Outlier and Influence Diagnostics
 
-```r
+```python
 # Leverage and influence
-influence_measures <- influence.measures(model)
-print(influence_measures)
+influence_measures = model.get_influence()
+summary_frame = influence_measures.summary_frame()
+print(summary_frame[['hat_diag', 'cooks_d', 'dffits', 'student_resid']])
 
 # Cook's distance
-cooksd <- cooks.distance(model)
-plot(cooksd, type = "h", main = "Cook's Distance", ylab = "Cook's D")
-abline(h = 4/length(cooksd), col = "red", lty = 2)
+cooksd = influence_measures.cooks_distance[0]
+plt.figure(figsize=(8, 4))
+plt.stem(np.arange(len(cooksd)), cooksd, use_line_collection=True)
+plt.axhline(4/len(cooksd), color='red', linestyle='--')
+plt.title("Cook's Distance")
+plt.xlabel('Observation')
+plt.ylabel("Cook's D")
+plt.tight_layout()
+plt.show()
 ```
 
 ## Effect Size and Model Fit
@@ -181,40 +230,50 @@ F = \frac{\text{ESS}/1}{\text{RSS}/(n-2)}
 
 ### Example 1: Predicting House Prices
 
-```r
+```python
 # Simulate data
-set.seed(42)
-house_size <- rnorm(100, mean = 1500, sd = 300)
-house_price <- 50000 + 120 * house_size + rnorm(100, mean = 0, sd = 20000)
+np.random.seed(42)
+house_size = np.random.normal(1500, 300, 100)
+house_price = 50000 + 120 * house_size + np.random.normal(0, 20000, 100)
 
 # Fit model
-house_model <- lm(house_price ~ house_size)
-summary(house_model)
+house_df = pd.DataFrame({'house_size': house_size, 'house_price': house_price})
+house_model = smf.ols('house_price ~ house_size', data=house_df).fit()
+print(house_model.summary())
 
 # Plot
-plot(house_size, house_price, pch = 16, col = "darkgreen",
-     main = "House Price vs Size",
-     xlab = "Size (sq ft)", ylab = "Price ($)")
-abline(house_model, col = "red", lwd = 2)
+plt.figure(figsize=(8, 6))
+plt.scatter(house_size, house_price, color='darkgreen', alpha=0.7)
+plt.plot(house_size, house_model.fittedvalues, color='red', linewidth=2)
+plt.title('House Price vs Size')
+plt.xlabel('Size (sq ft)')
+plt.ylabel('Price ($)')
+plt.tight_layout()
+plt.show()
 ```
 
 ### Example 2: Predicting Exam Scores from Study Hours
 
-```r
+```python
 # Simulate data
-set.seed(123)
-study_hours <- rnorm(50, mean = 10, sd = 2)
-exam_score <- 40 + 5 * study_hours + rnorm(50, mean = 0, sd = 5)
+np.random.seed(123)
+study_hours = np.random.normal(10, 2, 50)
+exam_score = 40 + 5 * study_hours + np.random.normal(0, 5, 50)
 
 # Fit model
-exam_model <- lm(exam_score ~ study_hours)
-summary(exam_model)
+exam_df = pd.DataFrame({'study_hours': study_hours, 'exam_score': exam_score})
+exam_model = smf.ols('exam_score ~ study_hours', data=exam_df).fit()
+print(exam_model.summary())
 
 # Plot
-plot(study_hours, exam_score, pch = 16, col = "purple",
-     main = "Exam Score vs Study Hours",
-     xlab = "Study Hours", ylab = "Exam Score")
-abline(exam_model, col = "red", lwd = 2)
+plt.figure(figsize=(8, 6))
+plt.scatter(study_hours, exam_score, color='purple', alpha=0.7)
+plt.plot(study_hours, exam_model.fittedvalues, color='red', linewidth=2)
+plt.title('Exam Score vs Study Hours')
+plt.xlabel('Study Hours')
+plt.ylabel('Exam Score')
+plt.tight_layout()
+plt.show()
 ```
 
 ## Best Practices
