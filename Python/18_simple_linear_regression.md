@@ -67,65 +67,45 @@ $R^2$ ranges from 0 (no fit) to 1 (perfect fit).
 
 ### Example: Predicting MPG from Weight
 
-```python
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
+**Code Reference**: See `mpg_weight_example()` function in `18_simple_linear_regression.py`.
 
-# Load data (using seaborn's version of mtcars)
-mtcars = sm.datasets.get_rdataset('mtcars').data
+The MPG vs Weight example demonstrates:
+1. **Data Loading**: Load mtcars dataset with fallback simulation
+2. **Model Fitting**: Complete simple linear regression analysis
+3. **Results Interpretation**: Coefficient interpretation and model fit assessment
+4. **Assumption Checking**: Comprehensive validation of regression assumptions
+5. **Influence Analysis**: Outlier and influential point detection
+6. **Visualization**: Regression plots and diagnostic visualizations
 
-# Fit simple linear regression
-model = smf.ols('mpg ~ wt', data=mtcars).fit()
-print(model.summary())
-
-# Extract coefficients
-print("Coefficients:", model.params)
-
-# Fitted values and residuals
-fitted_vals = model.fittedvalues
-residuals = model.resid
-
-# Plot data and regression line
-plt.figure(figsize=(8, 6))
-plt.scatter(mtcars['wt'], mtcars['mpg'], color='blue', alpha=0.7, label='Data')
-plt.plot(mtcars['wt'], fitted_vals, color='red', linewidth=2, label='Regression Line')
-plt.title('Simple Linear Regression: MPG vs Weight')
-plt.xlabel('Weight (1000 lbs)')
-plt.ylabel('Miles per Gallon')
-plt.legend()
-plt.tight_layout()
-plt.show()
-```
+This example shows how to perform a complete simple linear regression analysis on real data, including all necessary diagnostics and interpretations.
 
 ### Interpreting Output
-- **Intercept**: Estimated MPG when weight is zero (not always meaningful).
-- **Slope**: Change in MPG for each 1000 lb increase in weight.
-- **$R^2$**: Proportion of variance in MPG explained by weight.
-- **p-value**: Tests if the slope is significantly different from zero.
+
+**Code Reference**: See `interpret_regression_results()` function in `18_simple_linear_regression.py`.
+
+The interpretation function provides:
+1. **Coefficient Interpretation**: Clear explanations of intercept and slope meanings
+2. **Confidence Intervals**: Lower and upper bounds for coefficient estimates
+3. **Model Fit Assessment**: R² interpretation and significance testing
+4. **Statistical Significance**: F-statistic and p-value interpretation
+5. **Practical Meaning**: Real-world interpretation of regression coefficients
+
+This function automatically generates interpretable results for any simple linear regression model.
 
 ## Confidence and Prediction Intervals
 
 ### Confidence Interval for the Mean Response
 
-```python
-# Predict mean MPG for a new weight value
-new_data = pd.DataFrame({'wt': [3]})
-pred_conf = model.get_prediction(new_data).summary_frame(alpha=0.05)
-print("Confidence interval for mean response:")
-print(pred_conf[['mean', 'mean_ci_lower', 'mean_ci_upper']])
-```
+**Code Reference**: See `calculate_confidence_intervals()` function in `18_simple_linear_regression.py`.
 
-### Prediction Interval for a New Observation
+The confidence interval calculation provides:
+1. **Mean Response Prediction**: Predict expected value for new observations
+2. **Confidence Intervals**: Uncertainty bounds for the mean response
+3. **Prediction Intervals**: Uncertainty bounds for individual observations
+4. **Flexible Alpha**: Adjustable significance level (default: 0.05)
+5. **Multiple Predictions**: Handle multiple new predictor values simultaneously
 
-```python
-# Predict individual MPG for a new car
-print("Prediction interval for new observation:")
-print(pred_conf[['mean', 'obs_ci_lower', 'obs_ci_upper']])
-```
+This function provides both confidence intervals (for the mean response) and prediction intervals (for individual observations), essential for understanding prediction uncertainty.
 
 ## Assumption Checking and Diagnostics
 
@@ -149,62 +129,31 @@ print(pred_conf[['mean', 'obs_ci_lower', 'obs_ci_upper']])
 - Residuals should be approximately normally distributed.
 - **Check**: Q-Q plot, Shapiro-Wilk test.
 
-```python
-# Diagnostic plots
-import scipy.stats as stats
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+**Code Reference**: See `create_diagnostic_plots()` and `check_regression_assumptions()` functions in `18_simple_linear_regression.py`.
 
-# Residuals vs Fitted
-axes[0, 0].scatter(fitted_vals, residuals)
-axes[0, 0].axhline(0, color='red', linestyle='--')
-axes[0, 0].set_title('Residuals vs Fitted')
-axes[0, 0].set_xlabel('Fitted values')
-axes[0, 0].set_ylabel('Residuals')
+The diagnostic plots and assumption checking provide:
+1. **Residuals vs Fitted**: Check for linearity and homoscedasticity
+2. **Normal Q-Q Plot**: Assess normality of residuals
+3. **Scale-Location Plot**: Check for heteroscedasticity
+4. **Residuals vs Leverage**: Identify influential points
+5. **Statistical Tests**: Shapiro-Wilk test for normality, Breusch-Pagan for homoscedasticity
+6. **Comprehensive Assessment**: Overall evaluation of all assumptions
 
-# Q-Q plot
-sm.qqplot(residuals, line='s', ax=axes[0, 1])
-axes[0, 1].set_title('Normal Q-Q')
-
-# Scale-Location plot
-axes[1, 0].scatter(fitted_vals, np.sqrt(np.abs(residuals)))
-axes[1, 0].set_title('Scale-Location')
-axes[1, 0].set_xlabel('Fitted values')
-axes[1, 0].set_ylabel('Sqrt(|Residuals|)')
-
-# Residuals vs Leverage
-influence = model.get_influence()
-leverage = influence.hat_matrix_diag
-axes[1, 1].scatter(leverage, residuals)
-axes[1, 1].set_title('Residuals vs Leverage')
-axes[1, 1].set_xlabel('Leverage')
-axes[1, 1].set_ylabel('Residuals')
-
-plt.tight_layout()
-plt.show()
-
-# Shapiro-Wilk test for normality
-print("Shapiro-Wilk test for residuals:", stats.shapiro(residuals))
-```
+These functions provide both visual and statistical evidence for assumption validation, essential for determining whether regression results are reliable.
 
 ### Outlier and Influence Diagnostics
 
-```python
-# Leverage and influence
-influence_measures = model.get_influence()
-summary_frame = influence_measures.summary_frame()
-print(summary_frame[['hat_diag', 'cooks_d', 'dffits', 'student_resid']])
+**Code Reference**: See `analyze_influence()` and `plot_influence_diagnostics()` functions in `18_simple_linear_regression.py`.
 
-# Cook's distance
-cooksd = influence_measures.cooks_distance[0]
-plt.figure(figsize=(8, 4))
-plt.stem(np.arange(len(cooksd)), cooksd, use_line_collection=True)
-plt.axhline(4/len(cooksd), color='red', linestyle='--')
-plt.title("Cook's Distance")
-plt.xlabel('Observation')
-plt.ylabel("Cook's D")
-plt.tight_layout()
-plt.show()
-```
+The influence analysis provides:
+1. **Leverage Analysis**: Identify high-leverage points using hat matrix diagonals
+2. **Cook's Distance**: Measure influence of each observation on the model
+3. **DFFITS**: Standardized influence measure for each observation
+4. **Studentized Residuals**: Identify outliers in the response variable
+5. **Visual Diagnostics**: Stem plots for Cook's distance and leverage
+6. **Threshold Assessment**: Automatic identification of influential points
+
+These functions help identify observations that may unduly influence the regression results, essential for robust model interpretation.
 
 ## Effect Size and Model Fit
 
@@ -230,51 +179,31 @@ F = \frac{\text{ESS}/1}{\text{RSS}/(n-2)}
 
 ### Example 1: Predicting House Prices
 
-```python
-# Simulate data
-np.random.seed(42)
-house_size = np.random.normal(1500, 300, 100)
-house_price = 50000 + 120 * house_size + np.random.normal(0, 20000, 100)
+**Code Reference**: See `house_price_example()` function in `18_simple_linear_regression.py`.
 
-# Fit model
-house_df = pd.DataFrame({'house_size': house_size, 'house_price': house_price})
-house_model = smf.ols('house_price ~ house_size', data=house_df).fit()
-print(house_model.summary())
+The house price example demonstrates:
+1. **Realistic Data Simulation**: Generate house size and price data with known relationship
+2. **Model Fitting**: Complete simple linear regression analysis
+3. **Results Interpretation**: Coefficient interpretation and model fit assessment
+4. **Assumption Checking**: Comprehensive validation of regression assumptions
+5. **Visualization**: Regression plots and diagnostic visualizations
+6. **Practical Application**: Real-world scenario with meaningful variables
 
-# Plot
-plt.figure(figsize=(8, 6))
-plt.scatter(house_size, house_price, color='darkgreen', alpha=0.7)
-plt.plot(house_size, house_model.fittedvalues, color='red', linewidth=2)
-plt.title('House Price vs Size')
-plt.xlabel('Size (sq ft)')
-plt.ylabel('Price ($)')
-plt.tight_layout()
-plt.show()
-```
+This example shows how to apply simple linear regression to a realistic business scenario, including all necessary diagnostics and interpretations.
 
 ### Example 2: Predicting Exam Scores from Study Hours
 
-```python
-# Simulate data
-np.random.seed(123)
-study_hours = np.random.normal(10, 2, 50)
-exam_score = 40 + 5 * study_hours + np.random.normal(0, 5, 50)
+**Code Reference**: See `exam_score_example()` function in `18_simple_linear_regression.py`.
 
-# Fit model
-exam_df = pd.DataFrame({'study_hours': study_hours, 'exam_score': exam_score})
-exam_model = smf.ols('exam_score ~ study_hours', data=exam_df).fit()
-print(exam_model.summary())
+The exam score example demonstrates:
+1. **Educational Data Simulation**: Generate study hours and exam score data
+2. **Model Fitting**: Complete simple linear regression analysis
+3. **Results Interpretation**: Coefficient interpretation and model fit assessment
+4. **Assumption Checking**: Comprehensive validation of regression assumptions
+5. **Visualization**: Regression plots and diagnostic visualizations
+6. **Educational Application**: Academic scenario with clear causal interpretation
 
-# Plot
-plt.figure(figsize=(8, 6))
-plt.scatter(study_hours, exam_score, color='purple', alpha=0.7)
-plt.plot(study_hours, exam_model.fittedvalues, color='red', linewidth=2)
-plt.title('Exam Score vs Study Hours')
-plt.xlabel('Study Hours')
-plt.ylabel('Exam Score')
-plt.tight_layout()
-plt.show()
-```
+This example shows how to apply simple linear regression to educational research, demonstrating the relationship between study time and academic performance.
 
 ## Best Practices
 - Always visualize data and check assumptions before interpreting results.
@@ -302,6 +231,85 @@ Identify and interpret outliers and influential points in your regression model.
 ### Exercise 4: Real-World Application
 Find a real dataset (e.g., from R's datasets package). Fit a simple linear regression, check assumptions, and report results.
 
+## Using the Python Code
+
+### Getting Started
+
+To use the simple linear regression functions, import the module and run the main demonstration:
+
+```python
+# Run the complete demonstration
+python 18_simple_linear_regression.py
+```
+
+### Key Functions Overview
+
+**Data Preparation:**
+- `load_mtcars_data()`: Load mtcars dataset with fallback simulation
+- `simulate_regression_data()`: Generate data for regression analysis
+
+**Model Fitting and Analysis:**
+- `fit_simple_linear_regression()`: Complete regression analysis with diagnostics
+- `interpret_regression_results()`: Automatic interpretation of results
+- `calculate_confidence_intervals()`: Confidence and prediction intervals
+
+**Assumption Checking:**
+- `check_regression_assumptions()`: Comprehensive assumption validation
+- `create_diagnostic_plots()`: Visual assumption checking
+- `analyze_influence()`: Outlier and influence diagnostics
+- `plot_influence_diagnostics()`: Visual influence analysis
+
+**Visualization:**
+- `plot_regression_results()`: Scatter plots with regression lines
+
+**Practical Examples:**
+- `mpg_weight_example()`: MPG vs Weight analysis using mtcars data
+- `house_price_example()`: House price prediction example
+- `exam_score_example()`: Educational regression example
+
+### Workflow Example
+
+```python
+# 1. Generate or load data
+x, y = simulate_regression_data(slope=2.0, intercept=10.0)
+
+# 2. Fit regression model
+results = fit_simple_linear_regression(x, y, 'x', 'y')
+
+# 3. Interpret results
+interpretation = interpret_regression_results(results)
+print(f"Slope: {interpretation['slope']['value']:.3f}")
+print(f"R²: {interpretation['model_fit']['r_squared']:.3f}")
+
+# 4. Check assumptions
+assumptions = check_regression_assumptions(results)
+print(f"All assumptions met: {assumptions['overall_assessment']['all_assumptions_met']}")
+
+# 5. Analyze influence
+influence = analyze_influence(results)
+print(f"Influential points: {influence['summary']['total_high_influence']}")
+
+# 6. Create visualizations
+plot_regression_results(results, "Sample Regression")
+create_diagnostic_plots(results)
+```
+
+### Function Reference
+
+Each function includes comprehensive docstrings with:
+- **Parameters**: Input variables and their types
+- **Returns**: Output format and content
+- **Examples**: Usage examples in the main execution block
+- **Theory**: Connection to statistical concepts
+
+### Integration with Theory
+
+The Python functions implement the mathematical concepts discussed in this lesson:
+- **Least Squares Estimation**: Mathematical foundations in `fit_simple_linear_regression()`
+- **Model Diagnostics**: Assumption checking in `check_regression_assumptions()`
+- **Influence Analysis**: Outlier detection in `analyze_influence()`
+- **Confidence Intervals**: Prediction uncertainty in `calculate_confidence_intervals()`
+
 ---
 
 **Key Takeaways:**
@@ -310,4 +318,5 @@ Find a real dataset (e.g., from R's datasets package). Fit a simple linear regre
 - $R^2$ measures goodness of fit
 - Always check assumptions and diagnostics
 - Report coefficients, intervals, and model fit
-- Regression does not prove causation without proper design 
+- Regression does not prove causation without proper design
+- Use the Python functions for comprehensive, reproducible analysis 
