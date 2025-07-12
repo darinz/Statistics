@@ -1,25 +1,25 @@
-# Statistics with R
+# Statistics with Python
 
-[![R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white)](https://www.r-project.org/)
-[![RStudio](https://img.shields.io/badge/RStudio-75AADB?style=for-the-badge&logo=rstudio&logoColor=white)](https://posit.co/)
+[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)](https://jupyter.org/)
 [![Markdown](https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white)](https://markdown.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status](https://img.shields.io/badge/Status-Enhanced-brightgreen)](https://github.com/yourusername/statistics-with-r)
+[![Status](https://img.shields.io/badge/Status-Enhanced-brightgreen)](https://github.com/yourusername/statistics-with-python)
 
-A comprehensive, in-depth guide to learning statistics using R programming language, featuring mathematical foundations, detailed code explanations, practical applications, and hands-on exercises. This enhanced curriculum provides clear conceptual understanding, step-by-step implementations, and real-world examples for each statistical method.
+A comprehensive, in-depth guide to learning statistics using Python programming language, featuring mathematical foundations, detailed code explanations, practical applications, and hands-on exercises. This enhanced curriculum provides clear conceptual understanding, step-by-step implementations, and real-world examples for each statistical method.
 
 ## Table of Contents
 
 ### Fundamentals
-- [Introduction to R](01_introduction_to_r.md) - R basics, environment setup, and programming fundamentals
-- [Data Types and Structures](02_data_types_structures.md) - Vectors, matrices, data frames, and lists with practical examples
+- [Introduction to Python](01_introduction_to_python.md) - Python basics, environment setup, and programming fundamentals
+- [Data Types and Structures](02_data_types_structures.md) - Lists, arrays, DataFrames, and dictionaries with practical examples
 - [Data Import and Manipulation](03_data_import_manipulation.md) - Data cleaning, transformation, and preprocessing techniques
 - [Exploratory Data Analysis](04_exploratory_data_analysis.md) - Comprehensive EDA with visualization and summary statistics
 
 ### Descriptive Statistics
 - [Measures of Central Tendency](05_measures_central_tendency.md) - Mean, median, mode with mathematical foundations and applications
 - [Measures of Variability](06_measures_variability.md) - Variance, standard deviation, range, and coefficient of variation
-- [Data Visualization](07_data_visualization.md) - Advanced plotting with ggplot2, publication-ready graphics, and interactive visualizations
+- [Data Visualization](07_data_visualization.md) - Advanced plotting with matplotlib, seaborn, and publication-ready graphics
 - [Probability Distributions](08_probability_distributions.md) - Normal, binomial, Poisson, and other distributions with applications
 
 ### Statistical Inference
@@ -51,55 +51,58 @@ A comprehensive, in-depth guide to learning statistics using R programming langu
 ## Getting Started
 
 1. **Prerequisites**: Basic understanding of mathematics and statistics concepts
-2. **Software**: Install R and RStudio (latest versions recommended)
+2. **Software**: Install Python 3.8+ and Jupyter Notebook/Lab (latest versions recommended)
 3. **Learning Path**: Follow the chapters in order for best results
 4. **Practice**: Complete all exercises and work through the practical examples
 
-## Required R Packages
+## Required Python Packages
 
-```r
+```python
 # Core packages for this enhanced course
-install.packages(c(
-  # Data manipulation and visualization
-  "tidyverse",    # Comprehensive data science toolkit
-  "ggplot2",      # Advanced plotting and visualization
-  "dplyr",        # Data manipulation and transformation
-  "readr",        # Fast data import
-  "haven",        # Import SPSS, SAS, Stata files
-  "tidyr",        # Data tidying and reshaping
-  
-  # Statistical analysis
-  "car",          # Companion to Applied Regression
-  "rstatix",      # Pipe-friendly statistical tests
-  "broom",        # Tidy statistical output
-  "emmeans",      # Estimated marginal means
-  "effects",      # Effect displays for regression models
-  
-  # Visualization and reporting
-  "ggpubr",       # Publication-ready plots
-  "corrplot",     # Correlation matrix visualization
-  "plotly",       # Interactive plots
-  "knitr",        # Dynamic report generation
-  "rmarkdown",    # R Markdown documents
-  
-  # Advanced modeling
-  "MASS",         # Support functions and datasets
-  "nnet",         # Neural networks and multinomial models
-  "pROC",         # ROC curve analysis
-  "ResourceSelection", # Hosmer-Lemeshow test
-  
-  # Time series and multivariate analysis
-  "forecast",     # Time series forecasting
-  "tseries",      # Time series analysis
-  "psych",        # Psychometric analysis
-  "cluster",      # Clustering algorithms
-  
-  # Model diagnostics and validation
-  "leaps",        # Variable selection
-  "glmnet",       # Regularized regression
-  "pls",          # Partial least squares
-  "caret"         # Classification and regression training
-))
+pip install numpy pandas matplotlib seaborn scipy scikit-learn statsmodels
+
+# Additional packages for advanced topics
+pip install plotly jupyter notebook jupyterlab
+
+# For specific chapters
+pip install pingouin  # Statistical tests (Chapter 12-16)
+pip install lifelines  # Survival analysis
+pip install arch  # Time series analysis (Chapter 23)
+pip install factor_analyzer  # Factor analysis (Chapter 24)
+pip install yellowbrick  # Model diagnostics visualization
+```
+
+### Package Descriptions
+
+```python
+# Core scientific computing
+import numpy as np          # Numerical computing and arrays
+import pandas as pd         # Data manipulation and analysis
+import matplotlib.pyplot as plt  # Basic plotting
+import seaborn as sns       # Statistical data visualization
+import scipy.stats as stats # Statistical functions
+from scipy import optimize  # Optimization algorithms
+
+# Machine learning and modeling
+from sklearn import linear_model, metrics, model_selection  # ML algorithms
+import statsmodels.api as sm  # Statistical modeling
+from statsmodels.stats import diagnostic  # Model diagnostics
+
+# Visualization
+import plotly.express as px  # Interactive plots
+import plotly.graph_objects as go  # Advanced interactive plots
+
+# Statistical testing
+import pingouin as pg  # Statistical tests and effect sizes
+
+# Time series
+from statsmodels.tsa import seasonal, arima_model  # Time series analysis
+import arch  # GARCH models
+
+# Multivariate analysis
+from sklearn.decomposition import PCA  # Principal component analysis
+from sklearn.cluster import KMeans  # Clustering
+from factor_analyzer import FactorAnalyzer  # Factor analysis
 ```
 
 ## Enhanced Learning Features
@@ -111,9 +114,9 @@ install.packages(c(
 
 ### Comprehensive Code Examples
 - **Detailed Explanations**: Every code block includes explanations of what it does and why
-- **Best Practices**: Industry-standard coding practices and R programming conventions
+- **Best Practices**: Industry-standard coding practices and Python programming conventions
 - **Error Handling**: Common pitfalls and how to avoid them
-- **Performance Optimization**: Efficient R code and memory management
+- **Performance Optimization**: Efficient Python code and memory management
 
 ### Practical Applications
 - **Real-world Datasets**: Examples using realistic data scenarios
@@ -135,7 +138,7 @@ install.packages(c(
 By the end of this enhanced course, you will be able to:
 
 ### Technical Skills
-- Import, clean, and preprocess data efficiently in R
+- Import, clean, and preprocess data efficiently in Python
 - Perform comprehensive exploratory data analysis with advanced visualizations
 - Conduct various statistical tests with proper assumption checking
 - Build and validate regression models (linear, logistic, GLMs)
@@ -153,7 +156,7 @@ By the end of this enhanced course, you will be able to:
 - Apply statistical concepts to real-world problems across domains
 - Implement reproducible research workflows
 - Generate comprehensive statistical reports
-- Use R for both exploratory and confirmatory analysis
+- Use Python for both exploratory and confirmatory analysis
 - Understand the limitations and assumptions of statistical methods
 
 ## How to Use This Repository
@@ -166,7 +169,7 @@ Each enhanced markdown file contains:
 - **Assumptions and Limitations**: When and why methods work or fail
 
 ### Practical Implementation
-- **Step-by-step R Code**: Complete examples with detailed explanations
+- **Step-by-step Python Code**: Complete examples with detailed explanations
 - **Data Generation**: Realistic simulated datasets for practice
 - **Best Practices**: Industry-standard approaches and coding conventions
 
@@ -183,7 +186,7 @@ Each enhanced markdown file contains:
 ## Course Structure
 
 ### Beginner Level (Chapters 1-8)
-- R fundamentals and data manipulation
+- Python fundamentals and data manipulation
 - Descriptive statistics and visualization
 - Probability distributions and basic concepts
 
@@ -208,8 +211,8 @@ We welcome contributions to enhance this learning resource:
 - Add new statistical methods and techniques
 
 ### Technical Enhancements
-- Optimize R code for better performance
-- Add interactive visualizations and Shiny apps
+- Optimize Python code for better performance
+- Add interactive visualizations and Streamlit apps
 - Include additional diagnostic tools and validation methods
 - Create supplementary materials (videos, slides, etc.)
 
@@ -221,8 +224,8 @@ We welcome contributions to enhance this learning resource:
 
 ## Acknowledgments
 
-This enhanced curriculum builds upon the Applied Statistics with R framework, incorporating:
-- Modern R programming practices and tidyverse workflows
+This enhanced curriculum builds upon the Applied Statistics with Python framework, incorporating:
+- Modern Python programming practices and data science workflows
 - Comprehensive mathematical foundations with proper notation
 - Industry-standard diagnostic and validation procedures
 - Real-world applications and case studies
