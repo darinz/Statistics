@@ -73,119 +73,74 @@ Where $`n`$ is the number of observations and $`p`$ is the number of predictors.
 
 ### Example: Predicting MPG from Multiple Predictors
 
-```python
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import StandardScaler
+**Code Reference**: See `mpg_multiple_predictors_example()` function in `19_multiple_linear_regression.py`.
 
-# Load data
-mtcars = sm.datasets.get_rdataset('mtcars').data
+The MPG multiple predictors example demonstrates:
+1. **Data Loading**: Load mtcars dataset with fallback simulation
+2. **Model Fitting**: Complete multiple linear regression analysis
+3. **Results Interpretation**: Coefficient interpretation and model fit assessment
+4. **Multicollinearity Checking**: VIF analysis and correlation assessment
+5. **Diagnostics**: Comprehensive model diagnostics and influence analysis
+6. **Cross-Validation**: Model validation using k-fold cross-validation
 
-# Fit multiple linear regression
-multiple_model = smf.ols('mpg ~ wt + hp + disp', data=mtcars).fit()
-print(multiple_model.summary())
-
-# Extract coefficients
-print("Coefficients:", multiple_model.params)
-
-# Fitted values and residuals
-fitted_vals = multiple_model.fittedvalues
-residuals = multiple_model.resid
-```
+This example shows how to perform a complete multiple linear regression analysis on real data, including all necessary diagnostics and validations.
 
 ### Interpreting Output
-- **Intercept**: Estimated MPG when all predictors are zero (may not be meaningful).
-- **Coefficients**: Change in MPG for a one-unit increase in each predictor, holding others constant.
-- **$R^2$ and Adjusted $R^2$**: Proportion of variance explained.
-- **p-values**: Test if each coefficient is significantly different from zero.
+
+**Code Reference**: See `interpret_multiple_regression_results()` function in `19_multiple_linear_regression.py`.
+
+The interpretation function provides:
+1. **Coefficient Interpretation**: Clear explanations of intercept and slope meanings
+2. **Confidence Intervals**: Lower and upper bounds for coefficient estimates
+3. **Model Fit Assessment**: R² and adjusted R² interpretation
+4. **Statistical Significance**: F-statistic and p-value interpretation
+5. **Practical Meaning**: Real-world interpretation of regression coefficients
+6. **Predictor Effects**: Individual effect of each predictor holding others constant
+
+This function automatically generates interpretable results for any multiple linear regression model.
 
 ## Confidence Intervals and Standardized Coefficients
 
-```python
-# Confidence intervals for coefficients
-print("Confidence intervals:")
-print(multiple_model.conf_int(alpha=0.05))
+**Code Reference**: See `calculate_standardized_coefficients()` function in `19_multiple_linear_regression.py`.
 
-# Standardized coefficients
-def standardize_coefficients(model, data):
-    # Standardize predictors
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(data[['wt', 'hp', 'disp']])
-    y_scaled = (data['mpg'] - data['mpg'].mean()) / data['mpg'].std()
-    
-    # Fit model with standardized data
-    X_scaled_df = pd.DataFrame(X_scaled, columns=['wt', 'hp', 'disp'])
-    X_scaled_df['const'] = 1
-    model_scaled = sm.OLS(y_scaled, X_scaled_df).fit()
-    
-    return model_scaled.params
+The standardized coefficients analysis provides:
+1. **Coefficient Standardization**: Convert coefficients to standardized scale
+2. **Predictor Comparison**: Compare relative importance of predictors
+3. **Scale-Free Interpretation**: Coefficients independent of variable scales
+4. **Effect Size Assessment**: Quantify relative predictor importance
+5. **Automatic Calculation**: Handle any number of predictors automatically
 
-std_coeffs = standardize_coefficients(multiple_model, mtcars)
-print("Standardized coefficients:")
-print(std_coeffs)
-```
+This function provides standardized coefficients that allow direct comparison of predictor effects regardless of their original scales.
 
 ## Model Building and Selection
 
 ### Stepwise Regression
 
-- **Forward selection**: Start with no predictors, add one at a time.
-- **Backward elimination**: Start with all predictors, remove one at a time.
-- **Stepwise**: Combination of both.
+**Code Reference**: See `perform_stepwise_selection()` function in `19_multiple_linear_regression.py`.
 
-```python
-from sklearn.feature_selection import SequentialFeatureSelector
-from sklearn.linear_model import LinearRegression
+The stepwise regression analysis provides:
+1. **Forward Selection**: Start with no predictors, add one at a time
+2. **Backward Elimination**: Start with all predictors, remove one at a time
+3. **Automatic Selection**: Determine optimal number of features
+4. **Model Comparison**: Compare different selection strategies
+5. **Feature Ranking**: Identify most important predictors
+6. **Model Validation**: Validate selected models
 
-# Forward selection
-X = mtcars[['wt', 'hp', 'disp', 'drat', 'qsec']]
-y = mtcars['mpg']
-
-forward_selector = SequentialFeatureSelector(
-    LinearRegression(), n_features_to_select=3, direction='forward'
-)
-forward_selector.fit(X, y)
-print("Forward selection features:", X.columns[forward_selector.get_support()].tolist())
-
-# Backward elimination
-backward_selector = SequentialFeatureSelector(
-    LinearRegression(), n_features_to_select=2, direction='backward'
-)
-backward_selector.fit(X, y)
-print("Backward elimination features:", X.columns[backward_selector.get_support()].tolist())
-```
+This function implements both forward and backward stepwise selection methods for optimal predictor subset identification.
 
 ### Best Subset Selection
 
-```python
-from itertools import combinations
-from sklearn.metrics import r2_score
+**Code Reference**: See `perform_best_subset_selection()` function in `19_multiple_linear_regression.py`.
 
-def best_subset_selection(X, y, max_features):
-    best_score = -np.inf
-    best_features = None
-    
-    for k in range(1, max_features + 1):
-        for features in combinations(X.columns, k):
-            X_subset = X[list(features)]
-            model = LinearRegression().fit(X_subset, y)
-            score = r2_score(y, model.predict(X_subset))
-            
-            if score > best_score:
-                best_score = score
-                best_features = features
-    
-    return best_features, best_score
+The best subset selection analysis provides:
+1. **Exhaustive Search**: Evaluate all possible predictor combinations
+2. **Optimal Subset**: Find the best predictor combination for given criteria
+3. **Model Comparison**: Compare all possible models systematically
+4. **Feature Ranking**: Identify optimal feature subsets of different sizes
+5. **Performance Metrics**: R² and other fit measures for each subset
+6. **Computational Efficiency**: Handle large numbers of predictors efficiently
 
-best_features, best_score = best_subset_selection(X, y, 5)
-print(f"Best subset: {best_features}")
-print(f"Best R²: {best_score:.3f}")
-```
+This function performs exhaustive search to find the optimal subset of predictors, providing comprehensive model comparison.
 
 ## Model Diagnostics
 
@@ -196,38 +151,17 @@ print(f"Best R²: {best_score:.3f}")
 - **Homoscedasticity**: Residuals should have constant variance.
 - **Independence**: Residuals should not be autocorrelated.
 
-```python
-# Diagnostic plots
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+**Code Reference**: See `create_multiple_regression_diagnostics()` function in `19_multiple_linear_regression.py`.
 
-# Residuals vs Fitted
-axes[0, 0].scatter(fitted_vals, residuals)
-axes[0, 0].axhline(0, color='red', linestyle='--')
-axes[0, 0].set_title('Residuals vs Fitted')
-axes[0, 0].set_xlabel('Fitted values')
-axes[0, 0].set_ylabel('Residuals')
+The diagnostic plots provide:
+1. **Residuals vs Fitted**: Check for linearity and homoscedasticity
+2. **Normal Q-Q Plot**: Assess normality of residuals
+3. **Scale-Location Plot**: Check for heteroscedasticity
+4. **Residuals vs Leverage**: Identify influential points
+5. **Comprehensive Assessment**: Visual evaluation of all assumptions
+6. **Professional Output**: Publication-ready diagnostic visualizations
 
-# Q-Q plot
-sm.qqplot(residuals, line='s', ax=axes[0, 1])
-axes[0, 1].set_title('Normal Q-Q')
-
-# Scale-Location plot
-axes[1, 0].scatter(fitted_vals, np.sqrt(np.abs(residuals)))
-axes[1, 0].set_title('Scale-Location')
-axes[1, 0].set_xlabel('Fitted values')
-axes[1, 0].set_ylabel('Sqrt(|Residuals|)')
-
-# Residuals vs Leverage
-influence = multiple_model.get_influence()
-leverage = influence.hat_matrix_diag
-axes[1, 1].scatter(leverage, residuals)
-axes[1, 1].set_title('Residuals vs Leverage')
-axes[1, 1].set_xlabel('Leverage')
-axes[1, 1].set_ylabel('Residuals')
-
-plt.tight_layout()
-plt.show()
-```
+These plots provide essential visual diagnostics for multiple regression assumption validation.
 
 ### Multicollinearity Detection
 
@@ -235,25 +169,17 @@ plt.show()
 - **Tolerance**: $`1 / \text{VIF}`$
 - **Condition number**: Large values indicate multicollinearity.
 
-```python
-from statsmodels.stats.outliers_influence import variance_inflation_factor
+**Code Reference**: See `check_multicollinearity()` function in `19_multiple_linear_regression.py`.
 
-def calculate_vif(X):
-    vif_data = pd.DataFrame()
-    vif_data["Variable"] = X.columns
-    vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
-    return vif_data
+The multicollinearity detection provides:
+1. **VIF Calculation**: Variance Inflation Factor for each predictor
+2. **Tolerance Analysis**: Reciprocal of VIF for additional insight
+3. **Correlation Matrix**: Pairwise correlations between predictors
+4. **High Correlation Detection**: Identify problematic predictor pairs
+5. **Severity Assessment**: Classify multicollinearity severity
+6. **Recommendations**: Provide guidance for addressing multicollinearity
 
-X_vif = mtcars[['wt', 'hp', 'disp']]
-vif_results = calculate_vif(X_vif)
-print("Variance Inflation Factors:")
-print(vif_results)
-
-# Tolerance
-vif_results['Tolerance'] = 1 / vif_results['VIF']
-print("\nTolerance:")
-print(vif_results[['Variable', 'Tolerance']])
-```
+This function provides comprehensive multicollinearity diagnostics essential for multiple regression model validation.
 
 ### Outlier and Influence Diagnostics
 
@@ -261,30 +187,17 @@ print(vif_results[['Variable', 'Tolerance']])
 - **Leverage**: Points with unusual predictor values.
 - **Studentized residuals**: Detects outliers in $Y$.
 
-```python
-# Cook's distance
-cooksd = influence.cooks_distance[0]
-plt.figure(figsize=(8, 4))
-plt.stem(np.arange(len(cooksd)), cooksd, use_line_collection=True)
-plt.axhline(4/len(cooksd), color='red', linestyle='--')
-plt.title("Cook's Distance")
-plt.xlabel('Observation')
-plt.ylabel("Cook's D")
-plt.tight_layout()
-plt.show()
+**Code Reference**: See `analyze_multiple_regression_influence()` function in `19_multiple_linear_regression.py`.
 
-# Leverage
-leverage = influence.hat_matrix_diag
-plt.figure(figsize=(8, 4))
-plt.stem(np.arange(len(leverage)), leverage, use_line_collection=True)
-leverage_threshold = 2 * (len(multiple_model.params) + 1) / len(mtcars)
-plt.axhline(leverage_threshold, color='red', linestyle='--')
-plt.title("Leverage")
-plt.xlabel('Observation')
-plt.ylabel('Leverage')
-plt.tight_layout()
-plt.show()
-```
+The influence analysis provides:
+1. **Cook's Distance**: Measure influence of each observation on the model
+2. **Leverage Analysis**: Identify high-leverage points using hat matrix diagonals
+3. **DFFITS**: Standardized influence measure for each observation
+4. **Studentized Residuals**: Identify outliers in the response variable
+5. **Threshold Assessment**: Automatic identification of influential points
+6. **Comprehensive Summary**: Summary statistics for all influence measures
+
+These functions help identify observations that may unduly influence the multiple regression results.
 
 ## Model Comparison and Validation
 
@@ -292,31 +205,33 @@ plt.show()
 - **AIC**: Penalizes model complexity, lower is better.
 - **BIC**: Stronger penalty for complexity, lower is better.
 
-```python
-# AIC and BIC
-print(f"AIC: {multiple_model.aic:.2f}")
-print(f"BIC: {multiple_model.bic:.2f}")
-```
+**Code Reference**: See `fit_multiple_linear_regression()` function in `19_multiple_linear_regression.py`.
+
+The information criteria analysis provides:
+1. **AIC Calculation**: Akaike Information Criterion for model comparison
+2. **BIC Calculation**: Bayesian Information Criterion for model comparison
+3. **Model Selection**: Lower values indicate better models
+4. **Complexity Penalty**: Balance between fit and model complexity
+5. **Automatic Computation**: Included in comprehensive model results
+
+These criteria help select the optimal model by balancing goodness of fit with model complexity.
 
 ### Cross-Validation
 
 - **LOOCV**: Leave-one-out cross-validation.
 - **k-fold CV**: Split data into $k$ parts, train on $k-1$, test on 1.
 
-```python
-from sklearn.model_selection import cross_val_score, LeaveOneOut
+**Code Reference**: See `perform_cross_validation()` function in `19_multiple_linear_regression.py`.
 
-# LOOCV
-loo = LeaveOneOut()
-cv_scores_loo = cross_val_score(LinearRegression(), X, y, cv=loo, scoring='neg_mean_squared_error')
-mse_loo = -cv_scores_loo.mean()
-print(f"LOOCV MSE: {mse_loo:.2f}")
+The cross-validation analysis provides:
+1. **Leave-One-Out CV**: Comprehensive validation using all data points
+2. **K-Fold CV**: Efficient validation with configurable fold number
+3. **Multiple Metrics**: MSE, RMSE, and R² scores
+4. **Performance Assessment**: Mean and standard deviation of scores
+5. **Model Validation**: Unbiased estimate of model performance
+6. **Flexible Configuration**: Support for different CV strategies
 
-# 5-fold CV
-cv_scores_5fold = cross_val_score(LinearRegression(), X, y, cv=5, scoring='neg_mean_squared_error')
-mse_5fold = -cv_scores_5fold.mean()
-print(f"5-fold CV MSE: {mse_5fold:.2f}")
-```
+This function provides robust model validation essential for assessing predictive performance.
 
 ## Interaction and Polynomial Terms
 
@@ -324,138 +239,105 @@ print(f"5-fold CV MSE: {mse_5fold:.2f}")
 
 - **Interaction**: Effect of one predictor depends on another.
 
-```python
-# Interaction model
-interaction_model = smf.ols('mpg ~ wt * hp + disp', data=mtcars).fit()
-print(interaction_model.summary())
-```
+**Code Reference**: See `add_interaction_terms()` function in `19_multiple_linear_regression.py`.
+
+The interaction terms analysis provides:
+1. **Interaction Creation**: Automatically generate interaction terms
+2. **Flexible Naming**: Customizable interaction term names
+3. **Multiple Interactions**: Handle multiple variable interactions
+4. **Data Preparation**: Prepare data for interaction analysis
+5. **Model Integration**: Seamless integration with regression models
+
+This function facilitates the inclusion of interaction effects in multiple regression models.
 
 ### Polynomial Terms
 
 - **Polynomial**: Captures nonlinear relationships.
 
-```python
-# Polynomial model
-mtcars['wt_squared'] = mtcars['wt'] ** 2
-poly_model = smf.ols('mpg ~ wt + wt_squared + hp + disp', data=mtcars).fit()
-print(poly_model.summary())
-```
+**Code Reference**: See `add_polynomial_terms()` function in `19_multiple_linear_regression.py`.
+
+The polynomial terms analysis provides:
+1. **Polynomial Creation**: Generate polynomial terms up to specified degree
+2. **Flexible Degrees**: Support for quadratic, cubic, and higher-order terms
+3. **Custom Naming**: Configurable naming conventions for polynomial terms
+4. **Data Preparation**: Automatic data preparation for polynomial regression
+5. **Model Integration**: Seamless integration with regression models
+
+This function facilitates the inclusion of nonlinear relationships in multiple regression models.
 
 ## Regularization Methods
 
 ### Ridge Regression
 
-```python
-from sklearn.linear_model import Ridge, Lasso, ElasticNet
-from sklearn.model_selection import GridSearchCV
+**Code Reference**: See `apply_ridge_regression()` function in `19_multiple_linear_regression.py`.
 
-# Ridge regression
-ridge = Ridge()
-param_grid = {'alpha': np.logspace(-3, 3, 100)}
-ridge_cv = GridSearchCV(ridge, param_grid, cv=5, scoring='neg_mean_squared_error')
-ridge_cv.fit(X, y)
+The ridge regression analysis provides:
+1. **L2 Regularization**: Ridge regression with L2 penalty
+2. **Cross-Validation**: Automatic hyperparameter tuning
+3. **Optimal Alpha**: Find best regularization strength
+4. **Coefficient Shrinkage**: Shrink coefficients toward zero
+5. **Multicollinearity Handling**: Address multicollinearity issues
+6. **Performance Assessment**: R² and other fit measures
 
-best_ridge = Ridge(alpha=ridge_cv.best_params_['alpha'])
-best_ridge.fit(X, y)
-print("Ridge coefficients:", best_ridge.coef_)
-print("Best alpha:", ridge_cv.best_params_['alpha'])
-```
+This function implements ridge regression with automatic hyperparameter optimization.
 
 ### Lasso Regression
 
-```python
-# Lasso regression
-lasso = Lasso()
-lasso_cv = GridSearchCV(lasso, param_grid, cv=5, scoring='neg_mean_squared_error')
-lasso_cv.fit(X, y)
+**Code Reference**: See `apply_lasso_regression()` function in `19_multiple_linear_regression.py`.
 
-best_lasso = Lasso(alpha=lasso_cv.best_params_['alpha'])
-best_lasso.fit(X, y)
-print("Lasso coefficients:", best_lasso.coef_)
-print("Best alpha:", lasso_cv.best_params_['alpha'])
-```
+The lasso regression analysis provides:
+1. **L1 Regularization**: Lasso regression with L1 penalty
+2. **Feature Selection**: Automatic feature selection via coefficient sparsity
+3. **Cross-Validation**: Automatic hyperparameter tuning
+4. **Optimal Alpha**: Find best regularization strength
+5. **Sparse Solutions**: Produce sparse coefficient vectors
+6. **Variable Selection**: Identify important predictors
+
+This function implements lasso regression with automatic feature selection and hyperparameter optimization.
 
 ### Elastic Net
 
-```python
-# Elastic Net
-elastic = ElasticNet()
-param_grid_elastic = {
-    'alpha': np.logspace(-3, 3, 50),
-    'l1_ratio': np.linspace(0, 1, 20)
-}
-elastic_cv = GridSearchCV(elastic, param_grid_elastic, cv=5, scoring='neg_mean_squared_error')
-elastic_cv.fit(X, y)
+**Code Reference**: See `apply_elastic_net()` function in `19_multiple_linear_regression.py`.
 
-best_elastic = ElasticNet(
-    alpha=elastic_cv.best_params_['alpha'],
-    l1_ratio=elastic_cv.best_params_['l1_ratio']
-)
-best_elastic.fit(X, y)
-print("Elastic Net coefficients:", best_elastic.coef_)
-print("Best parameters:", elastic_cv.best_params_)
-```
+The elastic net analysis provides:
+1. **Combined Regularization**: L1 and L2 penalties combined
+2. **Flexible Penalty**: Adjustable balance between L1 and L2
+3. **Cross-Validation**: Automatic hyperparameter tuning
+4. **Optimal Parameters**: Find best alpha and l1_ratio
+5. **Feature Selection**: Combines benefits of ridge and lasso
+6. **Performance Assessment**: Comprehensive model evaluation
+
+This function implements elastic net regression with automatic hyperparameter optimization for both regularization parameters.
 
 ## Practical Examples
 
 ### Example 1: Real Estate Analysis
 
-```python
-# Simulate real estate data
-np.random.seed(123)
-n_properties = 100
-square_feet = np.random.normal(2000, 500, n_properties)
-bedrooms = np.random.randint(1, 6, n_properties)
-bathrooms = np.random.randint(1, 5, n_properties)
-age = np.random.normal(15, 8, n_properties)
-location_score = np.random.normal(7, 1, n_properties)
-price = (200000 + 100 * square_feet + 15000 * bedrooms + 
-         25000 * bathrooms - 2000 * age + 15000 * location_score + 
-         np.random.normal(0, 15000, n_properties))
+**Code Reference**: See `real_estate_example()` function in `19_multiple_linear_regression.py`.
 
-real_estate_data = pd.DataFrame({
-    'price': price,
-    'square_feet': square_feet,
-    'bedrooms': bedrooms,
-    'bathrooms': bathrooms,
-    'age': age,
-    'location_score': location_score
-})
+The real estate example demonstrates:
+1. **Realistic Data Simulation**: Generate property data with known relationships
+2. **Multiple Predictors**: Square footage, bedrooms, bathrooms, age, location
+3. **Model Selection**: Forward stepwise and best subset selection
+4. **Regularization Methods**: Ridge, Lasso, and Elastic Net comparison
+5. **Comprehensive Analysis**: Full multiple regression workflow
+6. **Business Application**: Real-world real estate valuation scenario
 
-real_estate_model = smf.ols(
-    'price ~ square_feet + bedrooms + bathrooms + age + location_score', 
-    data=real_estate_data
-).fit()
-print(real_estate_model.summary())
-```
+This example shows how to apply multiple regression to a realistic business scenario with model selection and regularization.
 
 ### Example 2: Marketing Analysis
 
-```python
-# Simulate marketing data
-np.random.seed(123)
-n_campaigns = 50
-ad_spend = np.random.normal(10000, 3000, n_campaigns)
-social_media_posts = np.random.poisson(20, n_campaigns)
-email_sends = np.random.poisson(1000, n_campaigns)
-season = np.random.choice(['Spring', 'Summer', 'Fall', 'Winter'], n_campaigns)
-sales = (50000 + 2.5 * ad_spend + 500 * social_media_posts + 
-         10 * email_sends + np.random.normal(0, 5000, n_campaigns))
+**Code Reference**: See `marketing_example()` function in `19_multiple_linear_regression.py`.
 
-marketing_data = pd.DataFrame({
-    'sales': sales,
-    'ad_spend': ad_spend,
-    'social_media_posts': social_media_posts,
-    'email_sends': email_sends,
-    'season': season
-})
+The marketing example demonstrates:
+1. **Marketing Data Simulation**: Generate campaign data with known effects
+2. **Categorical Variables**: Handle seasonal effects with dummy variables
+3. **Interaction Terms**: Add interaction effects between variables
+4. **Multiple Predictors**: Ad spend, social media, email, season
+5. **Business Metrics**: Sales prediction and ROI analysis
+6. **Marketing Application**: Real-world marketing campaign analysis
 
-marketing_model = smf.ols(
-    'sales ~ ad_spend + social_media_posts + email_sends + season', 
-    data=marketing_data
-).fit()
-print(marketing_model.summary())
-```
+This example shows how to apply multiple regression to marketing analytics, including categorical variables and interaction effects.
 
 ## Best Practices
 - Always check assumptions and perform diagnostics before interpreting results.
@@ -487,6 +369,101 @@ Apply ridge and lasso regression to your data. Compare the coefficients and mode
 ### Exercise 5: Real-World Application
 Find a real dataset (e.g., from R's datasets package). Build, validate, and report a multiple regression model.
 
+## Using the Python Code
+
+### Getting Started
+
+To use the multiple linear regression functions, import the module and run the main demonstration:
+
+```python
+# Run the complete demonstration
+python 19_multiple_linear_regression.py
+```
+
+### Key Functions Overview
+
+**Data Preparation:**
+- `load_mtcars_data()`: Load mtcars dataset with fallback simulation
+- `simulate_multiple_regression_data()`: Generate data for multiple regression
+
+**Model Fitting and Analysis:**
+- `fit_multiple_linear_regression()`: Complete multiple regression analysis
+- `interpret_multiple_regression_results()`: Automatic result interpretation
+- `calculate_standardized_coefficients()`: Standardized coefficient analysis
+
+**Model Selection:**
+- `perform_stepwise_selection()`: Forward and backward stepwise selection
+- `perform_best_subset_selection()`: Exhaustive subset selection
+
+**Diagnostics and Validation:**
+- `check_multicollinearity()`: VIF and multicollinearity diagnostics
+- `create_multiple_regression_diagnostics()`: Visual assumption checking
+- `analyze_multiple_regression_influence()`: Outlier and influence diagnostics
+- `perform_cross_validation()`: Cross-validation for model validation
+
+**Advanced Features:**
+- `add_interaction_terms()`: Create interaction effects
+- `add_polynomial_terms()`: Add polynomial terms
+- `apply_ridge_regression()`: Ridge regression with CV
+- `apply_lasso_regression()`: Lasso regression with CV
+- `apply_elastic_net()`: Elastic net regression with CV
+
+**Practical Examples:**
+- `mpg_multiple_predictors_example()`: MPG prediction with multiple variables
+- `real_estate_example()`: Real estate price prediction
+- `marketing_example()`: Marketing campaign analysis
+
+### Workflow Example
+
+```python
+# 1. Generate or load data
+X, y = simulate_multiple_regression_data(n_predictors=3)
+X_df = pd.DataFrame(X, columns=['X1', 'X2', 'X3'])
+y_series = pd.Series(y, name='y')
+
+# 2. Fit multiple regression model
+results = fit_multiple_linear_regression(X_df, y_series)
+
+# 3. Interpret results
+interpretation = interpret_multiple_regression_results(results)
+print(f"R²: {interpretation['model_fit']['r_squared']:.3f}")
+
+# 4. Check multicollinearity
+multicollinearity = check_multicollinearity(X_df)
+print(f"Severe multicollinearity: {multicollinearity['assessment']['severe_multicollinearity']}")
+
+# 5. Perform model selection
+stepwise_results = perform_stepwise_selection(X_df, y_series, direction='forward')
+print(f"Selected features: {stepwise_results['selected_features']}")
+
+# 6. Cross-validation
+cv_results = perform_cross_validation(X_df, y_series, cv_method='5fold')
+print(f"CV R²: {cv_results['r2_mean']:.3f}")
+
+# 7. Apply regularization
+ridge_results = apply_ridge_regression(X_df, y_series)
+lasso_results = apply_lasso_regression(X_df, y_series)
+print(f"Ridge R²: {ridge_results['r_squared']:.3f}")
+print(f"Lasso selected {lasso_results['n_non_zero']} variables")
+```
+
+### Function Reference
+
+Each function includes comprehensive docstrings with:
+- **Parameters**: Input variables and their types
+- **Returns**: Output format and content
+- **Examples**: Usage examples in the main execution block
+- **Theory**: Connection to statistical concepts
+
+### Integration with Theory
+
+The Python functions implement the mathematical concepts discussed in this lesson:
+- **Matrix Notation**: Mathematical foundations in `fit_multiple_linear_regression()`
+- **Model Selection**: Stepwise and subset selection methods
+- **Multicollinearity**: VIF and correlation analysis
+- **Regularization**: Ridge, Lasso, and Elastic Net implementations
+- **Cross-Validation**: Model validation techniques
+
 ---
 
 **Key Takeaways:**
@@ -494,4 +471,5 @@ Find a real dataset (e.g., from R's datasets package). Build, validate, and repo
 - Always check assumptions and diagnostics
 - Use model selection and regularization to avoid overfitting
 - Interpret coefficients in context
-- Report all relevant statistics and diagnostics 
+- Report all relevant statistics and diagnostics
+- Use the Python functions for comprehensive, reproducible analysis 
