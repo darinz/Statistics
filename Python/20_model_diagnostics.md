@@ -81,287 +81,103 @@ Where $`R_j^2`$ is the $R^2$ from regressing $`X_j`$ on all other predictors.
 
 ### Residual Analysis
 
-```python
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.datasets import load_boston
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import StandardScaler
-import statsmodels.api as sm
-from statsmodels.stats.diagnostic import het_breuschpagan
-from statsmodels.stats.stattools import durbin_watson
-from scipy import stats
-import warnings
-warnings.filterwarnings('ignore')
+**Code Reference**: See `perform_residual_analysis()` and `create_residual_plots()` functions in `20_model_diagnostics.py`.
 
-# Load data (using sklearn's boston dataset as mtcars equivalent)
-boston = load_boston()
-data = pd.DataFrame(boston.data, columns=boston.feature_names)
-data['MEDV'] = boston.target
+The residual analysis provides:
+1. **Comprehensive Residual Calculation**: Ordinary, standardized, and studentized residuals
+2. **Normality Testing**: Shapiro-Wilk test and Q-Q plots for residual normality
+3. **Residual Statistics**: Mean, standard deviation, skewness, and kurtosis
+4. **Visual Diagnostics**: Four-panel residual plots for comprehensive assessment
+5. **Automatic Assessment**: Automatic determination of normality assumptions
+6. **Professional Output**: Publication-ready diagnostic visualizations
 
-# Fit model
-X = data[['RM', 'LSTAT', 'PTRATIO']]  # Using room size, poverty level, and pupil-teacher ratio
-y = data['MEDV']
-X = sm.add_constant(X)
-model = sm.OLS(y, X).fit()
-
-# Residual plots
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-
-# Residuals vs Fitted
-axes[0, 0].scatter(model.fittedvalues, model.resid)
-axes[0, 0].axhline(y=0, color='red', linestyle='--')
-axes[0, 0].set_xlabel('Fitted Values')
-axes[0, 0].set_ylabel('Residuals')
-axes[0, 0].set_title('Residuals vs Fitted')
-
-# Q-Q plot for normality
-stats.probplot(model.resid, dist="norm", plot=axes[0, 1])
-axes[0, 1].set_title('Normal Q-Q')
-
-# Scale-Location plot
-axes[1, 0].scatter(model.fittedvalues, np.sqrt(np.abs(model.resid)))
-axes[1, 0].set_xlabel('Fitted Values')
-axes[1, 0].set_ylabel('sqrt(|Residuals|)')
-axes[1, 0].set_title('Scale-Location')
-
-# Residuals vs Leverage
-leverage = model.get_influence().hat_matrix_diag
-axes[1, 1].scatter(leverage, model.resid)
-axes[1, 1].set_xlabel('Leverage')
-axes[1, 1].set_ylabel('Residuals')
-axes[1, 1].set_title('Residuals vs Leverage')
-
-plt.tight_layout()
-plt.show()
-
-# Standardized and studentized residuals
-std_resid = model.get_influence().resid_studentized_internal
-stud_resid = model.get_influence().resid_studentized_external
-
-# Q-Q plot for normality
-plt.figure(figsize=(8, 6))
-stats.probplot(stud_resid, dist="norm", plot=plt)
-plt.title('Q-Q Plot of Studentized Residuals')
-plt.show()
-
-# Shapiro-Wilk test for normality
-shapiro_stat, shapiro_p = stats.shapiro(stud_resid)
-print(f"Shapiro-Wilk test: statistic = {shapiro_stat:.4f}, p-value = {shapiro_p:.4f}")
-```
+This function provides complete residual analysis essential for validating linear regression assumptions.
 
 ### Leverage and Influence
 
-```python
-# Leverage
-leverage = model.get_influence().hat_matrix_diag
-plt.figure(figsize=(10, 6))
-plt.bar(range(len(leverage)), leverage)
-plt.axhline(y=2 * (len(model.params) + 1) / len(data), color='red', linestyle='--', 
-           label=f'Threshold: {2 * (len(model.params) + 1) / len(data):.3f}')
-plt.xlabel('Observation')
-plt.ylabel('Leverage')
-plt.title('Leverage')
-plt.legend()
-plt.show()
+**Code Reference**: See `analyze_leverage_and_influence()` and `plot_leverage_and_influence()` functions in `20_model_diagnostics.py`.
 
-# Cook's distance
-cooksd = model.get_influence().cooks_distance[0]
-plt.figure(figsize=(10, 6))
-plt.bar(range(len(cooksd)), cooksd)
-plt.axhline(y=4/len(cooksd), color='red', linestyle='--', 
-           label=f'Threshold: {4/len(cooksd):.3f}')
-plt.xlabel('Observation')
-plt.ylabel("Cook's Distance")
-plt.title("Cook's Distance")
-plt.legend()
-plt.show()
+The leverage and influence analysis provides:
+1. **Leverage Calculation**: Hat matrix diagonals to identify high-leverage points
+2. **Cook's Distance**: Measure influence of each observation on all fitted values
+3. **DFFITS**: Standardized influence measure for each observation
+4. **Threshold Assessment**: Automatic identification of influential points
+5. **Visual Diagnostics**: Leverage plots, Cook's distance plots, and influence plots
+6. **Comprehensive Summary**: Summary statistics for all influence measures
 
-# Influence plot
-fig, ax = plt.subplots(figsize=(10, 8))
-influence_plot = model.get_influence()
-ax.scatter(leverage, stud_resid, s=100*cooksd, alpha=0.6)
-ax.set_xlabel('Leverage')
-ax.set_ylabel('Studentized Residuals')
-ax.set_title('Influence Plot')
-ax.axhline(y=0, color='red', linestyle='--')
-ax.axhline(y=2, color='red', linestyle='--')
-ax.axhline(y=-2, color='red', linestyle='--')
-plt.show()
-```
+These functions help identify observations that may unduly influence the regression results.
 
 ### Multicollinearity
 
-```python
-from statsmodels.stats.outliers_influence import variance_inflation_factor
+**Code Reference**: See `check_multicollinearity()` function in `20_model_diagnostics.py`.
 
-# Calculate VIF
-vif_data = pd.DataFrame()
-vif_data["Variable"] = X.columns
-vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
-print("Variance Inflation Factors:")
-print(vif_data)
+The multicollinearity detection provides:
+1. **VIF Calculation**: Variance Inflation Factor for each predictor
+2. **Tolerance Analysis**: Reciprocal of VIF for additional insight
+3. **Correlation Matrix**: Pairwise correlations between predictors
+4. **High Correlation Detection**: Identify problematic predictor pairs
+5. **Severity Assessment**: Classify multicollinearity severity
+6. **Recommendations**: Provide guidance for addressing multicollinearity
 
-# Tolerance (1/VIF)
-vif_data["Tolerance"] = 1 / vif_data["VIF"]
-print("\nTolerance:")
-print(vif_data[["Variable", "Tolerance"]])
-```
+This function provides comprehensive multicollinearity diagnostics essential for multiple regression model validation.
 
 ### Heteroscedasticity
 
-```python
-# Breusch-Pagan test
-bp_stat, bp_p, bp_f, bp_f_p = het_breuschpagan(model.resid, X)
-print(f"Breusch-Pagan test: statistic = {bp_stat:.4f}, p-value = {bp_p:.4f}")
+**Code Reference**: See `test_heteroscedasticity()` function in `20_model_diagnostics.py`.
 
-# Plot residuals vs fitted
-plt.figure(figsize=(10, 6))
-plt.scatter(model.fittedvalues, model.resid)
-plt.axhline(y=0, color='red', linestyle='--')
-plt.xlabel('Fitted Values')
-plt.ylabel('Residuals')
-plt.title('Residuals vs Fitted Values')
-plt.show()
-```
+The heteroscedasticity testing provides:
+1. **Breusch-Pagan Test**: Formal statistical test for heteroscedasticity
+2. **Variance Ratio Analysis**: Simple visual assessment of variance patterns
+3. **Statistical Assessment**: P-values and significance testing
+4. **Visual Diagnostics**: Residual plots for heteroscedasticity detection
+5. **Comprehensive Evaluation**: Multiple approaches to detect variance issues
+6. **Recommendations**: Guidance for addressing heteroscedasticity
+
+This function provides both statistical and visual evidence for heteroscedasticity detection.
 
 ### Independence
 
-```python
-# Durbin-Watson test for autocorrelation
-dw_stat = durbin_watson(model.resid)
-print(f"Durbin-Watson statistic: {dw_stat:.4f}")
-print("Interpretation:")
-print("- DW ≈ 2: No autocorrelation")
-print("- DW < 2: Positive autocorrelation")
-print("- DW > 2: Negative autocorrelation")
-```
+**Code Reference**: See `test_independence()` function in `20_model_diagnostics.py`.
+
+The independence testing provides:
+1. **Durbin-Watson Test**: Formal test for autocorrelation in residuals
+2. **Autocorrelation Detection**: Identify positive or negative autocorrelation
+3. **Statistical Assessment**: Durbin-Watson statistic interpretation
+4. **Clear Interpretation**: Automatic classification of autocorrelation type
+5. **Recommendations**: Guidance for addressing independence violations
+6. **Comprehensive Analysis**: Complete independence assessment
+
+This function provides essential diagnostics for assessing the independence assumption in regression models.
 
 ## Diagnostics for Logistic Regression
 
 ### Residuals and Influence
 
-```python
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_curve, auc, classification_report
-import statsmodels.api as sm
+**Code Reference**: See `perform_logistic_regression_diagnostics()` and `create_logistic_diagnostic_plots()` functions in `20_model_diagnostics.py`.
 
-# Create binary outcome (high vs low median value)
-data['high_value'] = (data['MEDV'] > data['MEDV'].median()).astype(int)
+The logistic regression diagnostics provide:
+1. **Pearson Residuals**: Standardized residuals for logistic regression
+2. **Deviance Residuals**: Deviance-based residuals for model fit assessment
+3. **Leverage Analysis**: Hat matrix diagonals for logistic models
+4. **Cook's Distance**: Influence measures for logistic regression
+5. **Visual Diagnostics**: Comprehensive plots for logistic model assessment
+6. **Model Fit Statistics**: Pseudo R-squared and other fit measures
 
-# Fit logistic regression with statsmodels
-X_logit = data[['RM', 'LSTAT', 'PTRATIO']]
-X_logit = sm.add_constant(X_logit)
-y_logit = data['high_value']
-logit_model = sm.Logit(y_logit, X_logit).fit()
-
-# Pearson and deviance residuals
-pearson_resid = logit_model.resid_pearson
-dev_resid = logit_model.resid_dev
-
-# Plot residuals
-fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-
-axes[0].scatter(logit_model.fittedvalues, pearson_resid)
-axes[0].axhline(y=0, color='red', linestyle='--')
-axes[0].set_xlabel('Fitted Values')
-axes[0].set_ylabel('Pearson Residuals')
-axes[0].set_title('Pearson Residuals vs Fitted')
-
-axes[1].scatter(logit_model.fittedvalues, dev_resid)
-axes[1].axhline(y=0, color='red', linestyle='--')
-axes[1].set_xlabel('Fitted Values')
-axes[1].set_ylabel('Deviance Residuals')
-axes[1].set_title('Deviance Residuals vs Fitted')
-
-plt.tight_layout()
-plt.show()
-
-# Leverage and Cook's distance
-leverage_logit = logit_model.get_influence().hat_matrix_diag
-cooksd_logit = logit_model.get_influence().cooks_distance[0]
-
-plt.figure(figsize=(10, 6))
-plt.scatter(leverage_logit, dev_resid)
-plt.xlabel('Leverage')
-plt.ylabel('Deviance Residuals')
-plt.title('Deviance Residuals vs Leverage')
-plt.show()
-
-plt.figure(figsize=(10, 6))
-plt.bar(range(len(cooksd_logit)), cooksd_logit)
-plt.axhline(y=4/len(cooksd_logit), color='red', linestyle='--', 
-           label=f'Threshold: {4/len(cooksd_logit):.3f}')
-plt.xlabel('Observation')
-plt.ylabel("Cook's Distance")
-plt.title("Cook's Distance (Logistic)")
-plt.legend()
-plt.show()
-```
+These functions provide essential diagnostics for validating logistic regression models.
 
 ### Model Fit and Classification
 
-```python
-# Pseudo R-squared
-print("Model Summary:")
-print(logit_model.summary())
+**Code Reference**: See `hosmer_lemeshow_test()` function and the model fit assessment within `perform_logistic_regression_diagnostics()` in `20_model_diagnostics.py`.
 
-# Hosmer-Lemeshow test (approximation using chi-square test on grouped residuals)
-def hosmer_lemeshow_test(y_true, y_pred, n_groups=10):
-    # Sort by predicted probabilities
-    sorted_indices = np.argsort(y_pred)
-    y_true_sorted = y_true.iloc[sorted_indices]
-    y_pred_sorted = y_pred.iloc[sorted_indices]
-    
-    # Group into deciles
-    group_size = len(y_true) // n_groups
-    groups = []
-    for i in range(n_groups):
-        start_idx = i * group_size
-        end_idx = start_idx + group_size if i < n_groups - 1 else len(y_true)
-        groups.append({
-            'observed': y_true_sorted.iloc[start_idx:end_idx],
-            'predicted': y_pred_sorted.iloc[start_idx:end_idx]
-        })
-    
-    # Calculate chi-square statistic
-    chi_square = 0
-    for group in groups:
-        observed_1 = group['observed'].sum()
-        observed_0 = len(group['observed']) - observed_1
-        expected_1 = group['predicted'].sum()
-        expected_0 = len(group['predicted']) - expected_1
-        
-        if expected_1 > 0 and expected_0 > 0:
-            chi_square += ((observed_1 - expected_1)**2 / expected_1 + 
-                          (observed_0 - expected_0)**2 / expected_0)
-    
-    p_value = 1 - stats.chi2.cdf(chi_square, n_groups - 2)
-    return chi_square, p_value
+The model fit and classification assessment provides:
+1. **Pseudo R-squared**: Multiple pseudo R-squared measures for logistic regression
+2. **Hosmer-Lemeshow Test**: Goodness-of-fit test for logistic regression
+3. **ROC Curve Analysis**: Receiver Operating Characteristic curve
+4. **AUC Calculation**: Area Under the Curve for classification performance
+5. **Model Summary**: Comprehensive statistical summary
+6. **Classification Performance**: Overall model performance assessment
 
-hl_stat, hl_p = hosmer_lemeshow_test(y_logit, pd.Series(logit_model.fittedvalues))
-print(f"Hosmer-Lemeshow test: chi-square = {hl_stat:.4f}, p-value = {hl_p:.4f}")
-
-# ROC curve and AUC
-y_pred_proba = logit_model.fittedvalues
-fpr, tpr, _ = roc_curve(y_logit, y_pred_proba)
-roc_auc = auc(fpr, tpr)
-
-plt.figure(figsize=(8, 6))
-plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.3f})')
-plt.plot([0, 1], [0, 1], color='red', lw=2, linestyle='--', label='Random')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('ROC Curve')
-plt.legend(loc="lower right")
-plt.show()
-
-print(f"AUC: {roc_auc:.4f}")
-```
+These functions provide essential validation metrics for logistic regression model performance.
 
 ## Generalized Linear Model (GLM) Diagnostics
 
@@ -372,66 +188,45 @@ print(f"AUC: {roc_auc:.4f}")
 
 ### Diagnostic Plot Matrix
 
-```python
-# For any statsmodels model
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+**Code Reference**: See `create_residual_plots()` and `create_comprehensive_diagnostic_plots()` functions in `20_model_diagnostics.py`.
 
-# Residuals vs Fitted
-axes[0, 0].scatter(model.fittedvalues, model.resid)
-axes[0, 0].axhline(y=0, color='red', linestyle='--')
-axes[0, 0].set_xlabel('Fitted Values')
-axes[0, 0].set_ylabel('Residuals')
-axes[0, 0].set_title('Residuals vs Fitted')
+The diagnostic plot matrix provides:
+1. **Four-Panel Layout**: Comprehensive diagnostic visualization
+2. **Residuals vs Fitted**: Linearity and homoscedasticity assessment
+3. **Normal Q-Q Plot**: Normality assumption validation
+4. **Scale-Location Plot**: Heteroscedasticity detection
+5. **Residuals vs Leverage**: Influence and leverage assessment
+6. **Professional Formatting**: Publication-ready visualizations
 
-# Q-Q plot
-stats.probplot(model.resid, dist="norm", plot=axes[0, 1])
-axes[0, 1].set_title('Normal Q-Q')
-
-# Scale-Location
-axes[1, 0].scatter(model.fittedvalues, np.sqrt(np.abs(model.resid)))
-axes[1, 0].set_xlabel('Fitted Values')
-axes[1, 0].set_ylabel('sqrt(|Residuals|)')
-axes[1, 0].set_title('Scale-Location')
-
-# Residuals vs Leverage
-axes[1, 1].scatter(leverage, model.resid)
-axes[1, 1].set_xlabel('Leverage')
-axes[1, 1].set_ylabel('Residuals')
-axes[1, 1].set_title('Residuals vs Leverage')
-
-plt.tight_layout()
-plt.show()
-```
+These functions create comprehensive diagnostic plots essential for model validation.
 
 ### Influence Plot
 
-```python
-# Influence plot
-fig, ax = plt.subplots(figsize=(10, 8))
-influence_plot = model.get_influence()
-ax.scatter(leverage, stud_resid, s=100*cooksd, alpha=0.6)
-ax.set_xlabel('Leverage')
-ax.set_ylabel('Studentized Residuals')
-ax.set_title('Influence Plot')
-ax.axhline(y=0, color='red', linestyle='--')
-ax.axhline(y=2, color='red', linestyle='--')
-ax.axhline(y=-2, color='red', linestyle='--')
-plt.show()
-```
+**Code Reference**: See `plot_leverage_and_influence()` function in `20_model_diagnostics.py`.
+
+The influence plot provides:
+1. **Bubble Plot**: Point size represents Cook's distance
+2. **Leverage vs Residuals**: X-axis shows leverage, Y-axis shows studentized residuals
+3. **Influence Assessment**: Visual identification of influential points
+4. **Threshold Lines**: Reference lines for leverage and residual thresholds
+5. **Comprehensive View**: Single plot showing all influence measures
+6. **Professional Formatting**: Publication-ready influence visualization
+
+This function creates the essential influence plot for identifying problematic observations.
 
 ### Residuals vs Leverage Plot
 
-```python
-plt.figure(figsize=(10, 6))
-plt.scatter(leverage, stud_resid)
-plt.axhline(y=2, color='red', linestyle='--', label='y = 2')
-plt.axhline(y=-2, color='red', linestyle='--', label='y = -2')
-plt.xlabel('Leverage')
-plt.ylabel('Studentized Residuals')
-plt.title('Studentized Residuals vs Leverage')
-plt.legend()
-plt.show()
-```
+**Code Reference**: See `plot_leverage_and_influence()` function in `20_model_diagnostics.py`.
+
+The residuals vs leverage plot provides:
+1. **Scatter Plot**: Studentized residuals vs leverage values
+2. **Threshold Lines**: Reference lines at ±2 for studentized residuals
+3. **Outlier Detection**: Visual identification of high-leverage and high-residual points
+4. **Influence Assessment**: Combined view of leverage and residual patterns
+5. **Clear Visualization**: Easy interpretation of problematic observations
+6. **Professional Formatting**: Publication-ready diagnostic plot
+
+This function creates essential plots for identifying influential observations in regression models.
 
 ## Best Practices
 - Always check all relevant assumptions before interpreting results.
@@ -462,6 +257,77 @@ Compare two regression models using AIC, BIC, and cross-validation. Assess which
 ### Exercise 5: Real-World Application
 Find a real dataset. Fit a regression model, perform comprehensive diagnostics, and report your findings.
 
+## Python Implementation Reference
+
+### Core Diagnostic Functions
+
+**Linear Regression Diagnostics:**
+- `perform_residual_analysis(X, y, feature_names=None)`: Comprehensive residual analysis
+- `analyze_leverage_and_influence(results)`: Leverage and influence diagnostics
+- `check_multicollinearity(X)`: VIF and multicollinearity analysis
+- `test_heteroscedasticity(results)`: Heteroscedasticity testing
+- `test_independence(results)`: Independence and autocorrelation testing
+
+**Logistic Regression Diagnostics:**
+- `perform_logistic_regression_diagnostics(X, y, feature_names=None)`: Complete logistic diagnostics
+- `hosmer_lemeshow_test(y_true, y_pred, n_groups=10)`: Goodness-of-fit test
+
+**Visualization Functions:**
+- `create_residual_plots(results, figsize=(12, 10))`: Four-panel residual plots
+- `plot_leverage_and_influence(results, influence_results)`: Leverage and influence plots
+- `create_logistic_diagnostic_plots(results)`: Logistic regression plots
+- `create_comprehensive_diagnostic_plots(diagnostic_results)`: All diagnostic plots
+
+**Comprehensive Analysis:**
+- `perform_comprehensive_diagnostics(X, y, model_type='linear', feature_names=None)`: Complete diagnostics
+- `boston_housing_diagnostics_example()`: Real-world linear regression example
+- `logistic_regression_example()`: Real-world logistic regression example
+- `outlier_influence_example()`: Outlier and influence analysis example
+
+### Data Preparation Functions
+- `load_boston_data()`: Load Boston housing dataset with fallback simulation
+- `simulate_data_with_outliers(seed=42, n_samples=100, outlier_fraction=0.05)`: Generate test data with outliers
+
+### Usage Example
+
+```python
+# Load the module
+from model_diagnostics import *
+
+# Perform comprehensive diagnostics
+data = load_boston_data()
+X = data[['RM', 'LSTAT', 'PTRATIO']]
+y = data['MEDV']
+
+# Complete diagnostic analysis
+diagnostics = perform_comprehensive_diagnostics(X, y, model_type='linear')
+
+# Create all diagnostic plots
+create_comprehensive_diagnostic_plots(diagnostics)
+
+# Access specific results
+print(f"Residuals normal: {diagnostics['residual_analysis']['residual_stats']['normal_residuals']}")
+print(f"Heteroscedasticity: {diagnostics['heteroscedasticity']['overall_assessment']['heteroscedastic']}")
+print(f"High leverage points: {diagnostics['leverage_and_influence']['summary']['total_high_leverage']}")
+```
+
+### Function Cross-References
+
+**Theory → Code Mapping:**
+- **Residual Analysis** → `perform_residual_analysis()`, `create_residual_plots()`
+- **Leverage & Influence** → `analyze_leverage_and_influence()`, `plot_leverage_and_influence()`
+- **Multicollinearity** → `check_multicollinearity()`
+- **Heteroscedasticity** → `test_heteroscedasticity()`
+- **Independence** → `test_independence()`
+- **Logistic Diagnostics** → `perform_logistic_regression_diagnostics()`, `create_logistic_diagnostic_plots()`
+- **Model Fit** → `hosmer_lemeshow_test()`, ROC analysis in logistic diagnostics
+
+**Complete Workflow:**
+1. **Data Preparation** → `load_boston_data()` or `simulate_data_with_outliers()`
+2. **Comprehensive Analysis** → `perform_comprehensive_diagnostics()`
+3. **Visualization** → `create_comprehensive_diagnostic_plots()`
+4. **Interpretation** → Access results from diagnostic dictionaries
+
 ---
 
 **Key Takeaways:**
@@ -469,4 +335,5 @@ Find a real dataset. Fit a regression model, perform comprehensive diagnostics, 
 - Always check residuals, leverage, influence, and assumptions
 - Use multiple diagnostics and visualizations
 - Address and report any violations or influential points
-- Good diagnostics lead to better models and more reliable conclusions 
+- Good diagnostics lead to better models and more reliable conclusions
+- The Python implementation provides comprehensive, professional diagnostic tools 
