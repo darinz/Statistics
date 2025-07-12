@@ -67,98 +67,70 @@ Kendall's $`\tau`$ measures ordinal association:
 
 ### Pearson Correlation
 
-```python
-import numpy as np
-import pandas as pd
-from scipy import stats
+**Code Reference**: See `simulate_correlation_data()` and `calculate_pearson_correlation()` functions in `17_correlation_analysis.py`.
 
-# Simulate data
-np.random.seed(42)
-x = np.random.normal(size=100)
-y = 0.7 * x + np.random.normal(scale=0.5, size=100)
+The Pearson correlation analysis provides:
+1. **Data Simulation**: Generate correlated data with specified correlation coefficient
+2. **Correlation Calculation**: Compute Pearson correlation coefficient with significance testing
+3. **Confidence Intervals**: Calculate 95% confidence intervals using Fisher's z-transformation
+4. **Effect Size Interpretation**: Classify correlation strength (negligible, small, moderate, large, etc.)
+5. **Comprehensive Results**: Returns correlation coefficient, p-value, confidence intervals, and effect size
 
-# Pearson correlation
-cor_pearson, _ = stats.pearsonr(x, y)
-print(f"Pearson correlation: {cor_pearson:.3f}")
-
-# Test significance
-cor_test = stats.pearsonr(x, y)
-print(f"Pearson r: {cor_test[0]:.3f}, p-value: {cor_test[1]:.4f}")
-```
+This function provides a complete analysis of the linear relationship between two variables.
 
 ### Spearman and Kendall Correlation
 
-```python
-# Spearman correlation
-cor_spearman, p_spearman = stats.spearmanr(x, y)
-print(f"Spearman correlation: {cor_spearman:.3f}")
-print(f"Spearman p-value: {p_spearman:.4f}")
+**Code Reference**: See `calculate_spearman_kendall()` function in `17_correlation_analysis.py`.
 
-# Kendall correlation
-cor_kendall, p_kendall = stats.kendalltau(x, y)
-print(f"Kendall correlation: {cor_kendall:.3f}")
-print(f"Kendall p-value: {p_kendall:.4f}")
-```
+The Spearman and Kendall correlation analysis provides:
+1. **Spearman Correlation**: Rank-based correlation for monotonic relationships
+2. **Kendall Correlation**: Ordinal correlation for small samples with many ties
+3. **Significance Testing**: P-values for both correlation methods
+4. **Effect Size Interpretation**: Strength classification for both correlations
+5. **Comprehensive Results**: Returns correlation coefficients, p-values, and effect sizes for both methods
+
+This function is particularly useful when data violate normality assumptions or when dealing with ordinal data.
 
 ### Correlation Matrix
 
-```python
-# Multiple variables
-np.random.seed(123)
-data = pd.DataFrame({
-    'A': np.random.normal(size=100),
-    'B': np.random.normal(size=100),
-    'C': np.random.normal(size=100)
-})
+**Code Reference**: See `simulate_multivariate_data()` and `create_correlation_matrix()` functions in `17_correlation_analysis.py`.
 
-# Correlation matrix
-cor_matrix = data.corr()
-print(cor_matrix)
+The correlation matrix analysis provides:
+1. **Multivariate Data Simulation**: Generate multiple variables for correlation analysis
+2. **Correlation Matrix**: Compute pairwise correlations between all variables
+3. **Significance Testing**: Calculate p-values for each correlation pair
+4. **Multiple Methods**: Support for Pearson, Spearman, and Kendall correlations
+5. **Comprehensive Results**: Returns both correlation matrix and significance matrix
 
-# Significance matrix
-from scipy.stats import pearsonr
-p_matrix = pd.DataFrame(np.ones((data.shape[1], data.shape[1])), columns=data.columns, index=data.columns)
-for i in data.columns:
-    for j in data.columns:
-        if i != j:
-            _, p = pearsonr(data[i], data[j])
-            p_matrix.loc[i, j] = p
-        else:
-            p_matrix.loc[i, j] = np.nan
-print("\nP-values matrix:")
-print(p_matrix)
-```
+This function is essential for understanding relationships between multiple variables in a dataset.
 
 ## Visualization
 
 ### Scatter Plot with Correlation
 
-```python
-import matplotlib.pyplot as plt
-import seaborn as sns
+**Code Reference**: See `plot_scatter_with_correlation()` function in `17_correlation_analysis.py`.
 
-# Scatter plot with regression line
-plot_data = pd.DataFrame({'x': x, 'y': y})
-plt.figure(figsize=(8, 6))
-sns.regplot(x='x', y='y', data=plot_data, ci=95, line_kws={'color': 'blue'})
-plt.title(f"Scatter Plot with Regression Line\nPearson r = {cor_pearson:.2f}")
-plt.xlabel("X")
-plt.ylabel("Y")
-plt.tight_layout()
-plt.show()
-```
+The scatter plot visualization provides:
+1. **Scatter Plot**: Visual representation of the relationship between variables
+2. **Regression Line**: Linear trend line with confidence intervals
+3. **Correlation Information**: Display correlation coefficient and significance in title
+4. **Customizable**: Adjustable plot size, colors, and styling
+5. **Professional Output**: Publication-ready visualizations
+
+This function creates informative scatter plots that clearly show the strength and direction of correlations.
 
 ### Correlation Matrix Heatmap
 
-```python
-cor_melt = cor_matrix.reset_index().melt(id_vars='index')
-cor_melt.columns = ['Var1', 'Var2', 'value']
-plt.figure(figsize=(6, 5))
-sns.heatmap(cor_matrix, annot=True, fmt='.2f', cmap='RdYlBu_r', square=True)
-plt.title("Correlation Matrix Heatmap")
-plt.tight_layout()
-plt.show()
-```
+**Code Reference**: See `plot_correlation_matrix()` function in `17_correlation_analysis.py`.
+
+The correlation matrix heatmap provides:
+1. **Visual Matrix**: Color-coded representation of correlation strengths
+2. **Numerical Values**: Display correlation coefficients in each cell
+3. **Color Scheme**: Red-Yellow-Blue color map for intuitive interpretation
+4. **Square Format**: Symmetric matrix layout for easy comparison
+5. **Professional Styling**: Publication-ready heatmap visualizations
+
+This function creates clear visual representations of correlation matrices, making it easy to identify strong and weak relationships.
 
 ## Assumption Checking
 
@@ -170,54 +142,42 @@ plt.show()
 
 #### Checking Linearity and Outliers
 
-```python
-# Scatter plot for linearity and outliers
-plt.figure(figsize=(7, 5))
-plt.scatter(x, y, alpha=0.7)
-slope, intercept = np.polyfit(x, y, 1)
-plt.plot(x, slope * x + intercept, color='red')
-plt.title("Scatter Plot for Linearity and Outliers")
-plt.xlabel("x")
-plt.ylabel("y")
-plt.tight_layout()
-plt.show()
-```
+**Code Reference**: See `plot_assumption_checks()` function in `17_correlation_analysis.py`.
+
+The linearity and outlier checking provides:
+1. **Scatter Plot**: Visual inspection of the relationship between variables
+2. **Trend Line**: Linear regression line to assess linearity
+3. **Outlier Detection**: Visual identification of potential outliers
+4. **Comprehensive Assessment**: Part of the complete assumption checking suite
+5. **Professional Visualization**: Clear, informative plots for assumption validation
+
+This function helps assess whether the relationship between variables is linear and identifies any influential outliers.
 
 #### Checking Normality
 
-```python
-# Q-Q plots
-import scipy.stats as stats
-fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-stats.probplot(x, dist="norm", plot=axes[0])
-axes[0].set_title("Q-Q Plot for x")
-stats.probplot(y, dist="norm", plot=axes[1])
-axes[1].set_title("Q-Q Plot for y")
-plt.tight_layout()
-plt.show()
+**Code Reference**: See `check_correlation_assumptions()` function in `17_correlation_analysis.py`.
 
-# Shapiro-Wilk test
-print("Shapiro-Wilk test for x:", stats.shapiro(x))
-print("Shapiro-Wilk test for y:", stats.shapiro(y))
-```
+The normality checking provides:
+1. **Q-Q Plots**: Visual assessment of normality for both variables
+2. **Shapiro-Wilk Test**: Formal statistical test for normality
+3. **Comprehensive Results**: P-values and normality assessment for both variables
+4. **Automated Assessment**: Automatic determination of whether normality assumptions are met
+5. **Professional Output**: Clear, interpretable results for assumption validation
+
+This function provides both visual and statistical evidence for normality, essential for determining whether Pearson correlation is appropriate.
 
 #### Checking Homoscedasticity
 
-```python
-# Residuals vs fitted
-from sklearn.linear_model import LinearRegression
-model = LinearRegression().fit(x.reshape(-1, 1), y)
-fitted = model.predict(x.reshape(-1, 1))
-residuals = y - fitted
-plt.figure(figsize=(7, 5))
-plt.scatter(fitted, residuals)
-plt.axhline(0, color='red')
-plt.title("Residuals vs Fitted Values")
-plt.xlabel("Fitted Values")
-plt.ylabel("Residuals")
-plt.tight_layout()
-plt.show()
-```
+**Code Reference**: See `check_correlation_assumptions()` function in `17_correlation_analysis.py`.
+
+The homoscedasticity checking provides:
+1. **Residual Analysis**: Plot of residuals against fitted values
+2. **Variance Assessment**: Statistical test for constant variance
+3. **Visual Inspection**: Clear visualization of variance patterns
+4. **Quantitative Results**: Variance ratio and homoscedasticity assessment
+5. **Automated Evaluation**: Automatic determination of homoscedasticity
+
+This function helps assess whether the variance of residuals is constant across the range of predictor values, an important assumption for Pearson correlation.
 
 ### Robust Alternatives
 - Use Spearman or Kendall correlation if assumptions are violated
@@ -238,20 +198,16 @@ plt.show()
 
 ### Confidence Interval for $`r`$
 
-```python
-# Confidence interval for correlation (using Fisher's z)
-def correlation_ci(r, n, alpha=0.05):
-    from scipy.stats import norm
-    z = np.arctanh(r)
-    se = 1 / np.sqrt(n - 3)
-    z_crit = norm.ppf(1 - alpha/2)
-    ci_lower = np.tanh(z - z_crit * se)
-    ci_upper = np.tanh(z + z_crit * se)
-    return ci_lower, ci_upper
+**Code Reference**: See `correlation_confidence_interval()` function in `17_correlation_analysis.py`.
 
-ci_low, ci_up = correlation_ci(cor_pearson, len(x))
-print(f"95% CI for r: [{ci_low:.2f}, {ci_up:.2f}]")
-```
+The confidence interval calculation provides:
+1. **Fisher's z-Transformation**: Converts correlation to normal distribution
+2. **Standard Error**: Calculates standard error of the transformed correlation
+3. **Confidence Bounds**: Computes lower and upper confidence limits
+4. **Back-Transformation**: Converts confidence limits back to correlation scale
+5. **Flexible Alpha**: Adjustable significance level (default: 0.05)
+
+This function provides precise confidence intervals for correlation coefficients, essential for understanding the uncertainty in correlation estimates.
 
 ### Fisher's z-Transformation
 
@@ -267,30 +223,29 @@ The standard error of $`z`$ is $`\frac{1}{\sqrt{n-3}}`$.
 
 ### Example 1: Height and Weight
 
-```python
-# Simulate height and weight data
-np.random.seed(1)
-height = np.random.normal(170, 10, 100)
-weight = 0.5 * height + np.random.normal(0, 8, 100)
+**Code Reference**: See `height_weight_example()` function in `17_correlation_analysis.py`.
 
-# Pearson correlation
-cor_hw, p_hw = stats.pearsonr(height, weight)
-print(f"Pearson correlation: {cor_hw:.3f}, p-value: {p_hw:.4f}")
-```
+The height-weight example demonstrates:
+1. **Realistic Data Simulation**: Generate height and weight data with known relationship
+2. **Comprehensive Analysis**: Pearson, Spearman, and Kendall correlations
+3. **Assumption Checking**: Full validation of correlation assumptions
+4. **Visualization**: Scatter plots and assumption checking plots
+5. **Complete Workflow**: End-to-end correlation analysis example
+
+This example shows how to perform a complete correlation analysis on realistic data, including assumption checking and visualization.
 
 ### Example 2: Nonlinear Relationship
 
-```python
-# Simulate nonlinear data
-np.random.seed(2)
-x_nl = np.random.normal(size=100)
-y_nl = x_nl ** 2 + np.random.normal(size=100)
+**Code Reference**: See `nonlinear_relationship_example()` function in `17_correlation_analysis.py`.
 
-# Pearson vs Spearman
-cor_pearson_nl, _ = stats.pearsonr(x_nl, y_nl)
-cor_spearman_nl, _ = stats.spearmanr(x_nl, y_nl)
-print(f"Pearson: {cor_pearson_nl:.3f}, Spearman: {cor_spearman_nl:.3f}")
-```
+The nonlinear relationship example demonstrates:
+1. **Nonlinear Data Simulation**: Generate quadratic relationship between variables
+2. **Method Comparison**: Compare Pearson vs Spearman correlation results
+3. **Visualization**: Scatter plot showing the nonlinear pattern
+4. **Interpretation**: Understanding when different correlation methods are appropriate
+5. **Educational Value**: Shows why Spearman correlation can be better for nonlinear relationships
+
+This example illustrates the importance of choosing the right correlation method and understanding the limitations of Pearson correlation for nonlinear relationships.
 
 ## Best Practices
 
@@ -324,6 +279,80 @@ Simulate data with outliers. Compare Pearson, Spearman, and robust correlation m
 ### Exercise 5: Real-World Application
 Find a real dataset (e.g., from R's datasets package). Perform a comprehensive correlation analysis, including visualization, assumption checking, and reporting.
 
+## Using the Python Code
+
+### Getting Started
+
+To use the correlation analysis functions, import the module and run the main demonstration:
+
+```python
+# Run the complete demonstration
+python 17_correlation_analysis.py
+```
+
+### Key Functions Overview
+
+**Data Simulation:**
+- `simulate_correlation_data()`: Generate correlated data with specified correlation
+- `simulate_multivariate_data()`: Create multivariate datasets for matrix analysis
+
+**Correlation Analysis:**
+- `calculate_pearson_correlation()`: Complete Pearson correlation with confidence intervals
+- `calculate_spearman_kendall()`: Spearman and Kendall correlations
+- `create_correlation_matrix()`: Correlation matrices with significance testing
+
+**Assumption Checking:**
+- `check_correlation_assumptions()`: Comprehensive assumption validation
+- `plot_assumption_checks()`: Visual assumption checking
+
+**Visualization:**
+- `plot_scatter_with_correlation()`: Scatter plots with correlation information
+- `plot_correlation_matrix()`: Correlation matrix heatmaps
+
+**Practical Examples:**
+- `height_weight_example()`: Realistic height-weight correlation analysis
+- `nonlinear_relationship_example()`: Demonstrating method differences
+- `multivariate_correlation_example()`: Multi-variable correlation analysis
+
+### Workflow Example
+
+```python
+# 1. Generate data
+x, y = simulate_correlation_data(correlation=0.7)
+
+# 2. Calculate correlations
+pearson_result = calculate_pearson_correlation(x, y)
+rank_results = calculate_spearman_kendall(x, y)
+
+# 3. Check assumptions
+assumptions = check_correlation_assumptions(x, y)
+
+# 4. Create visualizations
+plot_scatter_with_correlation(x, y, pearson_result)
+plot_assumption_checks(x, y)
+
+# 5. Interpret results
+print(f"Correlation: {pearson_result['correlation']:.3f}")
+print(f"Effect size: {pearson_result['effect_size']}")
+print(f"Recommendation: {assumptions['overall_assessment']['recommendation']}")
+```
+
+### Function Reference
+
+Each function includes comprehensive docstrings with:
+- **Parameters**: Input variables and their types
+- **Returns**: Output format and content
+- **Examples**: Usage examples in the main execution block
+- **Theory**: Connection to statistical concepts
+
+### Integration with Theory
+
+The Python functions implement the mathematical concepts discussed in this lesson:
+- **Covariance and Correlation**: Mathematical foundations in `calculate_pearson_correlation()`
+- **Fisher's z-Transformation**: Confidence intervals in `correlation_confidence_interval()`
+- **Assumption Checking**: Statistical tests in `check_correlation_assumptions()`
+- **Effect Size Interpretation**: Strength classification in `interpret_correlation_strength()`
+
 ---
 
 **Key Takeaways:**
@@ -331,4 +360,5 @@ Find a real dataset (e.g., from R's datasets package). Perform a comprehensive c
 - Pearson for linear, normal data; Spearman/Kendall for ranks or non-normal data
 - Always check assumptions and visualize
 - Correlation ≠ causation
-- Report effect size and confidence intervals 
+- Report effect size and confidence intervals
+- Use the Python functions for comprehensive, reproducible analysis 
